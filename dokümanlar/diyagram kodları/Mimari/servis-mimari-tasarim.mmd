@@ -1,0 +1,56 @@
+flowchart LR
+    Kullanici[Admin / ITPersoneli / PersonelKullanicisi]
+
+    subgraph Servisler
+        KimlikVePersonelServisi[KimlikVePersonelServisi]
+        EnvanterServisi[EnvanterServisi]
+        ZimmetServisi[ZimmetServisi]
+        DenetimKaydiServisi[DenetimKaydiServisi]
+        BildirimServisi[BildirimServisi]
+    end
+
+    subgraph Altyapi
+        RabbitMQ[(RabbitMQ inventory.events)]
+        MongoDB[(MongoDB audit_log)]
+        SignalR[SignalR NotificationHub]
+        Redis[(Redis Cache)]
+    end
+
+    Kullanici -- "Login / JWT" --> KimlikVePersonelServisi
+    Kullanici -- "Cihaz ve stok işlemleri" --> EnvanterServisi
+    Kullanici -- "Zimmet işlemleri" --> ZimmetServisi
+    Kullanici -- "Audit sorguları" --> DenetimKaydiServisi
+    Kullanici -- "Kritik stok bildirimi izleme" --> BildirimServisi
+
+    ZimmetServisi -- "HTTP: personel aktif mi?" --> KimlikVePersonelServisi
+    ZimmetServisi -- "HTTP: cihaz uygun mu?" --> EnvanterServisi
+    ZimmetServisi -- "HTTP: cihaz durumu güncelle" --> EnvanterServisi
+
+    EnvanterServisi -- "Kategori / lokasyon cache" --> Redis
+
+    KimlikVePersonelServisi -- "PersonelIstenAyrildi" --> RabbitMQ
+    EnvanterServisi -- "StokAzaldi" --> RabbitMQ
+    EnvanterServisi -- "KritikStokSeviyesineDusuldu" --> RabbitMQ
+    EnvanterServisi -- "CihazDurumuDegisti" --> RabbitMQ
+    ZimmetServisi -- "ZimmetOlusturuldu" --> RabbitMQ
+    ZimmetServisi -- "ZimmetIadeEdildi" --> RabbitMQ
+    ZimmetServisi -- "CihazKontroleAlindi" --> RabbitMQ
+    ZimmetServisi -- "CihazHasarliTeslimAlindi" --> RabbitMQ
+
+    RabbitMQ -- "Tüm eventler" --> DenetimKaydiServisi
+    DenetimKaydiServisi --> MongoDB
+
+    RabbitMQ -- "KritikStokSeviyesineDusuldu" --> BildirimServisi
+    BildirimServisi --> SignalR
+    SignalR -- "Kritik stok bildirimi" --> Kullanici
+
+    RabbitMQ -- "PersonelIstenAyrildi" --> ZimmetServisi
+    ZimmetServisi -- "Aktif zimmet kontrolü" --> ZimmetServisi
+
+    classDef service fill:#e8f1ff,stroke:#2f5f9f,stroke-width:1px,color:#111;
+    classDef infra fill:#fff4d6,stroke:#b8860b,stroke-width:1px,color:#111;
+    classDef client fill:#f2eefc,stroke:#6f42c1,stroke-width:1px,color:#111;
+
+    class KimlikVePersonelServisi,EnvanterServisi,ZimmetServisi,DenetimKaydiServisi,BildirimServisi service;
+    class RabbitMQ,MongoDB,SignalR,Redis infra;
+    class Kullanici client;

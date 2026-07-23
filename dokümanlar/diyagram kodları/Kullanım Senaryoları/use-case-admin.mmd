@@ -1,0 +1,62 @@
+flowchart LR
+    %% Admin aktörü için use-case diyagramı
+
+    Admin([Admin])
+
+    subgraph Sistem["IT Ekipman Takip Sistemi"]
+        direction TB
+
+        subgraph KimlikPersonel["Kimlik ve Personel Yönetimi"]
+            direction TB
+            UC_Giris(("Sisteme giriş yap"))
+            UC_Kullanici(("Kullanıcı hesabı yönet"))
+            UC_Rol(("Rol ve yetki yönet"))
+            UC_Personel(("Personel kaydı yönet"))
+            UC_Departman(("Departman yönet"))
+            UC_Sorumlu(("Departman sorumlusu belirle"))
+        end
+
+        subgraph EnvanterStok["Envanter ve Stok Yönetimi"]
+            direction TB
+            UC_Cihaz(("Seri numaralı cihaz yönet"))
+            UC_Sarf(("Sarf malzeme yönet"))
+            UC_Kategori(("Kategori ve alt kategori yönet"))
+            UC_Lokasyon(("Lokasyon yönet"))
+            UC_KritikKural(("Kritik stok kuralı yönet"))
+            UC_Rapor(("Stok ve varlık raporlarını görüntüle"))
+        end
+
+        subgraph DenetimBildirim["Denetim ve Bildirim"]
+            direction TB
+            UC_Audit(("Audit kayıtlarını sorgula"))
+            UC_Bildirim(("Kritik stok bildirimlerini görüntüle"))
+        end
+    end
+
+    Admin --> UC_Giris
+    Admin --> UC_Kullanici
+    Admin --> UC_Rol
+    Admin --> UC_Personel
+    Admin --> UC_Departman
+    Admin --> UC_Sorumlu
+    Admin --> UC_Cihaz
+    Admin --> UC_Sarf
+    Admin --> UC_Kategori
+    Admin --> UC_Lokasyon
+    Admin --> UC_KritikKural
+    Admin --> UC_Rapor
+    Admin --> UC_Audit
+    Admin --> UC_Bildirim
+
+    UC_Departman -. "gerekli olduğunda" .-> UC_Sorumlu
+    UC_KritikKural -. "eşik altı takibi" .-> UC_Bildirim
+
+    classDef actor fill:#f8fafc,stroke:#334155,stroke-width:1.6px,color:#0f172a;
+    classDef auth fill:#eef2ff,stroke:#4f46e5,stroke-width:1.3px,color:#111827;
+    classDef inventory fill:#ecfdf5,stroke:#059669,stroke-width:1.3px,color:#111827;
+    classDef audit fill:#fff7ed,stroke:#f97316,stroke-width:1.3px,color:#111827;
+
+    class Admin actor;
+    class UC_Giris,UC_Kullanici,UC_Rol,UC_Personel,UC_Departman,UC_Sorumlu auth;
+    class UC_Cihaz,UC_Sarf,UC_Kategori,UC_Lokasyon,UC_KritikKural,UC_Rapor inventory;
+    class UC_Audit,UC_Bildirim audit;

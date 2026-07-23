@@ -1,0 +1,29 @@
+flowchart TB
+    Start([Başla])
+    CihazSec["Cihaz seçilir"]
+    Neden["Hurda/ıskarta nedeni girilir"]
+    DepodaMi{"Cihaz depoda bekliyor mu?"}
+    Depoda["ToplamVarligaDahilMi = true"]
+    EldenCikti["ToplamVarligaDahilMi = false"]
+    CikisTarihi["EnvanterdenCikisTarihi girilir"]
+    SatisVarMi{"Satış bilgisi var mı?"}
+    SatisBilgisi["SatilanKisiVeyaKurum bilgisi girilir"]
+    Durum["Cihaz durumu HurdaIskarta yapılır"]
+    Event["CihazHurdayaAyrildi eventi yayınlanır"]
+    Audit["Audit log yazılır"]
+    End([Bitiş])
+
+    Start --> CihazSec
+    CihazSec --> Neden
+    Neden --> DepodaMi
+    DepodaMi -- "Evet" --> Depoda
+    DepodaMi -- "Hayır, atıldı/satıldı" --> EldenCikti
+    EldenCikti --> CikisTarihi
+    CikisTarihi --> SatisVarMi
+    SatisVarMi -- "Evet" --> SatisBilgisi
+    SatisVarMi -- "Hayır" --> Durum
+    SatisBilgisi --> Durum
+    Depoda --> Durum
+    Durum --> Event
+    Event --> Audit
+    Audit --> End

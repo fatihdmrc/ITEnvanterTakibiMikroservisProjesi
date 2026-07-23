@@ -1,0 +1,103 @@
+flowchart TB
+    %% Servis bazlı sade veri modeli
+    %% Bu diyagram servis sınırlarını okunabilir göstermek içindir.
+    %% Detaylı tablo alanları ve tüm ilişkiler için veri-modeli-er.mmd kullanılmalıdır.
+
+    subgraph KPS["KimlikVePersonelServisi - PostgreSQL"]
+        direction TB
+        KPS_DB[(kimlik_personel_db)]
+        KULLANICI["Kullanici"]
+        PERSONEL["Personel"]
+        DEPARTMAN["Departman"]
+
+        KPS_DB --> KULLANICI
+        KPS_DB --> PERSONEL
+        KPS_DB --> DEPARTMAN
+        DEPARTMAN -->|"1:N"| PERSONEL
+        PERSONEL -->|"1:1"| KULLANICI
+    end
+
+    subgraph ES["EnvanterServisi - PostgreSQL"]
+        direction TB
+        ES_DB[(envanter_db)]
+        CIHAZ["Cihaz"]
+        SARF["SarfMalzeme"]
+        KATEGORI["Kategori"]
+        LOKASYON["Lokasyon"]
+        KRITIK["KritikStokKurali"]
+        STOK["StokHareketi"]
+
+        ES_DB --> CIHAZ
+        ES_DB --> SARF
+        ES_DB --> KATEGORI
+        ES_DB --> LOKASYON
+        ES_DB --> KRITIK
+        ES_DB --> STOK
+        KATEGORI -->|"sınıflandırır"| CIHAZ
+        KATEGORI -->|"sınıflandırır"| SARF
+        LOKASYON -->|"bulundurur"| CIHAZ
+        LOKASYON -->|"bulundurur"| SARF
+        KATEGORI -->|"kritik stok"| KRITIK
+        LOKASYON -->|"kritik stok"| KRITIK
+        CIHAZ -->|"hareket"| STOK
+        SARF -->|"hareket"| STOK
+    end
+
+    subgraph ZS["ZimmetServisi - PostgreSQL"]
+        direction TB
+        ZS_DB[(zimmet_db)]
+        ZIMMET["Zimmet"]
+        FOTO["ZimmetFotografi"]
+
+        ZS_DB --> ZIMMET
+        ZS_DB --> FOTO
+        ZIMMET -->|"1:N"| FOTO
+    end
+
+    subgraph DKS["DenetimKaydiServisi - MongoDB"]
+        direction TB
+        MONGO[(audit_log)]
+        AUDIT["AuditKaydi"]
+
+        MONGO --> AUDIT
+    end
+
+    %% Servisler arası referans özeti
+    REF_ZIMMET["Zimmet referansları<br/>PersonelId<br/>CihazId<br/>KullaniciId"]
+    REF_STOK["Stok hareketi referansı<br/>OlusturanKullaniciId"]
+    REF_AUDIT["Audit kaynakları<br/>CRUD işlemleri<br/>RabbitMQ eventleri"]
+
+    PERSONEL -.-> REF_ZIMMET
+    CIHAZ -.-> REF_ZIMMET
+    KULLANICI -.-> REF_ZIMMET
+    REF_ZIMMET -.-> ZIMMET
+
+    KULLANICI -.-> REF_STOK
+    REF_STOK -.-> STOK
+
+    KPS_DB -.-> REF_AUDIT
+    ES_DB -.-> REF_AUDIT
+    ZS_DB -.-> REF_AUDIT
+    REF_AUDIT -.-> AUDIT
+
+    %% Renkler
+    classDef identity fill:#DCEBFF,stroke:#2F5F9F,stroke-width:2px,color:#111;
+    classDef inventory fill:#DFF4DD,stroke:#3F7D3A,stroke-width:2px,color:#111;
+    classDef stock fill:#FFF0B8,stroke:#B8860B,stroke-width:2px,color:#111;
+    classDef assignment fill:#FBD7EA,stroke:#B83280,stroke-width:2px,color:#111;
+    classDef audit fill:#E8DDFF,stroke:#6F42C1,stroke-width:2px,color:#111;
+    classDef ref fill:#FFFFFF,stroke:#555,stroke-width:2px,stroke-dasharray: 6 4,color:#111;
+    classDef db fill:#F7F7F7,stroke:#555,stroke-width:2px,color:#111;
+
+    class KULLANICI,PERSONEL,DEPARTMAN identity;
+    class CIHAZ,SARF,KATEGORI,LOKASYON inventory;
+    class KRITIK,STOK stock;
+    class ZIMMET,FOTO assignment;
+    class AUDIT audit;
+    class REF_ZIMMET,REF_STOK,REF_AUDIT ref;
+    class KPS_DB,ES_DB,ZS_DB,MONGO db;
+
+    style KPS fill:#F4F8FF,stroke:#2F5F9F,stroke-width:2px
+    style ES fill:#F4FFF2,stroke:#3F7D3A,stroke-width:2px
+    style ZS fill:#FFF2F8,stroke:#B83280,stroke-width:2px
+    style DKS fill:#F8F2FF,stroke:#6F42C1,stroke-width:2px

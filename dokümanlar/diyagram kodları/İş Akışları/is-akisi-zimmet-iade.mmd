@@ -1,0 +1,36 @@
+flowchart TB
+    Start([Başla])
+    ZimmetSec["Aktif zimmet kaydı seçilir"]
+    IadeBaslat["İade işlemi başlatılır"]
+    Incelemede["Cihaz durumu Incelemede yapılır"]
+    KontrolEvent["CihazKontroleAlindi eventi yayınlanır"]
+    FizikiKontrol["Fiziki kontrol yapılır ve kontrolü yapan kullanıcı kaydedilir"]
+    Sonuc{"Kontrol sonucu nedir?"}
+    Saglam["Cihaz durumu Kullanilabilir yapılır"]
+    Arizali["Cihaz durumu Bakimda yapılır"]
+    Hurda["Cihaz durumu HurdaIskarta yapılır"]
+    HasarNotu{"Hasar notu/fotoğraf gerekli mi?"}
+    NotFotograf["İade notu ve fotoğraflar eklenir"]
+    ZimmetKapat["Zimmet iade edildi olarak kapatılır"]
+    Event["ZimmetIadeEdildi eventi yayınlanır"]
+    Audit["Audit log yazılır"]
+    End([Bitiş])
+
+    Start --> ZimmetSec
+    ZimmetSec --> IadeBaslat
+    IadeBaslat --> Incelemede
+    Incelemede --> KontrolEvent
+    KontrolEvent --> FizikiKontrol
+    FizikiKontrol --> Sonuc
+    Sonuc -- "Sağlam" --> Saglam
+    Sonuc -- "Arızalı" --> Arizali
+    Sonuc -- "Kullanılamaz" --> Hurda
+    Saglam --> HasarNotu
+    Arizali --> HasarNotu
+    Hurda --> HasarNotu
+    HasarNotu -- "Evet" --> NotFotograf
+    HasarNotu -- "Hayır" --> ZimmetKapat
+    NotFotograf --> ZimmetKapat
+    ZimmetKapat --> Event
+    Event --> Audit
+    Audit --> End

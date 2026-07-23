@@ -1,0 +1,47 @@
+flowchart TB
+    Baslangic["İş Akışları"]
+
+    Baslangic --> ZimmetOlusturma["Zimmet Oluşturma"]
+    Baslangic --> ZimmetIade["Zimmet İade ve Fiziki Kontrol"]
+    Baslangic --> PersonelAyrilis["Personel İşten Ayrılma"]
+    Baslangic --> StokCikisi["Manuel Stok Çıkışı"]
+    Baslangic --> KritikStok["Kritik Stok Bildirimi"]
+    Baslangic --> Hurda["Hurda / Iskarta / Elden Çıkarma"]
+
+    ZimmetOlusturma --> ZO1["Personel doğrula"]
+    ZO1 --> ZO2["Cihaz uygunluğunu kontrol et"]
+    ZO2 --> ZO3["Zimmet kaydı oluştur"]
+    ZO3 --> ZO4["Cihazı Zimmetli yap"]
+    ZO4 --> ZO5["ZimmetOlusturuldu eventi"]
+
+    ZimmetIade --> ZI1["Aktif zimmeti seç"]
+    ZI1 --> ZI2["Cihazı Incelemede yap"]
+    ZI2 --> ZI3["Fiziki kontrol yap ve kullanıcıyı kaydet"]
+    ZI3 --> ZI4["Durumu belirle"]
+    ZI4 --> ZI5["ZimmetIadeEdildi eventi"]
+
+    PersonelAyrilis --> PA1["Personeli IstenAyrildi yap"]
+    PA1 --> PA2["Kullanıcı hesabını pasifleştir"]
+    PA2 --> PA3["PersonelIstenAyrildi eventi"]
+    PA3 --> PA4["Aktif zimmetleri kontrol et"]
+    PA4 --> PA5["İade bekliyor durumu"]
+
+    StokCikisi --> SC1["Cihaz veya sarf seç"]
+    SC1 --> SC2["Çıkış nedeni gir"]
+    SC2 --> SC3["Durum veya EldekiMiktar güncelle"]
+    SC3 --> SC4["StokAzaldi eventi"]
+    SC4 --> SC5["Kritik stok kontrolü"]
+
+    KritikStok --> KS1["Kullanılabilir stok hesapla"]
+    KS1 --> KS2{"Kritik seviyenin altında mı?"}
+    KS2 -- "Evet" --> KS3["KritikStokSeviyesineDusuldu eventi"]
+    KS2 -- "Hayır" --> KS4["Bildirim üretilmez"]
+
+    Hurda --> H1["Cihazı seç"]
+    H1 --> H2["Hurda/ıskarta nedeni gir"]
+    H2 --> H3{"Cihaz depoda mı?"}
+    H3 -- "Evet" --> H4["ToplamVarligaDahilMi true"]
+    H3 -- "Hayır" --> H5["ToplamVarligaDahilMi false"]
+    H5 --> H6["EnvanterdenCikisTarihi gir"]
+    H4 --> H7["CihazHurdayaAyrildi eventi"]
+    H6 --> H7

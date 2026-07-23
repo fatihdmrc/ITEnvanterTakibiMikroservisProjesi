@@ -1,0 +1,89 @@
+flowchart LR
+    %% IT Personeli aktörü için use-case diyagramı
+
+    IT([IT Personeli])
+
+    subgraph Sistem["IT Ekipman Takip Sistemi"]
+        direction TB
+
+        subgraph Envanter["Envanter Operasyonları"]
+            direction TB
+            UC_Giris(("Sisteme giriş yap"))
+            UC_CihazKayit(("Cihaz kaydı oluştur / güncelle"))
+            UC_SarfKayit(("Sarf malzeme kaydı oluştur / güncelle"))
+            UC_Durum(("Cihaz durumunu güncelle"))
+            UC_StokHareket(("Stok hareketi işle"))
+            UC_ManuelCikis(("Manuel stok çıkışı yap"))
+            UC_KritikKontrol(("Kritik stok durumunu kontrol et"))
+        end
+
+        subgraph Zimmet["Zimmet Operasyonları"]
+            direction TB
+            UC_ZimmetOlustur(("Zimmet oluştur"))
+            UC_PersonelKontrol(("Personelin aktifliğini kontrol et"))
+            UC_CihazKontrol(("Cihazın zimmetlenebilirliğini kontrol et"))
+            UC_TeslimEden(("Teslim eden kişiyi kaydet"))
+            UC_ZimmetFoto(("Zimmet fotoğrafı ekle"))
+            UC_IadeAl(("Zimmet iadesi al"))
+            UC_Inceleme(("Cihazı incelemeye al"))
+            UC_FizikiKontrol(("Fiziki kontrol yap"))
+            UC_KontrolYapan(("Kontrol yapan kullanıcıyı kaydet"))
+            UC_HasarNot(("Hasarlı teslim notu ekle"))
+            UC_HasarFoto(("Hasar fotoğrafları ekle"))
+            UC_IadeSonuc(("İade sonucuna göre cihaz durumunu belirle"))
+        end
+
+        subgraph PersonelSureci["Personel Süreçleri"]
+            direction TB
+            UC_PersonelAyrilis(("Personel işten ayrılışını işle"))
+            UC_AktifZimmet(("Aktif zimmetleri kontrol et"))
+        end
+
+        subgraph Izleme["İzleme"]
+            direction TB
+            UC_Rapor(("Stok ve zimmet raporlarını görüntüle"))
+            UC_Bildirim(("Kritik stok bildirimlerini görüntüle"))
+        end
+    end
+
+    IT --> UC_Giris
+    IT --> UC_CihazKayit
+    IT --> UC_SarfKayit
+    IT --> UC_Durum
+    IT --> UC_StokHareket
+    IT --> UC_KritikKontrol
+    IT --> UC_ZimmetOlustur
+    IT --> UC_IadeAl
+    IT --> UC_PersonelAyrilis
+    IT --> UC_Rapor
+    IT --> UC_Bildirim
+
+    UC_StokHareket -. "özel durum" .-> UC_ManuelCikis
+    UC_StokHareket -. "sonrasında" .-> UC_KritikKontrol
+    UC_KritikKontrol -. "eşik altıysa" .-> UC_Bildirim
+
+    UC_ZimmetOlustur -. "zorunlu" .-> UC_PersonelKontrol
+    UC_ZimmetOlustur -. "zorunlu" .-> UC_CihazKontrol
+    UC_ZimmetOlustur -. "zorunlu" .-> UC_TeslimEden
+    UC_ZimmetOlustur -. "opsiyonel" .-> UC_ZimmetFoto
+
+    UC_IadeAl -. "ilk adım" .-> UC_Inceleme
+    UC_Inceleme -. "sonra" .-> UC_FizikiKontrol
+    UC_FizikiKontrol -. "zorunlu" .-> UC_KontrolYapan
+    UC_FizikiKontrol -. "hasar varsa" .-> UC_HasarNot
+    UC_HasarNot -. "destekler" .-> UC_HasarFoto
+    UC_FizikiKontrol -. "sonuç" .-> UC_IadeSonuc
+
+    UC_PersonelAyrilis -. "ön kontrol" .-> UC_AktifZimmet
+
+    classDef actor fill:#f8fafc,stroke:#334155,stroke-width:1.6px,color:#0f172a;
+    classDef inventory fill:#ecfdf5,stroke:#059669,stroke-width:1.3px,color:#111827;
+    classDef assignment fill:#fff7ed,stroke:#f97316,stroke-width:1.3px,color:#111827;
+    classDef personel fill:#eef2ff,stroke:#4f46e5,stroke-width:1.3px,color:#111827;
+    classDef monitor fill:#fef2f2,stroke:#dc2626,stroke-width:1.3px,color:#111827;
+
+    class IT actor;
+    class UC_Giris,UC_CihazKayit,UC_SarfKayit,UC_Durum,UC_StokHareket,UC_ManuelCikis,UC_KritikKontrol inventory;
+    class UC_ZimmetOlustur,UC_PersonelKontrol,UC_CihazKontrol,UC_TeslimEden,UC_ZimmetFoto,UC_IadeAl,UC_Inceleme,UC_FizikiKontrol,UC_KontrolYapan,UC_HasarNot,UC_HasarFoto,UC_IadeSonuc assignment;
+    class UC_PersonelAyrilis,UC_AktifZimmet personel;
+    class UC_Rapor,UC_Bildirim monitor;

@@ -1,0 +1,27 @@
+flowchart TB
+    Start([Başla])
+    PersonelSec["Personel kaydı seçilir"]
+    Ayrilis["Personel Durum = IstenAyrildi yapılır"]
+    Tarih["IstenAyrilisTarihi kaydedilir"]
+    HesapPasif["İlgili kullanıcı hesabı pasifleştirilir"]
+    Event["PersonelIstenAyrildi eventi yayınlanır"]
+    ZimmetKontrol["ZimmetServisi aktif zimmetleri kontrol eder"]
+    AktifZimmetVarMi{"Aktif zimmet var mı?"}
+    IadeBekliyor["İade bekliyor durumu oluşturulur"]
+    YeniZimmetEngel["Yeni zimmet oluşturma engellenir"]
+    Audit["Audit log yazılır"]
+    End([Bitiş])
+
+    Start --> PersonelSec
+    PersonelSec --> Ayrilis
+    Ayrilis --> Tarih
+    Tarih --> HesapPasif
+    HesapPasif --> Event
+    Event --> ZimmetKontrol
+    ZimmetKontrol --> AktifZimmetVarMi
+    AktifZimmetVarMi -- "Evet" --> IadeBekliyor
+    AktifZimmetVarMi -- "Hayır" --> YeniZimmetEngel
+    IadeBekliyor --> YeniZimmetEngel
+    Event --> Audit
+    YeniZimmetEngel --> End
+    Audit --> End

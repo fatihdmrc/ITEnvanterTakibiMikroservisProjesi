@@ -1,0 +1,31 @@
+flowchart TB
+    Start([Başla])
+    Secim["Personel ve cihaz seçilir"]
+    PersonelKontrol["KimlikVePersonelServisi üzerinden personel kontrol edilir"]
+    PersonelAktifMi{"Personel aktif mi?"}
+    PersonelHata["İşlem durdurulur: personel aktif değil"]
+    CihazKontrol["EnvanterServisi üzerinden cihaz kontrol edilir"]
+    CihazUygunMu{"Cihaz Kullanilabilir mi ve aktif zimmeti yok mu?"}
+    CihazHata["İşlem durdurulur: cihaz uygun değil"]
+    TeslimEden["Teslim eden kullanıcı kaydedilir"]
+    Fotograf["Varsa zimmet fotoğrafı eklenir"]
+    ZimmetKaydi["Zimmet kaydı oluşturulur"]
+    DurumGuncelle["Cihaz durumu Zimmetli yapılır"]
+    Event["ZimmetOlusturuldu eventi yayınlanır"]
+    Audit["DenetimKaydiServisi audit log yazar"]
+    End([Bitiş])
+
+    Start --> Secim
+    Secim --> PersonelKontrol
+    PersonelKontrol --> PersonelAktifMi
+    PersonelAktifMi -- "Hayır" --> PersonelHata
+    PersonelAktifMi -- "Evet" --> CihazKontrol
+    CihazKontrol --> CihazUygunMu
+    CihazUygunMu -- "Hayır" --> CihazHata
+    CihazUygunMu -- "Evet" --> TeslimEden
+    TeslimEden --> Fotograf
+    Fotograf --> ZimmetKaydi
+    ZimmetKaydi --> DurumGuncelle
+    DurumGuncelle --> Event
+    Event --> Audit
+    Audit --> End

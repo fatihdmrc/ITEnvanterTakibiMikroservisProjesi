@@ -1,0 +1,35 @@
+flowchart TB
+    Start([Başla])
+    VarlikSec["Cihaz veya sarf malzeme seçilir"]
+    Neden["Stok çıkış nedeni girilir"]
+    Tip{"Varlık tipi nedir?"}
+    Cihaz["Seri numaralı cihaz"]
+    Sarf["Sarf malzeme"]
+    CihazDurum["Cihaz durumu güncellenir"]
+    SarfMiktar["EldekiMiktar azaltılır"]
+    StokEvent["StokAzaldi eventi yayınlanır"]
+    StokHesapla["Kullanılabilir stok hesaplanır"]
+    KritikMi{"Kritik stok seviyesinin altında mı?"}
+    KritikEvent["KritikStokSeviyesineDusuldu eventi yayınlanır"]
+    Audit["Audit log yazılır"]
+    Bildirim["SignalR bildirimi gönderilir"]
+    End([Bitiş])
+
+    Start --> VarlikSec
+    VarlikSec --> Neden
+    Neden --> Tip
+    Tip -- "Cihaz" --> Cihaz
+    Tip -- "Sarf malzeme" --> Sarf
+    Cihaz --> CihazDurum
+    Sarf --> SarfMiktar
+    CihazDurum --> StokEvent
+    SarfMiktar --> StokEvent
+    StokEvent --> StokHesapla
+    StokHesapla --> KritikMi
+    KritikMi -- "Evet" --> KritikEvent
+    KritikMi -- "Hayır" --> Audit
+    KritikEvent --> Audit
+    KritikEvent --> Bildirim
+    Audit --> End
+    Bildirim --> End
+
