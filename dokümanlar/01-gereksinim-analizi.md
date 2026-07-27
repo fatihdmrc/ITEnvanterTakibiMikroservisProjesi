@@ -18,7 +18,9 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 - Cihaz durumlarının takip edilmesi
 - Kullanılabilir stok ve toplam varlık bilgisinin hesaplanması
 - Kritik stok durumlarında bildirim üretilmesi
-- RabbitMQ ile event tabanlı iletişim kurulması
+- YARP tabanlı Api Gateway ile client isteklerinin ilgili servislere yönlendirilmesi
+- DotNetCore.CAP ve RabbitMQ ile event tabanlı iletişim kurulması
+- Outbox Pattern ile event yayınlama güvenilirliğinin sağlanması
 - MongoDB ile audit/event log tutulması
 - Redis ile sık kullanılan referans verilerin cache'lenmesi
 - SignalR ile anlık bildirim altyapısının tasarlanması
@@ -27,7 +29,6 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 
 İlk kapsamda aşağıdaki konular yer almayacaktır:
 
-- Api Gateway kullanımı
 - Zimmet belgesi üretimi
 - Dijital imza veya imzalı belge yükleme
 - Garanti bitiş tarihi takibi
@@ -130,7 +131,9 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 ### Bildirim ve Audit
 
 - Zimmet oluşturma, zimmet iade, stok azalması ve kritik stok olaylarında event üretilmelidir.
-- Eventler RabbitMQ üzerinden yayınlanmalıdır.
+- Eventler DotNetCore.CAP üzerinden RabbitMQ'ya yayınlanmalıdır.
+- Event yayınlama sürecinde Outbox Pattern uygulanmalıdır.
+- Eventler arasında gerekli durumlarda `KullaniciId`, `PersonelId`, `Rol` ve `CorrelationId` bilgileri taşınmalıdır.
 - Event geçmişi MongoDB üzerinde JSON tabanlı olarak tutulmalıdır.
 - Audit log kapsamında hem eventler hem de CRUD işlemleri kaydedilmelidir.
 - SignalR bildirimi yalnızca kritik stok seviyesinin altına düşüldüğünde üretilmelidir.
@@ -139,10 +142,11 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 ## 6. Fonksiyonel Olmayan Gereksinimler
 
 - Sistem mikroservis mimarisiyle tasarlanmalıdır.
+- Client istekleri YARP tabanlı Api Gateway üzerinden ilgili servislere yönlendirilmelidir.
 - Her servis kendi sorumluluk alanına sahip olmalıdır.
 - Her servis kendi portunda ve kendi Swagger arayüzüyle çalışmalıdır.
 - Servisler arası senkron doğrulamalar HTTP ile yapılmalıdır.
-- Servisler arası asenkron iletişim RabbitMQ ile sağlanmalıdır.
+- Servisler arası asenkron iletişim DotNetCore.CAP ve RabbitMQ ile sağlanmalıdır.
 - PostgreSQL ana operasyonel veriler için kullanılmalıdır.
 - Redis sık kullanılan referans veriler için kullanılmalıdır.
 - MongoDB audit/event log kayıtları için kullanılmalıdır.

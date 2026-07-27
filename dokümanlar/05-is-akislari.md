@@ -143,7 +143,7 @@ Akış:
 3. Seri numaralı cihazlarda kullanılabilir stok cihaz durumlarından hesaplanır.
 4. Sarf malzemelerinde kullanılabilir stok `EldekiMiktar` alanından okunur.
 5. Hesaplanan değer kritik stok seviyesinin altındaysa event üretilir.
-6. `KritikStokSeviyesineDusuldu` eventi RabbitMQ'ya yayınlanır.
+6. CAP Outbox kaydı oluşturulur ve `KritikStokSeviyesineDusuldu` eventi RabbitMQ'ya yayınlanır.
 7. DenetimKaydiServisi event kaydını MongoDB'ye yazar.
 8. BildirimServisi SignalR ile kritik stok bildirimi üretir.
 

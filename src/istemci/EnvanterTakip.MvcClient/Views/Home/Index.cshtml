@@ -1,0 +1,305 @@
+@model KimlikPersonelPanelModel
+@{
+    ViewData["Title"] = "Kontrol Paneli";
+    var kullaniciPersonelIdleri = Model.Kullanicilar.Select(kullanici => kullanici.PersonelId).ToHashSet();
+    var hesapAcilabilirPersoneller = Model.Personeller
+        .Where(personel => personel.AktifMi && personel.Durum != PersonelDurumuModel.IstenAyrildi && !kullaniciPersonelIdleri.Contains(personel.Id))
+        .ToList();
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Kimlik ve Personel Kontrol Paneli</h1>
+            <p class="text-muted mb-0">Departman, personel, kullanıcı ve JWT giriş akışını tek ekrandan yönet.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="http://localhost:5000/swagger" target="_blank" rel="noopener">Swagger</a>
+            <a class="btn btn-outline-secondary" href="http://localhost:5000/saglik" target="_blank" rel="noopener">Servis Durumu</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
+    {
+        <div class="alert alert-success" role="alert">@Model.BasariMesaji</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+    {
+        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    <section class="border rounded-2 p-3 mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-7">
+                <h2 class="h5 mb-2">Oturum</h2>
+                @if (Model.OturumKullanici is null)
+                {
+                    <p class="text-muted mb-0">Henüz giriş yapılmadı.</p>
+                }
+                else
+                {
+                    <dl class="row mb-0 small">
+                        <dt class="col-sm-3">Kullanıcı</dt>
+                        <dd class="col-sm-9">@Model.OturumKullanici.KullaniciAdi</dd>
+                        <dt class="col-sm-3">Rol</dt>
+                        <dd class="col-sm-9">@Model.OturumKullanici.Rol</dd>
+                        <dt class="col-sm-3">PersonelId</dt>
+                        <dd class="col-sm-9 font-monospace">@Model.OturumKullanici.PersonelId</dd>
+                    </dl>
+                }
+            </div>
+            <div class="col-lg-5">
+                @if (Model.OturumKullanici is null)
+                {
+                    <form asp-action="Giris" method="post" class="row g-2">
+                        <div class="col-sm-5">
+                            <label class="form-label">Kullanıcı adı</label>
+                            <input name="KullaniciAdi" class="form-control" value="admin" />
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label">Şifre</label>
+                            <input name="Sifre" type="password" class="form-control" value="Admin123!" />
+                        </div>
+                        <div class="col-sm-2 d-grid">
+                            <button class="btn btn-primary" type="submit">Giriş</button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <a asp-action="Cikis" class="btn btn-outline-danger">Çıkış Yap</a>
+                }
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Departman</div>
+                <div class="fs-4 fw-semibold">@Model.Departmanlar.Count</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Personel</div>
+                <div class="fs-4 fw-semibold">@Model.Personeller.Count</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Kullanıcı</div>
+                <div class="fs-4 fw-semibold">@Model.Kullanicilar.Count</div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="kimlikPersonelSekmeleri" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="departman-tab" data-bs-toggle="tab" data-bs-target="#departman" type="button" role="tab">Departmanlar</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="personel-tab" data-bs-toggle="tab" data-bs-target="#personel" type="button" role="tab">Personeller</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="kullanici-tab" data-bs-toggle="tab" data-bs-target="#kullanici" type="button" role="tab">Kullanıcılar</button>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom-2 p-3">
+        <div class="tab-pane fade show active" id="departman" role="tabpanel" aria-labelledby="departman-tab">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Departman</th>
+                                    <th>Sorumlu PersonelId</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var departman in Model.Departmanlar)
+                                {
+                                    <tr>
+                                        <td>@departman.Ad</td>
+                                        <td class="font-monospace small">@(departman.SorumluPersonelId?.ToString() ?? "-")</td>
+                                        <td>@(departman.AktifMi ? "Aktif" : "Pasif")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <form asp-action="DepartmanOlustur" method="post" class="border rounded-2 p-3">
+                        <h3 class="h6">Departman oluştur</h3>
+                        <div class="mb-3">
+                            <label class="form-label">Ad</label>
+                            <input name="Ad" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sorumlu</label>
+                            <select name="SorumluPersonelId" class="form-select">
+                                <option value="">Seçilmedi</option>
+                                @foreach (var personel in Model.Personeller.Where(personel => personel.AktifMi))
+                                {
+                                    <option value="@personel.Id">@personel.Ad @personel.Soyad</option>
+                                }
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" type="submit">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="personel" role="tabpanel" aria-labelledby="personel-tab">
+            <div class="row g-4">
+                <div class="col-xl-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Ad Soyad</th>
+                                    <th>E-posta</th>
+                                    <th>Departman</th>
+                                    <th>Durum</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var personel in Model.Personeller)
+                                {
+                                    var departmanAdi = Model.Departmanlar.FirstOrDefault(departman => departman.Id == personel.DepartmanId)?.Ad ?? "-";
+                                    <tr>
+                                        <td>@personel.Ad @personel.Soyad</td>
+                                        <td>@personel.Email</td>
+                                        <td>@departmanAdi</td>
+                                        <td>@personel.Durum</td>
+                                        <td class="text-end">
+                                            @if (personel.Durum != PersonelDurumuModel.IstenAyrildi)
+                                            {
+                                                <form asp-action="PersoneliIstenAyrildiYap" method="post">
+                                                    <input type="hidden" name="id" value="@personel.Id" />
+                                                    <button class="btn btn-sm btn-outline-danger" type="submit">İşten ayrıldı</button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <form asp-action="PersonelOlustur" method="post" class="border rounded-2 p-3">
+                        <h3 class="h6">Personel oluştur</h3>
+                        <div class="row g-2">
+                            <div class="col-sm-6">
+                                <label class="form-label">Ad</label>
+                                <input name="Ad" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Soyad</label>
+                                <input name="Soyad" class="form-control" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">E-posta</label>
+                                <input name="Email" type="email" class="form-control" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Departman</label>
+                                <select name="DepartmanId" class="form-select">
+                                    @foreach (var departman in Model.Departmanlar.Where(departman => departman.AktifMi))
+                                    {
+                                        <option value="@departman.Id">@departman.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Unvan</label>
+                                <input name="Unvan" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">İşe giriş</label>
+                                <input name="IseGirisTarihi" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input name="DepartmanSorumlusuMu" value="true" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label">Departman sorumlusu</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3" type="submit">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="kullanici" role="tabpanel" aria-labelledby="kullanici-tab">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Kullanıcı adı</th>
+                                    <th>Rol</th>
+                                    <th>Personel</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var kullanici in Model.Kullanicilar)
+                                {
+                                    var personel = Model.Personeller.FirstOrDefault(personel => personel.Id == kullanici.PersonelId);
+                                    <tr>
+                                        <td>@kullanici.KullaniciAdi</td>
+                                        <td>@kullanici.Rol</td>
+                                        <td>@(personel is null ? "-" : $"{personel.Ad} {personel.Soyad}")</td>
+                                        <td>@(kullanici.AktifMi ? "Aktif" : "Pasif")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <form asp-action="KullaniciOlustur" method="post" class="border rounded-2 p-3">
+                        <h3 class="h6">Kullanıcı oluştur</h3>
+                        <div class="mb-3">
+                            <label class="form-label">Personel</label>
+                            <select name="PersonelId" class="form-select">
+                                @foreach (var personel in hesapAcilabilirPersoneller)
+                                {
+                                    <option value="@personel.Id">@personel.Ad @personel.Soyad</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kullanıcı adı</label>
+                            <input name="KullaniciAdi" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Şifre</label>
+                            <input name="Sifre" type="password" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rol</label>
+                            <select name="Rol" class="form-select">
+                                <option value="Admin">Admin</option>
+                                <option value="ITPersoneli">ITPersoneli</option>
+                                <option value="PersonelKullanicisi" selected>PersonelKullanicisi</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" type="submit" disabled="@(hesapAcilabilirPersoneller.Count == 0)">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

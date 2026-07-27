@@ -2,12 +2,13 @@
 
 ## 1. Genel Yaklaşım
 
-Sistem Api Gateway olmadan çalışacaktır. Her servis kendi portundan erişilebilir olacaktır. Servisler arası iletişim iki şekilde tasarlanır:
+Sistem YARP tabanlı Api Gateway ile çalışacaktır. Client uygulama istekleri önce ApiGateway'e gelecek, ApiGateway isteği ilgili mikroservise yönlendirecektir. Her servis kendi portundan ve kendi Swagger arayüzünden erişilebilir olmaya devam edecektir. Servisler arası iletişim üç şekilde tasarlanır:
 
+- Client-server yönlendirmesi için ApiGateway
 - Senkron HTTP çağrıları
-- Asenkron RabbitMQ eventleri
+- Asenkron DotNetCore.CAP + RabbitMQ eventleri
 
-Senkron HTTP çağrıları işlem anında doğrulama gerektiğinde kullanılır. RabbitMQ eventleri ise gerçekleşen olayların diğer servislere duyurulması için kullanılır.
+Senkron HTTP çağrıları işlem anında doğrulama gerektiğinde kullanılır. CAP + RabbitMQ eventleri ise gerçekleşen olayların diğer servislere güvenilir şekilde duyurulması için kullanılır. Event publish işlemlerinde Outbox Pattern uygulanır.
 
 ## 2. Servis Portları
 
@@ -15,6 +16,7 @@ Senkron HTTP çağrıları işlem anında doğrulama gerektiğinde kullanılır.
 
 | Servis | Port | Açıklama |
 | --- | --- | --- |
+| ApiGateway | 5005 | YARP tabanlı merkezi client giriş noktası |
 | KimlikVePersonelServisi | 5000 | Kullanıcı, personel ve departman işlemleri |
 | EnvanterServisi | 5001 | Cihaz, sarf malzeme, kategori, lokasyon ve stok işlemleri |
 | ZimmetServisi | 5002 | Zimmet oluşturma ve iade işlemleri |
@@ -81,7 +83,21 @@ Amaç:
 - İade sürecinde cihazı `Incelemede` durumuna almak
 - Fiziki kontrol sonucunda cihazı `Kullanilabilir`, `Bakimda` veya `HurdaIskarta` durumuna almak
 
-## 4. RabbitMQ Eventleri
+## 4. CAP + RabbitMQ Eventleri
+
+Event bus:
+
+- DotNetCore.CAP
+
+Mesaj taşıyıcı:
+
+- RabbitMQ
+
+Outbox kararı:
+
+- Event üreten servislerde iş verisi ve event kaydı aynı transaction içinde yazılır.
+- CAP Outbox kaydı daha sonra RabbitMQ'ya yayınlar.
+- Böylece veritabanı kaydı başarılı olup event publish işleminin kaybolması riski azaltılır.
 
 RabbitMQ exchange:
 
@@ -113,24 +129,35 @@ Tüm eventlerde aşağıdaki alanlar bulunmalıdır:
 | KaynakServis | Eventi üreten servis |
 | CorrelationId | İlgili işlem akışını takip etmek için kullanılan kimlik |
 | KullaniciId | İşlemi başlatan kullanıcı |
+| PersonelId | İşlemi başlatan kullanıcının bağlı olduğu personel kaydı |
+| Rol | İşlemi başlatan kullanıcının sistem rolü |
 | Payload | Evente özel veri |
+
+Kullanıcı bağlamı:
+
+- Gerekli eventlerde `KullaniciId`, `PersonelId`, `Rol` ve `CorrelationId` taşınır.
+- Bu bilgiler audit log ve süreç izlenebilirliği için kullanılır.
 
 ## 6. Örnek Akış: Zimmet Oluşturma
 
-1. Kullanıcı ZimmetServisi'ne zimmet oluşturma isteği gönderir.
-2. ZimmetServisi, KimlikVePersonelServisi üzerinden personeli doğrular.
-3. ZimmetServisi, EnvanterServisi üzerinden cihazı doğrular.
-4. Cihaz uygunsa zimmet kaydı oluşturulur.
-5. ZimmetServisi, EnvanterServisi'ne cihaz durumunu `Zimmetli` yapmak için istek gönderir.
-6. ZimmetServisi `ZimmetOlusturuldu` eventini RabbitMQ'ya yayınlar.
-7. DenetimKaydiServisi eventi MongoDB'ye kaydeder.
+1. Kullanıcı ApiGateway'e zimmet oluşturma isteği gönderir.
+2. ApiGateway isteği ZimmetServisi'ne yönlendirir.
+3. ZimmetServisi, KimlikVePersonelServisi üzerinden personeli doğrular.
+4. ZimmetServisi, EnvanterServisi üzerinden cihazı doğrular.
+5. Cihaz uygunsa zimmet kaydı oluşturulur.
+6. ZimmetServisi, EnvanterServisi'ne cihaz durumunu `Zimmetli` yapmak için istek gönderir.
+7. ZimmetServisi aynı transaction içinde Outbox kaydını oluşturur.
+8. CAP, `ZimmetOlusturuldu` eventini RabbitMQ'ya yayınlar.
+9. DenetimKaydiServisi eventi MongoDB'ye kaydeder.
 
 ## 7. Örnek Akış: Personel İşten Ayrılma
 
-1. Admin veya ITPersoneli, KimlikVePersonelServisi üzerinden personeli işten ayrıldı durumuna alır.
-2. KimlikVePersonelServisi, personel durumunu `IstenAyrildi` yapar.
-3. Aynı servis ilgili kullanıcı hesabını pasifleştirir.
-4. KimlikVePersonelServisi `PersonelIstenAyrildi` eventini yayınlar.
-5. ZimmetServisi personelin aktif zimmetlerini kontrol eder.
-6. Aktif zimmet varsa iade bekliyor durumu üretilir.
-7. DenetimKaydiServisi olayı MongoDB'ye kaydeder.
+1. Admin veya ITPersoneli, ApiGateway üzerinden personeli işten ayrıldı durumuna alma isteği gönderir.
+2. ApiGateway isteği KimlikVePersonelServisi'ne yönlendirir.
+3. KimlikVePersonelServisi, personel durumunu `IstenAyrildi` yapar.
+4. Aynı servis ilgili kullanıcı hesabını pasifleştirir.
+5. KimlikVePersonelServisi aynı transaction içinde Outbox kaydını oluşturur.
+6. CAP, `PersonelIstenAyrildi` eventini RabbitMQ'ya yayınlar.
+7. ZimmetServisi personelin aktif zimmetlerini kontrol eder.
+8. Aktif zimmet varsa iade bekliyor durumu üretilir.
+9. DenetimKaydiServisi olayı MongoDB'ye kaydeder.

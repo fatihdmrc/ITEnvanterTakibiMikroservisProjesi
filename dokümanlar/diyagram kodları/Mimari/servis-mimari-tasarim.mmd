@@ -1,7 +1,11 @@
 flowchart LR
     Kullanici[Admin / ITPersoneli / PersonelKullanicisi]
 
-    subgraph Servisler
+    subgraph GatewayKatmani["Api Gateway Katmanı"]
+        ApiGateway[ApiGateway<br/>YARP Reverse Proxy]
+    end
+
+    subgraph Servisler["Mikroservisler"]
         KimlikVePersonelServisi[KimlikVePersonelServisi]
         EnvanterServisi[EnvanterServisi]
         ZimmetServisi[ZimmetServisi]
@@ -9,48 +13,70 @@ flowchart LR
         BildirimServisi[BildirimServisi]
     end
 
-    subgraph Altyapi
-        RabbitMQ[(RabbitMQ inventory.events)]
-        MongoDB[(MongoDB audit_log)]
-        SignalR[SignalR NotificationHub]
-        Redis[(Redis Cache)]
+    subgraph VeriDepolari["Veri Depoları"]
+        KimlikDb[(PostgreSQL<br/>Kimlik ve Personel DB)]
+        EnvanterDb[(PostgreSQL<br/>Envanter DB)]
+        ZimmetDb[(PostgreSQL<br/>Zimmet DB)]
+        MongoDB[(MongoDB<br/>Audit Log)]
+        Redis[(Redis<br/>Kategori / Lokasyon Cache)]
     end
 
-    Kullanici -- "Login / JWT" --> KimlikVePersonelServisi
-    Kullanici -- "Cihaz ve stok işlemleri" --> EnvanterServisi
-    Kullanici -- "Zimmet işlemleri" --> ZimmetServisi
-    Kullanici -- "Audit sorguları" --> DenetimKaydiServisi
-    Kullanici -- "Kritik stok bildirimi izleme" --> BildirimServisi
+    subgraph EventAltyapisi["Event Altyapısı"]
+        Cap[DotNetCore.CAP<br/>Publish / Subscribe]
+        RabbitMQ[(RabbitMQ<br/>inventory.events)]
+        OutboxKimlik[(CAP Outbox<br/>Kimlik DB)]
+        OutboxEnvanter[(CAP Outbox<br/>Envanter DB)]
+        OutboxZimmet[(CAP Outbox<br/>Zimmet DB)]
+    end
+
+    subgraph GercekZamanli["Gerçek Zamanlı Bildirim"]
+        SignalR[SignalR<br/>NotificationHub]
+    end
+
+    Kullanici -- "HTTPS / JWT" --> ApiGateway
+
+    ApiGateway -- "Login, personel, departman" --> KimlikVePersonelServisi
+    ApiGateway -- "Cihaz, stok, kategori, lokasyon" --> EnvanterServisi
+    ApiGateway -- "Zimmet ve iade" --> ZimmetServisi
+    ApiGateway -- "Audit sorguları" --> DenetimKaydiServisi
+    ApiGateway -- "Kritik stok bildirimi izleme" --> BildirimServisi
+
+    KimlikVePersonelServisi --> KimlikDb
+    EnvanterServisi --> EnvanterDb
+    ZimmetServisi --> ZimmetDb
+    DenetimKaydiServisi --> MongoDB
+    EnvanterServisi -- "Kategori / lokasyon cache" --> Redis
 
     ZimmetServisi -- "HTTP: personel aktif mi?" --> KimlikVePersonelServisi
     ZimmetServisi -- "HTTP: cihaz uygun mu?" --> EnvanterServisi
     ZimmetServisi -- "HTTP: cihaz durumu güncelle" --> EnvanterServisi
 
-    EnvanterServisi -- "Kategori / lokasyon cache" --> Redis
+    KimlikVePersonelServisi -- "PersonelIstenAyrildi" --> OutboxKimlik
+    EnvanterServisi -- "StokAzaldi<br/>KritikStokSeviyesineDusuldu<br/>CihazDurumuDegisti" --> OutboxEnvanter
+    ZimmetServisi -- "ZimmetOlusturuldu<br/>ZimmetIadeEdildi<br/>CihazKontroleAlindi" --> OutboxZimmet
 
-    KimlikVePersonelServisi -- "PersonelIstenAyrildi" --> RabbitMQ
-    EnvanterServisi -- "StokAzaldi" --> RabbitMQ
-    EnvanterServisi -- "KritikStokSeviyesineDusuldu" --> RabbitMQ
-    EnvanterServisi -- "CihazDurumuDegisti" --> RabbitMQ
-    ZimmetServisi -- "ZimmetOlusturuldu" --> RabbitMQ
-    ZimmetServisi -- "ZimmetIadeEdildi" --> RabbitMQ
-    ZimmetServisi -- "CihazKontroleAlindi" --> RabbitMQ
-    ZimmetServisi -- "CihazHasarliTeslimAlindi" --> RabbitMQ
+    OutboxKimlik --> Cap
+    OutboxEnvanter --> Cap
+    OutboxZimmet --> Cap
+    Cap --> RabbitMQ
 
     RabbitMQ -- "Tüm eventler" --> DenetimKaydiServisi
-    DenetimKaydiServisi --> MongoDB
-
     RabbitMQ -- "KritikStokSeviyesineDusuldu" --> BildirimServisi
-    BildirimServisi --> SignalR
-    SignalR -- "Kritik stok bildirimi" --> Kullanici
-
     RabbitMQ -- "PersonelIstenAyrildi" --> ZimmetServisi
-    ZimmetServisi -- "Aktif zimmet kontrolü" --> ZimmetServisi
 
-    classDef service fill:#e8f1ff,stroke:#2f5f9f,stroke-width:1px,color:#111;
-    classDef infra fill:#fff4d6,stroke:#b8860b,stroke-width:1px,color:#111;
-    classDef client fill:#f2eefc,stroke:#6f42c1,stroke-width:1px,color:#111;
+    BildirimServisi --> SignalR
+    SignalR -- "Sadece kritik stok bildirimi" --> Kullanici
 
-    class KimlikVePersonelServisi,EnvanterServisi,ZimmetServisi,DenetimKaydiServisi,BildirimServisi service;
-    class RabbitMQ,MongoDB,SignalR,Redis infra;
+    classDef client fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a;
+    classDef gateway fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#111827;
+    classDef service fill:#e8f1ff,stroke:#2f5f9f,stroke-width:1.3px,color:#111827;
+    classDef data fill:#ecfdf5,stroke:#059669,stroke-width:1.3px,color:#111827;
+    classDef event fill:#fff7ed,stroke:#f97316,stroke-width:1.3px,color:#111827;
+    classDef notify fill:#fef2f2,stroke:#dc2626,stroke-width:1.3px,color:#111827;
+
     class Kullanici client;
+    class ApiGateway gateway;
+    class KimlikVePersonelServisi,EnvanterServisi,ZimmetServisi,DenetimKaydiServisi,BildirimServisi service;
+    class KimlikDb,EnvanterDb,ZimmetDb,MongoDB,Redis data;
+    class Cap,RabbitMQ,OutboxKimlik,OutboxEnvanter,OutboxZimmet event;
+    class SignalR notify;

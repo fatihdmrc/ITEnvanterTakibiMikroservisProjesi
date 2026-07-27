@@ -2,11 +2,31 @@
 
 ## 1. Mimari Yaklaşım
 
-Sistem mikroservis mimarisiyle tasarlanacaktır. Api Gateway kullanılmayacaktır. Her mikroservis kendi portunda çalışacak, kendi Swagger arayüzüne sahip olacak ve kendi sorumluluk alanındaki verileri yönetecektir.
+Sistem mikroservis mimarisiyle tasarlanacaktır. Client istekleri YARP tabanlı Api Gateway üzerinden ilgili mikroservislere yönlendirilecektir. Her mikroservis kendi portunda çalışacak, kendi Swagger arayüzüne sahip olacak ve kendi sorumluluk alanındaki verileri yönetecektir.
 
-Ana mimari hedef, servisleri iş alanlarına göre ayırmak ve servisler arası bağımlılığı mümkün olduğunca azaltmaktır. Senkron doğrulamalar HTTP ile yapılacak, sistem genelinde duyurulması gereken olaylar RabbitMQ eventleriyle yayınlanacaktır.
+Ana mimari hedef, servisleri iş alanlarına göre ayırmak ve servisler arası bağımlılığı mümkün olduğunca azaltmaktır. Senkron doğrulamalar HTTP ile yapılacak, sistem genelinde duyurulması gereken olaylar DotNetCore.CAP üzerinden RabbitMQ eventleriyle yayınlanacaktır. Event yayınlama güvenilirliği için Outbox Pattern uygulanacaktır.
 
 ## 2. Servisler
+
+### ApiGateway
+
+Sorumlulukları:
+
+- Client uygulamadan gelen istekler için tek giriş noktası olmak
+- YARP ile route bazlı yönlendirme yapmak
+- Gerekli endpointlerde JWT doğrulama ve rol bazlı yetki politikalarını uygulamak
+- İstekleri ilgili mikroservise iletmek
+- Client tarafındaki servis adresi karmaşıklığını azaltmak
+
+Teknoloji:
+
+- YARP
+
+Önemli kararlar:
+
+- ApiGateway iş kuralı veya veri sahipliği taşımaz.
+- Servisler arası iç HTTP çağrıları ApiGateway üzerinden yapılmak zorunda değildir.
+- Her servis kendi Swagger arayüzünü korur; ApiGateway ise client-server trafiği için merkezi giriş noktasıdır.
 
 ### KimlikVePersonelServisi
 
@@ -88,7 +108,7 @@ Senkron iletişim:
 
 Sorumlulukları:
 
-- RabbitMQ eventlerini tüketmek
+- DotNetCore.CAP ile RabbitMQ eventlerini tüketmek
 - Eventleri MongoDB üzerinde audit log olarak saklamak
 - Audit log sorgulama endpointleri sağlamak
 
@@ -130,9 +150,9 @@ Senkron HTTP çağrıları, işlem sırasında hemen doğrulama gereken durumlar
 - ZimmetServisi, cihazın zimmetlenebilir durumda olup olmadığını EnvanterServisi üzerinden kontrol eder.
 - ZimmetServisi, zimmet oluşturma veya iade sürecinde cihaz durumunu EnvanterServisi üzerinden günceller.
 
-### Asenkron RabbitMQ İletişimi
+### Asenkron CAP + RabbitMQ İletişimi
 
-RabbitMQ, sistemde gerçekleşen olayların diğer servislere duyurulması için kullanılacaktır.
+DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır.
 
 Örnekler:
 
@@ -165,10 +185,19 @@ RabbitMQ:
 
 - Servisler arası event dağıtımı
 
+DotNetCore.CAP:
+
+- Event publish/subscribe yönetimi
+- Outbox Pattern
+- Event yayınlama tekrar denemeleri
+- RabbitMQ entegrasyonu
+
 ## 5. Güvenlik Tasarımı
 
 - Authentication JWT ile yapılacaktır.
 - Authorization rol bazlı olacaktır.
+- ApiGateway üzerinde route bazlı authorization policy uygulanabilecektir.
+- Mikroservisler de kendilerine gelen JWT token'ı doğrulayabilecek şekilde tasarlanmalıdır.
 - Roller: `Admin`, `ITPersoneli`, `PersonelKullanicisi`
 - JWT içinde `KullaniciId`, `KullaniciAdi`, `Rol`, `PersonelId` claim'leri bulunacaktır.
 - `PersonelId` zorunlu claim olacaktır.
@@ -187,7 +216,7 @@ Bu dokümandaki mimari tasarım şu araçlarla görselleştirilebilir:
 ## 7. Görsel Tasarıma Dönüştürülecek Diyagramlar
 
 - Mikroservis genel mimari diyagramı
-- Servisler arası HTTP ve RabbitMQ iletişim diyagramı
+- Api Gateway, servisler arası HTTP ve CAP/RabbitMQ iletişim diyagramı
 - Zimmet oluşturma sequence diagram
 - Zimmet iade activity diagram
 - Personel işten ayrılma activity diagram

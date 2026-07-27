@@ -13,10 +13,14 @@ Staj defteri konu başlığı:
 ## 2. Mimari Kararlar
 
 - Sistem mikroservis mimarisiyle tasarlanacaktır.
-- Api Gateway kullanılmayacaktır.
+- Api Gateway kullanılacaktır.
+- Api Gateway teknolojisi olarak YARP tercih edilmiştir.
+- Client istekleri doğrudan mikroservislere değil, YARP tabanlı Api Gateway üzerinden ilgili servislere yönlendirilecektir.
 - Her mikroservis kendi portunda çalışacak ve kendi Swagger arayüzüne sahip olacaktır.
 - Servisler arası zorunlu doğrulamalar HTTP ile yapılacaktır.
-- Asenkron olay akışları RabbitMQ ile yürütülecektir.
+- Asenkron olay akışları DotNetCore.CAP üzerinden RabbitMQ ile yürütülecektir.
+- Event yayınlama güvenilirliği için Outbox Pattern uygulanacaktır.
+- Eventler arasında gerekli görülen durumlarda kullanıcı bağlamı taşınacaktır.
 - Authentication ve authorization işlemleri olacaktır.
 - Güvenlik yaklaşımı JWT + rol bazlı yetkilendirme olarak planlanmıştır.
 - Test yazımı bu kapsamda yapılmayacaktır.
@@ -61,6 +65,15 @@ Staj defteri konu başlığı:
 
 ## 5. Planlanan Mikroservisler
 
+### ApiGateway
+
+- Client uygulamadan gelen istekler için tek giriş noktasıdır.
+- YARP kullanılarak geliştirilecektir.
+- Route bazlı yönlendirme yapar.
+- Gerekli endpointlerde JWT doğrulama ve rol bazlı yetki politikalarını uygulayabilir.
+- İstekleri KimlikVePersonelServisi, EnvanterServisi, ZimmetServisi, DenetimKaydiServisi ve BildirimServisi'ne yönlendirir.
+- Servisler arası iç HTTP iletişimin yerine geçmez; yalnızca client-server trafiğini merkezileştirir.
+
 ### KimlikVePersonelServisi
 
 - Kullanıcı girişi yapar.
@@ -80,7 +93,7 @@ Staj defteri konu başlığı:
 - PostgreSQL + EF Core kullanır.
 - Kategori ve lokasyon listelerini Redis ile cache'ler.
 - Manuel stok çıkışı, arıza, çalınma-kaybolma ve hurda-iskarta işlemlerinde stok durumunu günceller.
-- Kritik stok seviyesine düşüldüğünde RabbitMQ eventi yayınlar.
+- Kritik stok seviyesine düşüldüğünde DotNetCore.CAP üzerinden RabbitMQ eventi yayınlar.
 
 ### ZimmetServisi
 
@@ -88,17 +101,17 @@ Staj defteri konu başlığı:
 - Bir personele birden fazla cihaz zimmetlenmesine izin verir.
 - Bir cihaz aynı anda yalnızca bir personele zimmetlenebilir.
 - Departmanda ortak kullanılan cihazlar departman sorumlusu adına zimmetlenir.
-- Zimmet oluşturma ve iade olaylarını RabbitMQ'ya yayınlar.
+- Zimmet oluşturma ve iade olaylarını DotNetCore.CAP üzerinden RabbitMQ'ya yayınlar.
 
 ### DenetimKaydiServisi
 
-- RabbitMQ eventlerini tüketir.
+- DotNetCore.CAP ile RabbitMQ eventlerini tüketir.
 - MongoDB üzerinde JSON tabanlı audit/event log kaydı tutar.
 - Zimmet geçmişi silinmeyecektir.
 
 ### BildirimServisi
 
-- RabbitMQ üzerinden kritik stok eventlerini tüketir.
+- DotNetCore.CAP ile RabbitMQ üzerinden kritik stok eventlerini tüketir.
 - SignalR ile yalnızca kritik stok seviyesi altına düşme bildirimlerini yayınlar.
 - Kritik stok bildirim paneli ile demo edilebilir.
 
@@ -419,6 +432,14 @@ Fotoğraf saklama kararı:
 
 ## 13. Event Tasarımı
 
+Event bus yaklaşımı:
+
+- Event bus için DotNetCore.CAP kullanılacaktır.
+- Mesaj taşıyıcı olarak RabbitMQ kullanılacaktır.
+- PostgreSQL kullanan servislerde CAP Outbox tabloları aynı veritabanı içinde tutulacaktır.
+- İş verisi kaydı ile event kaydı aynı transaction kapsamında yazılacaktır.
+- CAP, Outbox kaydını daha sonra RabbitMQ'ya güvenilir şekilde yayınlayacaktır.
+
 RabbitMQ exchange:
 
 - `inventory.events`
@@ -449,7 +470,14 @@ Tüm eventlerde asgari olarak şu bilgiler bulunmalıdır:
 - KaynakServis
 - CorrelationId
 - KullaniciId
+- PersonelId
+- Rol
 - Payload
+
+Kullanıcı bağlamı kararı:
+
+- Event payload veya metadata içinde gerekli durumlarda `KullaniciId`, `PersonelId`, `Rol` ve `CorrelationId` taşınacaktır.
+- Kullanıcı bağlamı, audit loglarda işlemi yapan kişinin izlenebilmesi ve servisler arası süreç takibi için kullanılacaktır.
 
 ## 14. Cache Tasarımı
 

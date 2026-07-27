@@ -65,7 +65,7 @@ flowchart TB
     %% Servisler arası referans özeti
     REF_ZIMMET["Zimmet referansları<br/>PersonelId<br/>CihazId<br/>KullaniciId"]
     REF_STOK["Stok hareketi referansı<br/>OlusturanKullaniciId"]
-    REF_AUDIT["Audit kaynakları<br/>CRUD işlemleri<br/>RabbitMQ eventleri"]
+    REF_AUDIT["Audit kaynakları<br/>CRUD işlemleri<br/>CAP / RabbitMQ eventleri"]
 
     PERSONEL -.-> REF_ZIMMET
     CIHAZ -.-> REF_ZIMMET

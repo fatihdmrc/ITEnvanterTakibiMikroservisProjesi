@@ -228,7 +228,7 @@ Kurallar:
 
 Kurallar:
 
-- Audit log kapsamında hem RabbitMQ eventleri hem de CRUD işlemleri kaydedilir.
+- Audit log kapsamında hem DotNetCore.CAP üzerinden gelen RabbitMQ eventleri hem de CRUD işlemleri kaydedilir.
 
 ## 6. ER Diyagramı İçin Notlar
 
