@@ -276,3 +276,45 @@ Neden yapıldı:
 - Projenin hedef mimarisinde controller, service ve repository yapılarının uygulanması bekleniyor.
 - Endpoint sayısı arttıkça controller dosyaları Minimal API route bloklarına göre daha okunabilir ve yönetilebilir olur.
 - Controller yapısı staj dokümantasyonu ve sunumunda daha klasik, anlaşılır bir backend akışı gösterir.
+
+## 2026-07-28
+
+### ASP.NET Core Identity geçişi yapıldı
+
+Ne yapıldı:
+
+- KimlikVePersonelServisi custom kullanıcı/şifre sistemi yerine ASP.NET Core Identity altyapısına taşındı.
+- `Kullanici` entity'si kaldırıldı ve yerine `UygulamaKullanici : IdentityUser<Guid>` eklendi.
+- `KimlikPersonelDbContext`, `IdentityDbContext<UygulamaKullanici, IdentityRole<Guid>, Guid>` sınıfından türetildi.
+- Identity tabloları `kimlik_personel` schema'sı altında Türkçe tablo adlarıyla oluşturuldu:
+  - `Kullanicilar`
+  - `Roller`
+  - `KullaniciRolleri`
+  - `KullaniciClaimleri`
+  - `KullaniciLoginleri`
+  - `RolClaimleri`
+  - `KullaniciTokenlari`
+- `SifreServisi`, `IKullaniciRepository` ve `EfKullaniciRepository` kaldırıldı.
+- Kullanıcı oluşturma, rol atama ve şifre doğrulama işlemleri `UserManager`, `RoleManager` ve `SignInManager` üzerinden yapılacak şekilde güncellendi.
+- `JwtTokenServisi`, `UygulamaKullanici` ve Identity rol bilgisinden JWT üretecek hale getirildi.
+- Personel işten ayrıldığında bağlı kullanıcı hesabının `AktifMi = false` yapılması korundu.
+- Demo seed yapısı Identity üzerinden kullanıcı ve rol oluşturacak şekilde yenilendi.
+- Eski migration dosyaları temizlendi ve Identity tabanlı yeni ilk migration oluşturuldu.
+
+Neden yapıldı:
+
+- ASP.NET Core Identity uzun vadede şifre hashleme, rol yönetimi, hesap kilitleme ve kullanıcı güvenliği gibi konularda custom çözüme göre daha güvenilir ve sürdürülebilir bir altyapı sağlar.
+- JWT kullanılmaya devam ettiği için API endpoint davranışı ve MVC client akışı korunur; Identity yalnızca kullanıcı, rol ve şifre yönetimini üstlenir.
+- Kullanıcı hesabının personel kaydına zorunlu bağlı olması proje kuralıyla uyumlu kalır.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+- PostgreSQL geliştirme volume'ü temiz sıfırlandı ve `IlkIdentityKimlikPersonelSemasi` migration'ı başarıyla uygulandı.
+- API açılışında demo departman, personel, rol ve kullanıcı seed kayıtları Identity üzerinden oluşturuldu.
+- `admin / Admin123!` ile login sonucu JWT token üretildi.
+- Tokensız `GET /api/departmanlar` isteği `401 Unauthorized` döndü.
+- Admin token ile `GET /api/departmanlar` isteği `200 OK` döndü.
+- `PersonelKullanicisi` token ile `GET /api/kullanicilar` isteği `403 Forbidden` döndü.
+- Geçici bir kullanıcıyla işten ayrılma senaryosu denendi; personel işten ayrıldıktan sonra bağlı kullanıcı login yapamadı.
+- Test verileri temizlendi ve veritabanı tekrar yalnızca demo seed kayıtları kalacak şekilde sıfırlandı.

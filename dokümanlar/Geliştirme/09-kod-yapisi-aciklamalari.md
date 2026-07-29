@@ -12,7 +12,7 @@ Türkçe kalması uygun örnekler:
 - `Departman`
 - `Zimmet`
 - `Kullanici`
-- `SifreServisi`
+- `UygulamaKullanici`
 
 İngilizce kalması daha doğru örnekler:
 
@@ -68,13 +68,36 @@ Alanlar:
 
 Geliştirme ortamında `SigningKey` appsettings içinde durabilir. Canlı ortamda bu değer environment variable, secret manager veya güvenli secret store üzerinden verilmelidir.
 
+## ASP.NET Core Identity Neden Kullanılıyor?
+
+KimlikVePersonelServisi artık custom kullanıcı/şifre tablosu yerine ASP.NET Core Identity kullanır.
+
+Identity şu sorumlulukları üstlenir:
+
+- Kullanıcı kaydı
+- Şifre hashleme ve doğrulama
+- Rol yönetimi
+- Security stamp ve lockout gibi hesap güvenliği alanları
+- Kullanıcı ile rol arasındaki bağlantı tabloları
+
+Bu projede Identity, cookie login için değil kullanıcı, rol ve şifre altyapısı için kullanılır. API tarafında oturum taşımak için JWT kullanılmaya devam eder.
+
+Temel entity:
+
+- `UygulamaKullanici`: `IdentityUser<Guid>` sınıfından türeyen uygulama kullanıcısıdır. Ek olarak `PersonelId` ve `AktifMi` alanlarını taşır.
+
+Temel servisler:
+
+- `UserManager<UygulamaKullanici>`: Kullanıcı oluşturma, kullanıcı bulma, şifre doğrulama altyapısı ve kullanıcı güncelleme işlemlerini sağlar.
+- `RoleManager<IdentityRole<Guid>>`: Roller var mı, yoksa oluşturulmalı mı gibi rol yönetimi işlerini sağlar.
+- `SignInManager<UygulamaKullanici>`: Login sırasında şifre doğrulama ve lockout davranışını Identity kurallarına göre yürütür.
+
 ## Services Klasörü Altındakiler Ne Yapıyor?
 
 `Services` klasörü iş kurallarının ve teknik servislerin bulunduğu katmandır.
 
 - `IKimlikPersonelServisi`: Endpointlerin çağırdığı ana servis sözleşmesidir.
 - `KimlikPersonelServisi`: Departman, personel, kullanıcı ve giriş işlemlerindeki iş kurallarını uygular.
-- `ISifreServisi` / `SifreServisi`: Şifre kural kontrolü, şifre hash üretimi ve şifre doğrulama işlemlerini yapar.
 - `ITokenServisi` / `JwtTokenServisi`: Başarılı giriş sonrası JWT token üretir.
 - `Sonuc<T>`: Servis işlemlerinde başarılı/başarısız sonucu ve hata mesajını standartlaştırır.
 
@@ -86,7 +109,8 @@ Repository sınıfları EF Core ve veritabanı sorgularını kapsar:
 
 - `IDepartmanRepository` / `EfDepartmanRepository`
 - `IPersonelRepository` / `EfPersonelRepository`
-- `IKullaniciRepository` / `EfKullaniciRepository`
+
+Not: Kullanıcı işlemleri için ayrıca repository tutulmaz. Bu alan ASP.NET Core Identity'nin `UserManager`, `RoleManager` ve `SignInManager` servisleriyle yönetilir.
 
 Bu ayrım sayesinde:
 

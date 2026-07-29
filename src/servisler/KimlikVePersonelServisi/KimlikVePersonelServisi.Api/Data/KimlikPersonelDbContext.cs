@@ -1,21 +1,54 @@
 using KimlikVePersonelServisi.Api.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace KimlikVePersonelServisi.Api.Data;
 
-public sealed class KimlikPersonelDbContext(DbContextOptions<KimlikPersonelDbContext> options) : DbContext(options)
+public sealed class KimlikPersonelDbContext(DbContextOptions<KimlikPersonelDbContext> options)
+    : IdentityDbContext<UygulamaKullanici, IdentityRole<Guid>, Guid>(options)
 {
     public DbSet<Departman> Departmanlar => Set<Departman>();
     public DbSet<Personel> Personeller => Set<Personel>();
-    public DbSet<Kullanici> Kullanicilar => Set<Kullanici>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.HasDefaultSchema("kimlik_personel");
 
+        IdentityModeliniOlustur(modelBuilder);
         DepartmanModeliniOlustur(modelBuilder);
         PersonelModeliniOlustur(modelBuilder);
-        KullaniciModeliniOlustur(modelBuilder);
+    }
+
+    private static void IdentityModeliniOlustur(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UygulamaKullanici>(entity =>
+        {
+            entity.ToTable("Kullanicilar");
+
+            entity.Property(kullanici => kullanici.PersonelId)
+                .IsRequired();
+
+            entity.Property(kullanici => kullanici.AktifMi)
+                .IsRequired();
+
+            entity.HasIndex(kullanici => kullanici.PersonelId)
+                .IsUnique();
+
+            entity.HasOne<Personel>()
+                .WithOne()
+                .HasForeignKey<UygulamaKullanici>(kullanici => kullanici.PersonelId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<IdentityRole<Guid>>().ToTable("Roller");
+        modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("KullaniciRolleri");
+        modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("KullaniciClaimleri");
+        modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("KullaniciLoginleri");
+        modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("RolClaimleri");
+        modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("KullaniciTokenlari");
     }
 
     private static void DepartmanModeliniOlustur(ModelBuilder modelBuilder)
@@ -80,36 +113,4 @@ public sealed class KimlikPersonelDbContext(DbContextOptions<KimlikPersonelDbCon
         });
     }
 
-    private static void KullaniciModeliniOlustur(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Kullanici>(entity =>
-        {
-            entity.ToTable("Kullanicilar");
-            entity.HasKey(kullanici => kullanici.Id);
-
-            entity.Property(kullanici => kullanici.KullaniciAdi)
-                .HasMaxLength(100)
-                .IsRequired();
-
-            entity.Property(kullanici => kullanici.SifreHash)
-                .HasMaxLength(500)
-                .IsRequired();
-
-            entity.Property(kullanici => kullanici.Rol)
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
-
-            entity.HasIndex(kullanici => kullanici.KullaniciAdi)
-                .IsUnique();
-
-            entity.HasIndex(kullanici => kullanici.PersonelId)
-                .IsUnique();
-
-            entity.HasOne<Personel>()
-                .WithOne()
-                .HasForeignKey<Kullanici>(kullanici => kullanici.PersonelId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-    }
 }

@@ -8,21 +8,23 @@ Veritabanı ve kod isimlendirmelerinde Türkçe domain kavramları kullanılacak
 
 ## 2. KimlikVePersonelServisi Veri Modeli
 
-### Kullanici
+### UygulamaKullanici
 
 | Alan | Açıklama |
 | --- | --- |
-| Id | Kullanıcı benzersiz kimliği |
-| KullaniciAdi | Sisteme girişte kullanılan kullanıcı adı |
-| SifreHash | Hash'lenmiş şifre |
-| Rol | Admin, ITPersoneli veya PersonelKullanicisi |
+| Id | Identity kullanıcı benzersiz kimliği |
+| UserName | Sisteme girişte kullanılan kullanıcı adı |
 | PersonelId | Bağlı olduğu personel kaydı |
 | AktifMi | Kullanıcı hesabının aktiflik durumu |
 
 Kurallar:
 
+- Kullanıcı, ASP.NET Core Identity `IdentityUser<Guid>` altyapısı üzerinden yönetilir.
+- Şifre hashleme, doğrulama, security stamp, lockout ve rol bağlantıları Identity tabloları üzerinden tutulur.
+- Roller Identity role sistemiyle `Admin`, `ITPersoneli` ve `PersonelKullanicisi` olarak yönetilir.
 - `PersonelId` zorunludur.
 - Personel kaydı olmayan kullanıcı oluşturulmaz.
+- Bir personele yalnızca bir kullanıcı hesabı açılabilir.
 - İşten ayrılan personelin kullanıcı hesabı pasifleştirilir.
 
 ### Personel

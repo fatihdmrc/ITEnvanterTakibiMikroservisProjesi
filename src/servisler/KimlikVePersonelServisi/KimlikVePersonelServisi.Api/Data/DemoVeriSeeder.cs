@@ -1,14 +1,25 @@
 using KimlikVePersonelServisi.Api.Domain.Entities;
 using KimlikVePersonelServisi.Api.Domain.Enums;
-using KimlikVePersonelServisi.Api.Services;
+using Microsoft.AspNetCore.Identity;
 
 namespace KimlikVePersonelServisi.Api.Data;
 
 public static class DemoVeriSeeder
 {
-    public static void Seed(KimlikPersonelDbContext dbContext, ISifreServisi sifreServisi)
+    public static void Seed(
+        KimlikPersonelDbContext dbContext,
+        UserManager<UygulamaKullanici> userManager,
+        RoleManager<IdentityRole<Guid>> roleManager)
     {
-        if (dbContext.Departmanlar.Any() || dbContext.Personeller.Any() || dbContext.Kullanicilar.Any())
+        foreach (var rol in Enum.GetNames<KullaniciRolu>())
+        {
+            if (!roleManager.RoleExistsAsync(rol).GetAwaiter().GetResult())
+            {
+                roleManager.CreateAsync(new IdentityRole<Guid>(rol)).GetAwaiter().GetResult();
+            }
+        }
+
+        if (dbContext.Departmanlar.Any() || dbContext.Personeller.Any() || userManager.Users.Any())
         {
             return;
         }
@@ -56,30 +67,34 @@ public static class DemoVeriSeeder
         bilgiIslem.SorumluPersonelId = adminPersonel.Id;
         insanKaynaklari.SorumluPersonelId = personelKullanicisi.Id;
 
-        dbContext.Kullanicilar.AddRange(
-            new Kullanici
-            {
-                KullaniciAdi = "admin",
-                SifreHash = sifreServisi.HashOlustur("Admin123!"),
-                Rol = KullaniciRolu.Admin,
-                PersonelId = adminPersonel.Id
-            },
-            new Kullanici
-            {
-                KullaniciAdi = "it.personel",
-                SifreHash = sifreServisi.HashOlustur("ItPersonel123!"),
-                Rol = KullaniciRolu.ITPersoneli,
-                PersonelId = itPersoneli.Id
-            },
-            new Kullanici
-            {
-                KullaniciAdi = "personel",
-                SifreHash = sifreServisi.HashOlustur("Personel123!"),
-                Rol = KullaniciRolu.PersonelKullanicisi,
-                PersonelId = personelKullanicisi.Id
-            });
+        KullaniciOlustur(userManager, "admin", "Admin123!", KullaniciRolu.Admin, adminPersonel.Id);
+        KullaniciOlustur(userManager, "it.personel", "ItPersonel123!", KullaniciRolu.ITPersoneli, itPersoneli.Id);
+        KullaniciOlustur(userManager, "personel", "Personel123!", KullaniciRolu.PersonelKullanicisi, personelKullanicisi.Id);
+    }
 
-        
-        dbContext.SaveChanges();
+    private static void KullaniciOlustur(
+        UserManager<UygulamaKullanici> userManager,
+        string kullaniciAdi,
+        string sifre,
+        KullaniciRolu rol,
+        Guid personelId)
+    {
+        var kullanici = new UygulamaKullanici
+        {
+            UserName = kullaniciAdi,
+            PersonelId = personelId
+        };
+
+        var sonuc = userManager.CreateAsync(kullanici, sifre).GetAwaiter().GetResult();
+        if (!sonuc.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join(" ", sonuc.Errors.Select(hata => hata.Description)));
+        }
+
+        var rolSonucu = userManager.AddToRoleAsync(kullanici, rol.ToString()).GetAwaiter().GetResult();
+        if (!rolSonucu.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join(" ", rolSonucu.Errors.Select(hata => hata.Description)));
+        }
     }
 }

@@ -10,14 +10,14 @@ namespace KimlikVePersonelServisi.Api.Services;
 
 public interface ITokenServisi
 {
-    TokenBilgisi TokenOlustur(Kullanici kullanici);
+    TokenBilgisi TokenOlustur(UygulamaKullanici kullanici, string rol);
 }
 
 public sealed record TokenBilgisi(string Token, DateTimeOffset GecerlilikZamani);
 
 public sealed class JwtTokenServisi(IOptions<JwtAyarlari> jwtAyarlari) : ITokenServisi
 {
-    public TokenBilgisi TokenOlustur(Kullanici kullanici)
+    public TokenBilgisi TokenOlustur(UygulamaKullanici kullanici, string rol)
     {
         var ayarlar = jwtAyarlari.Value;
         var gecerlilikZamani = DateTimeOffset.UtcNow.AddMinutes(ayarlar.GecerlilikDakikasi);
@@ -27,12 +27,12 @@ public sealed class JwtTokenServisi(IOptions<JwtAyarlari> jwtAyarlari) : ITokenS
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, kullanici.Id.ToString()),
-            new(JwtRegisteredClaimNames.UniqueName, kullanici.KullaniciAdi),
+            new(JwtRegisteredClaimNames.UniqueName, kullanici.UserName ?? string.Empty),
             new("KullaniciId", kullanici.Id.ToString()),
-            new("KullaniciAdi", kullanici.KullaniciAdi),
+            new("KullaniciAdi", kullanici.UserName ?? string.Empty),
             new("PersonelId", kullanici.PersonelId.ToString()),
-            new(ClaimTypes.Role, kullanici.Rol.ToString()),
-            new("Rol", kullanici.Rol.ToString())
+            new(ClaimTypes.Role, rol),
+            new("Rol", rol)
         };
 
         // Token içinde kullanıcı taşıyoruz, ileride event metadata ve audit log için aynı bilgiler kullanılacak.

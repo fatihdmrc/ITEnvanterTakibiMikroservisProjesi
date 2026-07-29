@@ -194,7 +194,8 @@ DotNetCore.CAP:
 
 ## 5. Güvenlik Tasarımı
 
-- Authentication JWT ile yapılacaktır.
+- Kullanıcı, rol ve şifre yönetimi ASP.NET Core Identity ile yapılacaktır.
+- Servisler arası ve client-server authentication JWT ile yapılacaktır.
 - Authorization rol bazlı olacaktır.
 - ApiGateway üzerinde route bazlı authorization policy uygulanabilecektir.
 - Mikroservisler de kendilerine gelen JWT token'ı doğrulayabilecek şekilde tasarlanmalıdır.

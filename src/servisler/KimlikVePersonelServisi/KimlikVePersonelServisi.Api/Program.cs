@@ -1,11 +1,13 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using KimlikVePersonelServisi.Api.Data;
+using KimlikVePersonelServisi.Api.Domain.Entities;
 using KimlikVePersonelServisi.Api.Options;
 using KimlikVePersonelServisi.Api.Repositories;
 using KimlikVePersonelServisi.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -100,11 +102,27 @@ builder.Services.AddDbContext<KimlikPersonelDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 
-builder.Services.AddSingleton<ISifreServisi, SifreServisi>();
+// Identity kullanıcı, rol, şifre hash ve hesap kilitleme altyapısını yönetir; dış API çağrılarında yine JWT kullanılır.
+builder.Services
+    .AddIdentityCore<UygulamaKullanici>(options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequiredUniqueChars = 1;
+        options.Password.RequireDigit = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.User.RequireUniqueEmail = false;
+    })
+    .AddRoles<IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<KimlikPersonelDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+
 builder.Services.AddSingleton<ITokenServisi, JwtTokenServisi>();
 builder.Services.AddScoped<IDepartmanRepository, EfDepartmanRepository>();
 builder.Services.AddScoped<IPersonelRepository, EfPersonelRepository>();
-builder.Services.AddScoped<IKullaniciRepository, EfKullaniciRepository>();
 builder.Services.AddScoped<IKimlikPersonelServisi, KimlikPersonelServisi>();
 
 var app = builder.Build();
@@ -125,8 +143,9 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<KimlikPersonelDbContext>();
     dbContext.Database.Migrate();
 
-    var sifreServisi = scope.ServiceProvider.GetRequiredService<ISifreServisi>();
-    DemoVeriSeeder.Seed(dbContext, sifreServisi);
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UygulamaKullanici>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    DemoVeriSeeder.Seed(dbContext, userManager, roleManager);
 }
 
 app.MapControllers();

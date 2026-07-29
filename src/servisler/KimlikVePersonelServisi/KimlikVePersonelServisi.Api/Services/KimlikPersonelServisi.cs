@@ -5,14 +5,17 @@ using KimlikVePersonelServisi.Api.Contracts.Personeller;
 using KimlikVePersonelServisi.Api.Domain.Entities;
 using KimlikVePersonelServisi.Api.Domain.Enums;
 using KimlikVePersonelServisi.Api.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace KimlikVePersonelServisi.Api.Services;
 
 public sealed class KimlikPersonelServisi(
     IDepartmanRepository departmanRepository,
     IPersonelRepository personelRepository,
-    IKullaniciRepository kullaniciRepository,
-    ISifreServisi sifreServisi,
+    UserManager<UygulamaKullanici> userManager,
+    RoleManager<IdentityRole<Guid>> roleManager,
+    SignInManager<UygulamaKullanici> signInManager,
     ITokenServisi tokenServisi) : IKimlikPersonelServisi
 {
     // Servis sınıfı HTTP'den bağımsız iş kurallarını taşır; endpointler yalnızca bu servisi çağırır.
@@ -170,8 +173,9 @@ public sealed class KimlikPersonelServisi(
 
         if (istek.Durum == PersonelDurumu.IstenAyrildi)
         {
+            personel.AktifMi = false;
             personel.IstenAyrilisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
-            kullaniciRepository.PersonelHesaplariniPasiflestir(personel.Id);
+            PersonelHesaplariniPasiflestir(personel.Id);
         }
 
         personelRepository.Kaydet();
@@ -190,8 +194,8 @@ public sealed class KimlikPersonelServisi(
         personel.AktifMi = false;
         personel.IstenAyrilisTarihi = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // İşten ayrılan personelin hesabını kapatmak aynı transaction içinde ele alınır.
-        kullaniciRepository.PersonelHesaplariniPasiflestir(personel.Id);
+        // Personel işten ayrıldığında bağlı kullanıcı hesabı da giriş yapamasın diye pasifleştirilir.
+        PersonelHesaplariniPasiflestir(personel.Id);
 
         personelRepository.Kaydet();
         return Sonuc<PersonelCevap>.Basarili(PersonelCevabaDonustur(personel));
@@ -199,7 +203,12 @@ public sealed class KimlikPersonelServisi(
 
     public IReadOnlyCollection<KullaniciCevap> KullanicilariListele()
     {
-        return kullaniciRepository.Listele().Select(KullaniciCevabaDonustur).ToList();
+        return userManager.Users
+            .AsNoTracking()
+            .OrderBy(kullanici => kullanici.UserName)
+            .AsEnumerable()
+            .Select(KullaniciCevabaDonustur)
+            .ToList();
     }
 
     public Sonuc<KullaniciCevap> KullaniciOlustur(KullaniciOlusturIstek istek)
@@ -216,31 +225,40 @@ public sealed class KimlikPersonelServisi(
         }
 
         var kullaniciAdi = istek.KullaniciAdi.Trim();
-        if (kullaniciRepository.KullaniciAdiKullaniliyorMu(kullaniciAdi))
+        var rolAdi = istek.Rol.ToString();
+        if (!roleManager.RoleExistsAsync(rolAdi).GetAwaiter().GetResult())
+        {
+            return Sonuc<KullaniciCevap>.Basarisiz("Geçerli bir kullanıcı rolü seçilmelidir.");
+        }
+
+        if (userManager.FindByNameAsync(kullaniciAdi).GetAwaiter().GetResult() is not null)
         {
             return Sonuc<KullaniciCevap>.Basarisiz("Bu kullanıcı adı zaten kullanılıyor.");
         }
 
-        if (kullaniciRepository.PersonelIcinHesapVarMi(istek.PersonelId))
+        if (userManager.Users.Any(kullanici => kullanici.PersonelId == istek.PersonelId))
         {
             return Sonuc<KullaniciCevap>.Basarisiz("Bu personel için kullanıcı hesabı zaten oluşturulmuş.");
         }
 
-        if (!sifreServisi.SifreKurallarinaUygunMu(istek.Sifre, out var hata))
+        var kullanici = new UygulamaKullanici
         {
-            return Sonuc<KullaniciCevap>.Basarisiz(hata);
-        }
-
-        var kullanici = new Kullanici
-        {
-            KullaniciAdi = kullaniciAdi,
-            SifreHash = sifreServisi.HashOlustur(istek.Sifre),
-            Rol = istek.Rol,
+            UserName = kullaniciAdi,
+            NormalizedUserName = kullaniciAdi.ToUpperInvariant(),
             PersonelId = istek.PersonelId
         };
 
-        kullaniciRepository.Ekle(kullanici);
-        kullaniciRepository.Kaydet();
+        var kullaniciSonucu = userManager.CreateAsync(kullanici, istek.Sifre).GetAwaiter().GetResult();
+        if (!kullaniciSonucu.Succeeded)
+        {
+            return Sonuc<KullaniciCevap>.Basarisiz(IdentityHatalariniBirlestir(kullaniciSonucu));
+        }
+
+        var rolSonucu = userManager.AddToRoleAsync(kullanici, rolAdi).GetAwaiter().GetResult();
+        if (!rolSonucu.Succeeded)
+        {
+            return Sonuc<KullaniciCevap>.Basarisiz(IdentityHatalariniBirlestir(rolSonucu));
+        }
 
         return Sonuc<KullaniciCevap>.Basarili(KullaniciCevabaDonustur(kullanici));
     }
@@ -248,8 +266,16 @@ public sealed class KimlikPersonelServisi(
     public Sonuc<GirisCevap> GirisYap(GirisIstek istek)
     {
         var kullaniciAdi = istek.KullaniciAdi.Trim();
-        var kullanici = kullaniciRepository.KullaniciAdiIleGetir(kullaniciAdi);
-        if (kullanici is null || !kullanici.AktifMi || !sifreServisi.Dogrula(istek.Sifre, kullanici.SifreHash))
+        var kullanici = userManager.FindByNameAsync(kullaniciAdi).GetAwaiter().GetResult();
+        if (kullanici is null || !kullanici.AktifMi)
+        {
+            return Sonuc<GirisCevap>.Basarisiz("Kullanıcı adı veya şifre hatalı.");
+        }
+
+        var sifreSonucu = signInManager.CheckPasswordSignInAsync(kullanici, istek.Sifre, lockoutOnFailure: true)
+            .GetAwaiter()
+            .GetResult();
+        if (!sifreSonucu.Succeeded)
         {
             return Sonuc<GirisCevap>.Basarisiz("Kullanıcı adı veya şifre hatalı.");
         }
@@ -260,12 +286,14 @@ public sealed class KimlikPersonelServisi(
             return Sonuc<GirisCevap>.Basarisiz("Personel kaydı aktif olmadığı için giriş yapılamaz.");
         }
 
-        var tokenBilgisi = tokenServisi.TokenOlustur(kullanici);
+        var rol = userManager.GetRolesAsync(kullanici).GetAwaiter().GetResult().FirstOrDefault()
+            ?? KullaniciRolu.PersonelKullanicisi.ToString();
+        var tokenBilgisi = tokenServisi.TokenOlustur(kullanici, rol);
         var cevap = new GirisCevap(
             tokenBilgisi.Token,
             kullanici.Id,
             kullanici.PersonelId,
-            kullanici.Rol,
+            Enum.Parse<KullaniciRolu>(rol),
             tokenBilgisi.GecerlilikZamani);
 
         return Sonuc<GirisCevap>.Basarili(cevap);
@@ -288,6 +316,31 @@ public sealed class KimlikPersonelServisi(
             personel.IstenAyrilisTarihi,
             personel.AktifMi);
 
-    private static KullaniciCevap KullaniciCevabaDonustur(Kullanici kullanici)
-        => new(kullanici.Id, kullanici.KullaniciAdi, kullanici.Rol, kullanici.PersonelId, kullanici.AktifMi);
+    private void PersonelHesaplariniPasiflestir(Guid personelId)
+    {
+        var kullanicilar = userManager.Users.Where(kullanici => kullanici.PersonelId == personelId).ToList();
+        foreach (var kullanici in kullanicilar)
+        {
+            kullanici.AktifMi = false;
+            userManager.UpdateAsync(kullanici).GetAwaiter().GetResult();
+        }
+    }
+
+    private KullaniciCevap KullaniciCevabaDonustur(UygulamaKullanici kullanici)
+    {
+        var rol = userManager.GetRolesAsync(kullanici).GetAwaiter().GetResult().FirstOrDefault()
+            ?? KullaniciRolu.PersonelKullanicisi.ToString();
+
+        return new(
+            kullanici.Id,
+            kullanici.UserName ?? string.Empty,
+            Enum.Parse<KullaniciRolu>(rol),
+            kullanici.PersonelId,
+            kullanici.AktifMi);
+    }
+
+    private static string IdentityHatalariniBirlestir(IdentityResult sonuc)
+    {
+        return string.Join(" ", sonuc.Errors.Select(hata => hata.Description));
+    }
 }

@@ -103,9 +103,11 @@ Kimlik ve personel tablolarını görmek için:
 
 1. Sol menüden bağlantıyı aç.
 2. `Databases > it_envanter_takip > Schemas > kimlik_personel > Tables` yoluna git.
-3. `Departmanlar`, `Personeller` ve `Kullanicilar` tablolarını incele.
+3. `Departmanlar`, `Personeller`, `Kullanicilar`, `Roller` ve Identity bağlantı tablolarını incele.
 
 Not: EF Core şu an tablo adlarını C# `DbSet` adlarıyla oluşturduğu için tablolar büyük harfle başlar. DBeaver'da küçük harfli tablo adı ararsan görünmüyor gibi düşünebilirsin.
+
+Identity geçişinden sonra `Kullanicilar` tablosunda `PasswordHash`, `SecurityStamp`, `LockoutEnd` gibi standart Identity alanları da görünür. Bunlar bizim elle yazdığımız alanlar değil, ASP.NET Core Identity'nin kullanıcı güvenliği için yönettiği alanlardır.
 
 ## 7. Migration Uygula
 
@@ -303,6 +305,7 @@ Yetki notu:
 - PostgreSQL Docker Compose 
 - KimlikVePersonelServisi EF Core migration yapısı
 - KimlikVePersonelServisi PostgreSQL bağlantısı
+- ASP.NET Core Identity ile kullanıcı, rol ve şifre yönetimi
 - KimlikVePersonelServisi JWT token üretimi
 - Demo departman, personel ve kullanıcı kayıtları
 - Her iki API için `/saglik` endpointi
