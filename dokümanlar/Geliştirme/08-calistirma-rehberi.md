@@ -109,6 +109,23 @@ Not: EF Core şu an tablo adlarını C# `DbSet` adlarıyla oluşturduğu için t
 
 Identity geçişinden sonra `Kullanicilar` tablosunda `PasswordHash`, `SecurityStamp`, `LockoutEnd` gibi standart Identity alanları da görünür. Bunlar bizim elle yazdığımız alanlar değil, ASP.NET Core Identity'nin kullanıcı güvenliği için yönettiği alanlardır.
 
+Envanter tablolarını görmek için:
+
+```text
+Databases > it_envanter_takip > Schemas > envanter > Tables
+```
+
+Bu schema altında şu tablolar bulunur:
+
+```text
+Kategoriler
+Lokasyonlar
+Cihazlar
+SarfMalzemeler
+StokHareketleri
+KritikStokKurallari
+```
+
 ## 7. Migration Uygula
 
 PostgreSQL çalıştıktan sonra KimlikVePersonelServisi migration'ını uygula:
@@ -263,6 +280,24 @@ Kontrol adresi:
 http://localhost:5001/saglik
 ```
 
+Swagger adresi:
+
+```text
+http://localhost:5001/swagger
+```
+
+EnvanterServisi endpointleri JWT ile korunur. Önce KimlikVePersonelServisi üzerinden `admin` veya `it.personel` kullanıcısıyla token alıp EnvanterServisi Swagger ekranındaki `Authorize` alanına yapıştırman gerekir.
+
+Temel endpointler:
+
+```text
+GET /api/kategoriler
+GET /api/lokasyonlar
+GET /api/cihazlar
+GET /api/sarf-malzemeler
+GET /api/stok/ozet
+```
+
 ### Terminal 3 - MVC Client
 
 ```powershell
@@ -313,6 +348,9 @@ Yetki notu:
 - Repository pattern ile ayrılmış veri erişim katmanı
 - Controller, service ve repository şeklinde ayrılmış KimlikVePersonelServisi API mimarisi
 - Kimlik ve personel işlemlerini kullanan MVC kontrol paneli
+- EnvanterServisi EF Core migration yapısı
+- EnvanterServisi kategori, lokasyon, cihaz ve sarf malzeme CRUD endpointleri
+- EnvanterServisi kullanılabilir stok ve kritik stok özeti endpointi
 
 Henüz eklenmeyenler:
 

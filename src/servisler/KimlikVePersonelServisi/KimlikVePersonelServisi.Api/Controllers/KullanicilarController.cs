@@ -11,15 +11,15 @@ namespace KimlikVePersonelServisi.Api.Controllers;
 public sealed class KullanicilarController(IKimlikPersonelServisi kimlikPersonelServisi) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyCollection<KullaniciCevap>> Listele()
+    public async Task<ActionResult<IReadOnlyCollection<KullaniciCevap>>> Listele(CancellationToken cancellationToken)
     {
-        return Ok(kimlikPersonelServisi.KullanicilariListele());
+        return Ok(await kimlikPersonelServisi.KullanicilariListeleAsync(cancellationToken));
     }
 
     [HttpPost]
-    public ActionResult<KullaniciCevap> Olustur([FromBody] KullaniciOlusturIstek istek)
+    public async Task<ActionResult<KullaniciCevap>> Olustur([FromBody] KullaniciOlusturIstek istek, CancellationToken cancellationToken)
     {
-        var sonuc = kimlikPersonelServisi.KullaniciOlustur(istek);
+        var sonuc = await kimlikPersonelServisi.KullaniciOlusturAsync(istek, cancellationToken);
         return sonuc.BasariliMi
             ? Created($"/api/kullanicilar/{sonuc.Veri!.Id}", sonuc.Veri)
             : BadRequest(new { hata = sonuc.Hata });

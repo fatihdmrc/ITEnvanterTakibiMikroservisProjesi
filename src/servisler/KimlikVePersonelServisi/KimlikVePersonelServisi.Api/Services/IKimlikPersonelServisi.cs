@@ -7,16 +7,16 @@ namespace KimlikVePersonelServisi.Api.Services;
 
 public interface IKimlikPersonelServisi
 {
-    IReadOnlyCollection<DepartmanCevap> DepartmanlariListele();
-    DepartmanCevap? DepartmanGetir(Guid id);
-    Sonuc<DepartmanCevap> DepartmanOlustur(DepartmanOlusturIstek istek);
-    Sonuc<DepartmanCevap> DepartmanGuncelle(Guid id, DepartmanGuncelleIstek istek);
-    IReadOnlyCollection<PersonelCevap> PersonelleriListele();
-    PersonelCevap? PersonelGetir(Guid id);
-    Sonuc<PersonelCevap> PersonelOlustur(PersonelOlusturIstek istek);
-    Sonuc<PersonelCevap> PersonelGuncelle(Guid id, PersonelGuncelleIstek istek);
-    Sonuc<PersonelCevap> PersoneliIstenAyrildiYap(Guid id);
-    IReadOnlyCollection<KullaniciCevap> KullanicilariListele();
-    Sonuc<KullaniciCevap> KullaniciOlustur(KullaniciOlusturIstek istek);
-    Sonuc<GirisCevap> GirisYap(GirisIstek istek);
+    Task<IReadOnlyCollection<DepartmanCevap>> DepartmanlariListeleAsync(CancellationToken cancellationToken = default);
+    Task<DepartmanCevap?> DepartmanGetirAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Sonuc<DepartmanCevap>> DepartmanOlusturAsync(DepartmanOlusturIstek istek, CancellationToken cancellationToken = default);
+    Task<Sonuc<DepartmanCevap>> DepartmanGuncelleAsync(Guid id, DepartmanGuncelleIstek istek, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<PersonelCevap>> PersonelleriListeleAsync(CancellationToken cancellationToken = default);
+    Task<PersonelCevap?> PersonelGetirAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Sonuc<PersonelCevap>> PersonelOlusturAsync(PersonelOlusturIstek istek, CancellationToken cancellationToken = default);
+    Task<Sonuc<PersonelCevap>> PersonelGuncelleAsync(Guid id, PersonelGuncelleIstek istek, CancellationToken cancellationToken = default);
+    Task<Sonuc<PersonelCevap>> PersoneliIstenAyrildiYapAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<KullaniciCevap>> KullanicilariListeleAsync(CancellationToken cancellationToken = default);
+    Task<Sonuc<KullaniciCevap>> KullaniciOlusturAsync(KullaniciOlusturIstek istek, CancellationToken cancellationToken = default);
+    Task<Sonuc<GirisCevap>> GirisYapAsync(GirisIstek istek, CancellationToken cancellationToken = default);
 }

@@ -9,9 +9,9 @@ namespace KimlikVePersonelServisi.Api.Controllers;
 public sealed class KimlikController(IKimlikPersonelServisi kimlikPersonelServisi) : ControllerBase
 {
     [HttpPost("giris")]
-    public ActionResult<GirisCevap> Giris([FromBody] GirisIstek istek)
+    public async Task<ActionResult<GirisCevap>> Giris([FromBody] GirisIstek istek, CancellationToken cancellationToken)
     {
-        var sonuc = kimlikPersonelServisi.GirisYap(istek);
+        var sonuc = await kimlikPersonelServisi.GirisYapAsync(istek, cancellationToken);
         return sonuc.BasariliMi
             ? Ok(sonuc.Veri)
             : BadRequest(new { hata = sonuc.Hata });

@@ -6,16 +6,16 @@ namespace KimlikVePersonelServisi.Api.Data;
 
 public static class DemoVeriSeeder
 {
-    public static void Seed(
+    public static async Task SeedAsync(
         KimlikPersonelDbContext dbContext,
         UserManager<UygulamaKullanici> userManager,
         RoleManager<IdentityRole<Guid>> roleManager)
     {
         foreach (var rol in Enum.GetNames<KullaniciRolu>())
         {
-            if (!roleManager.RoleExistsAsync(rol).GetAwaiter().GetResult())
+            if (!await roleManager.RoleExistsAsync(rol))
             {
-                roleManager.CreateAsync(new IdentityRole<Guid>(rol)).GetAwaiter().GetResult();
+                await roleManager.CreateAsync(new IdentityRole<Guid>(rol));
             }
         }
 
@@ -67,12 +67,12 @@ public static class DemoVeriSeeder
         bilgiIslem.SorumluPersonelId = adminPersonel.Id;
         insanKaynaklari.SorumluPersonelId = personelKullanicisi.Id;
 
-        KullaniciOlustur(userManager, "admin", "Admin123!", KullaniciRolu.Admin, adminPersonel.Id);
-        KullaniciOlustur(userManager, "it.personel", "ItPersonel123!", KullaniciRolu.ITPersoneli, itPersoneli.Id);
-        KullaniciOlustur(userManager, "personel", "Personel123!", KullaniciRolu.PersonelKullanicisi, personelKullanicisi.Id);
+        await KullaniciOlusturAsync(userManager, "admin", "Admin123!", KullaniciRolu.Admin, adminPersonel.Id);
+        await KullaniciOlusturAsync(userManager, "it.personel", "ItPersonel123!", KullaniciRolu.ITPersoneli, itPersoneli.Id);
+        await KullaniciOlusturAsync(userManager, "personel", "Personel123!", KullaniciRolu.PersonelKullanicisi, personelKullanicisi.Id);
     }
 
-    private static void KullaniciOlustur(
+    private static async Task KullaniciOlusturAsync(
         UserManager<UygulamaKullanici> userManager,
         string kullaniciAdi,
         string sifre,
@@ -85,13 +85,13 @@ public static class DemoVeriSeeder
             PersonelId = personelId
         };
 
-        var sonuc = userManager.CreateAsync(kullanici, sifre).GetAwaiter().GetResult();
+        var sonuc = await userManager.CreateAsync(kullanici, sifre);
         if (!sonuc.Succeeded)
         {
             throw new InvalidOperationException(string.Join(" ", sonuc.Errors.Select(hata => hata.Description)));
         }
 
-        var rolSonucu = userManager.AddToRoleAsync(kullanici, rol.ToString()).GetAwaiter().GetResult();
+        var rolSonucu = await userManager.AddToRoleAsync(kullanici, rol.ToString());
         if (!rolSonucu.Succeeded)
         {
             throw new InvalidOperationException(string.Join(" ", rolSonucu.Errors.Select(hata => hata.Description)));

@@ -4,45 +4,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KimlikVePersonelServisi.Api.Repositories;
 
-public sealed class EfDepartmanRepository(KimlikPersonelDbContext dbContext) : IDepartmanRepository
+public sealed class EfDepartmanRepository(KimlikPersonelDbContext dbContext)
+    : EfGenericRepository<Departman>(dbContext), IDepartmanRepository
 {
-    public IReadOnlyCollection<Departman> Listele()
+    public override async Task<IReadOnlyCollection<Departman>> ListeleAsync(CancellationToken cancellationToken = default)
     {
-        return dbContext.Departmanlar
+        return await DbSet
             .AsNoTracking()
             .OrderBy(departman => departman.Ad)
-            .ToList();
+            .ToListAsync(cancellationToken);
     }
 
-    public Departman? Getir(Guid id)
+    public async Task<bool> AktifVarMiAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return dbContext.Departmanlar.FirstOrDefault(departman => departman.Id == id);
+        return await DbSet.AnyAsync(departman => departman.Id == id && departman.AktifMi, cancellationToken);
     }
 
-    public bool VarMi(Guid id)
+    public async Task<bool> AdKullaniliyorMuAsync(string ad, Guid? haricDepartmanId = null, CancellationToken cancellationToken = default)
     {
-        return dbContext.Departmanlar.Any(departman => departman.Id == id);
-    }
-
-    public bool AktifVarMi(Guid id)
-    {
-        return dbContext.Departmanlar.Any(departman => departman.Id == id && departman.AktifMi);
-    }
-
-    public bool AdKullaniliyorMu(string ad, Guid? haricDepartmanId = null)
-    {
-        return dbContext.Departmanlar.Any(departman =>
+        return await DbSet.AnyAsync(departman =>
             departman.Ad == ad &&
-            (!haricDepartmanId.HasValue || departman.Id != haricDepartmanId.Value));
-    }
-
-    public void Ekle(Departman departman)
-    {
-        dbContext.Departmanlar.Add(departman);
-    }
-
-    public void Kaydet()
-    {
-        dbContext.SaveChanges();
+            (!haricDepartmanId.HasValue || departman.Id != haricDepartmanId.Value),
+            cancellationToken);
     }
 }

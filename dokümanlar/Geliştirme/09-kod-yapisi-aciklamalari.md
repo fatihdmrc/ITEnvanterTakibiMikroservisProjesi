@@ -107,8 +107,24 @@ Repository pattern bu aşamada `Repositories` klasörüyle uygulanmıştır.
 
 Repository sınıfları EF Core ve veritabanı sorgularını kapsar:
 
+- `IGenericRepository<T>` / `EfGenericRepository<T>`
 - `IDepartmanRepository` / `EfDepartmanRepository`
 - `IPersonelRepository` / `EfPersonelRepository`
+
+`IGenericRepository<T>` ortak CRUD operasyonlarını sağlar:
+
+- Listeleme
+- Id ile getirme
+- Id var mı kontrolü
+- Ekleme
+- Değişiklikleri kaydetme
+
+`IDepartmanRepository` ve `IPersonelRepository` gibi özel repository arayüzleri generic repository'den miras alır. Böylece ortak metotları tekrar yazmaz, sadece kendi domain'ine özel sorguları ekler.
+
+Örnek:
+
+- `IDepartmanRepository`: `AdKullaniliyorMuAsync`, `AktifVarMiAsync`
+- `IPersonelRepository`: `EmailKullaniliyorMuAsync`
 
 Not: Kullanıcı işlemleri için ayrıca repository tutulmaz. Bu alan ASP.NET Core Identity'nin `UserManager`, `RoleManager` ve `SignInManager` servisleriyle yönetilir.
 

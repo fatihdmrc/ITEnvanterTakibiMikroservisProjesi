@@ -3,13 +3,8 @@ using KimlikVePersonelServisi.Api.Domain.Entities;
 namespace KimlikVePersonelServisi.Api.Repositories;
 
 // Repository yalnızca veri erişimini soyutlar; validasyon ve iş kararları servis katmanında kalır.
-public interface IDepartmanRepository
+public interface IDepartmanRepository : IGenericRepository<Departman>
 {
-    IReadOnlyCollection<Departman> Listele();
-    Departman? Getir(Guid id);
-    bool VarMi(Guid id);
-    bool AktifVarMi(Guid id);
-    bool AdKullaniliyorMu(string ad, Guid? haricDepartmanId = null);
-    void Ekle(Departman departman);
-    void Kaydet();
+    Task<bool> AktifVarMiAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> AdKullaniliyorMuAsync(string ad, Guid? haricDepartmanId = null, CancellationToken cancellationToken = default);
 }

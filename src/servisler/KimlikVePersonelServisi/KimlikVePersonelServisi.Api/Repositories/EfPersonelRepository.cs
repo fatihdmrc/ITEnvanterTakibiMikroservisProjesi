@@ -4,41 +4,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KimlikVePersonelServisi.Api.Repositories;
 
-public sealed class EfPersonelRepository(KimlikPersonelDbContext dbContext) : IPersonelRepository
+public sealed class EfPersonelRepository(KimlikPersonelDbContext dbContext)
+    : EfGenericRepository<Personel>(dbContext), IPersonelRepository
 {
-    public IReadOnlyCollection<Personel> Listele()
+    public override async Task<IReadOnlyCollection<Personel>> ListeleAsync(CancellationToken cancellationToken = default)
     {
-        return dbContext.Personeller
+        return await DbSet
             .AsNoTracking()
             .OrderBy(personel => personel.Ad)
             .ThenBy(personel => personel.Soyad)
-            .ToList();
+            .ToListAsync(cancellationToken);
     }
 
-    public Personel? Getir(Guid id)
+    public async Task<bool> EmailKullaniliyorMuAsync(string email, Guid? haricPersonelId = null, CancellationToken cancellationToken = default)
     {
-        return dbContext.Personeller.FirstOrDefault(personel => personel.Id == id);
-    }
-
-    public bool VarMi(Guid id)
-    {
-        return dbContext.Personeller.Any(personel => personel.Id == id);
-    }
-
-    public bool EmailKullaniliyorMu(string email, Guid? haricPersonelId = null)
-    {
-        return dbContext.Personeller.Any(personel =>
+        return await DbSet.AnyAsync(personel =>
             personel.Email == email &&
-            (!haricPersonelId.HasValue || personel.Id != haricPersonelId.Value));
-    }
-
-    public void Ekle(Personel personel)
-    {
-        dbContext.Personeller.Add(personel);
-    }
-
-    public void Kaydet()
-    {
-        dbContext.SaveChanges();
+            (!haricPersonelId.HasValue || personel.Id != haricPersonelId.Value),
+            cancellationToken);
     }
 }

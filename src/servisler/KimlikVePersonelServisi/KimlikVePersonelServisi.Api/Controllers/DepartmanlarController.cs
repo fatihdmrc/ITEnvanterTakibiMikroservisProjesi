@@ -11,33 +11,33 @@ namespace KimlikVePersonelServisi.Api.Controllers;
 public sealed class DepartmanlarController(IKimlikPersonelServisi kimlikPersonelServisi) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyCollection<DepartmanCevap>> Listele()
+    public async Task<ActionResult<IReadOnlyCollection<DepartmanCevap>>> Listele(CancellationToken cancellationToken)
     {
-        return Ok(kimlikPersonelServisi.DepartmanlariListele());
+        return Ok(await kimlikPersonelServisi.DepartmanlariListeleAsync(cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
-    public ActionResult<DepartmanCevap> Getir(Guid id)
+    public async Task<ActionResult<DepartmanCevap>> Getir(Guid id, CancellationToken cancellationToken)
     {
-        var departman = kimlikPersonelServisi.DepartmanGetir(id);
+        var departman = await kimlikPersonelServisi.DepartmanGetirAsync(id, cancellationToken);
         return departman is null
             ? NotFound(new { hata = "Departman bulunamadı." })
             : Ok(departman);
     }
 
     [HttpPost]
-    public ActionResult<DepartmanCevap> Olustur([FromBody] DepartmanOlusturIstek istek)
+    public async Task<ActionResult<DepartmanCevap>> Olustur([FromBody] DepartmanOlusturIstek istek, CancellationToken cancellationToken)
     {
-        var sonuc = kimlikPersonelServisi.DepartmanOlustur(istek);
+        var sonuc = await kimlikPersonelServisi.DepartmanOlusturAsync(istek, cancellationToken);
         return sonuc.BasariliMi
             ? CreatedAtAction(nameof(Getir), new { id = sonuc.Veri!.Id }, sonuc.Veri)
             : BadRequest(new { hata = sonuc.Hata });
     }
 
     [HttpPut("{id:guid}")]
-    public ActionResult<DepartmanCevap> Guncelle(Guid id, [FromBody] DepartmanGuncelleIstek istek)
+    public async Task<ActionResult<DepartmanCevap>> Guncelle(Guid id, [FromBody] DepartmanGuncelleIstek istek, CancellationToken cancellationToken)
     {
-        var sonuc = kimlikPersonelServisi.DepartmanGuncelle(id, istek);
+        var sonuc = await kimlikPersonelServisi.DepartmanGuncelleAsync(id, istek, cancellationToken);
         return sonuc.BasariliMi
             ? Ok(sonuc.Veri)
             : BadRequest(new { hata = sonuc.Hata });

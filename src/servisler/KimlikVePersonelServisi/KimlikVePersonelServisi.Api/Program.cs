@@ -121,6 +121,7 @@ builder.Services
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<ITokenServisi, JwtTokenServisi>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
 builder.Services.AddScoped<IDepartmanRepository, EfDepartmanRepository>();
 builder.Services.AddScoped<IPersonelRepository, EfPersonelRepository>();
 builder.Services.AddScoped<IKimlikPersonelServisi, KimlikPersonelServisi>();
@@ -145,7 +146,7 @@ using (var scope = app.Services.CreateScope())
 
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UygulamaKullanici>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-    DemoVeriSeeder.Seed(dbContext, userManager, roleManager);
+    await DemoVeriSeeder.SeedAsync(dbContext, userManager, roleManager);
 }
 
 app.MapControllers();

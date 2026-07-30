@@ -19,18 +19,19 @@ public sealed class KimlikPersonelServisi(
     ITokenServisi tokenServisi) : IKimlikPersonelServisi
 {
     // Servis sınıfı HTTP'den bağımsız iş kurallarını taşır; endpointler yalnızca bu servisi çağırır.
-    public IReadOnlyCollection<DepartmanCevap> DepartmanlariListele()
+    public async Task<IReadOnlyCollection<DepartmanCevap>> DepartmanlariListeleAsync(CancellationToken cancellationToken = default)
     {
-        return departmanRepository.Listele().Select(DepartmanCevabaDonustur).ToList();
+        var departmanlar = await departmanRepository.ListeleAsync(cancellationToken);
+        return departmanlar.Select(DepartmanCevabaDonustur).ToList();
     }
 
-    public DepartmanCevap? DepartmanGetir(Guid id)
+    public async Task<DepartmanCevap?> DepartmanGetirAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var departman = departmanRepository.Getir(id);
+        var departman = await departmanRepository.GetirAsync(id, cancellationToken);
         return departman is null ? null : DepartmanCevabaDonustur(departman);
     }
 
-    public Sonuc<DepartmanCevap> DepartmanOlustur(DepartmanOlusturIstek istek)
+    public async Task<Sonuc<DepartmanCevap>> DepartmanOlusturAsync(DepartmanOlusturIstek istek, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(istek.Ad))
         {
@@ -38,12 +39,12 @@ public sealed class KimlikPersonelServisi(
         }
 
         var departmanAdi = istek.Ad.Trim();
-        if (departmanRepository.AdKullaniliyorMu(departmanAdi))
+        if (await departmanRepository.AdKullaniliyorMuAsync(departmanAdi, cancellationToken: cancellationToken))
         {
             return Sonuc<DepartmanCevap>.Basarisiz("Aynı ada sahip departman zaten var.");
         }
 
-        if (istek.SorumluPersonelId.HasValue && !personelRepository.VarMi(istek.SorumluPersonelId.Value))
+        if (istek.SorumluPersonelId.HasValue && !await personelRepository.VarMiAsync(istek.SorumluPersonelId.Value, cancellationToken))
         {
             return Sonuc<DepartmanCevap>.Basarisiz("Sorumlu personel bulunamadı.");
         }
@@ -55,14 +56,14 @@ public sealed class KimlikPersonelServisi(
         };
 
         departmanRepository.Ekle(departman);
-        departmanRepository.Kaydet();
+        await departmanRepository.KaydetAsync(cancellationToken);
 
         return Sonuc<DepartmanCevap>.Basarili(DepartmanCevabaDonustur(departman));
     }
 
-    public Sonuc<DepartmanCevap> DepartmanGuncelle(Guid id, DepartmanGuncelleIstek istek)
+    public async Task<Sonuc<DepartmanCevap>> DepartmanGuncelleAsync(Guid id, DepartmanGuncelleIstek istek, CancellationToken cancellationToken = default)
     {
-        var departman = departmanRepository.Getir(id);
+        var departman = await departmanRepository.GetirAsync(id, cancellationToken);
         if (departman is null)
         {
             return Sonuc<DepartmanCevap>.Basarisiz("Departman bulunamadı.");
@@ -74,12 +75,12 @@ public sealed class KimlikPersonelServisi(
         }
 
         var departmanAdi = istek.Ad.Trim();
-        if (departmanRepository.AdKullaniliyorMu(departmanAdi, id))
+        if (await departmanRepository.AdKullaniliyorMuAsync(departmanAdi, id, cancellationToken))
         {
             return Sonuc<DepartmanCevap>.Basarisiz("Aynı ada sahip departman zaten var.");
         }
 
-        if (istek.SorumluPersonelId.HasValue && !personelRepository.VarMi(istek.SorumluPersonelId.Value))
+        if (istek.SorumluPersonelId.HasValue && !await personelRepository.VarMiAsync(istek.SorumluPersonelId.Value, cancellationToken))
         {
             return Sonuc<DepartmanCevap>.Basarisiz("Sorumlu personel bulunamadı.");
         }
@@ -88,22 +89,23 @@ public sealed class KimlikPersonelServisi(
         departman.SorumluPersonelId = istek.SorumluPersonelId;
         departman.AktifMi = istek.AktifMi;
 
-        departmanRepository.Kaydet();
+        await departmanRepository.KaydetAsync(cancellationToken);
         return Sonuc<DepartmanCevap>.Basarili(DepartmanCevabaDonustur(departman));
     }
 
-    public IReadOnlyCollection<PersonelCevap> PersonelleriListele()
+    public async Task<IReadOnlyCollection<PersonelCevap>> PersonelleriListeleAsync(CancellationToken cancellationToken = default)
     {
-        return personelRepository.Listele().Select(PersonelCevabaDonustur).ToList();
+        var personeller = await personelRepository.ListeleAsync(cancellationToken);
+        return personeller.Select(PersonelCevabaDonustur).ToList();
     }
 
-    public PersonelCevap? PersonelGetir(Guid id)
+    public async Task<PersonelCevap?> PersonelGetirAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var personel = personelRepository.Getir(id);
+        var personel = await personelRepository.GetirAsync(id, cancellationToken);
         return personel is null ? null : PersonelCevabaDonustur(personel);
     }
 
-    public Sonuc<PersonelCevap> PersonelOlustur(PersonelOlusturIstek istek)
+    public async Task<Sonuc<PersonelCevap>> PersonelOlusturAsync(PersonelOlusturIstek istek, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(istek.Ad) || string.IsNullOrWhiteSpace(istek.Soyad))
         {
@@ -115,13 +117,13 @@ public sealed class KimlikPersonelServisi(
             return Sonuc<PersonelCevap>.Basarisiz("Geçerli bir e-posta adresi girilmelidir.");
         }
 
-        if (!departmanRepository.AktifVarMi(istek.DepartmanId))
+        if (!await departmanRepository.AktifVarMiAsync(istek.DepartmanId, cancellationToken))
         {
             return Sonuc<PersonelCevap>.Basarisiz("Aktif departman bulunamadı.");
         }
 
         var email = istek.Email.Trim();
-        if (personelRepository.EmailKullaniliyorMu(email))
+        if (await personelRepository.EmailKullaniliyorMuAsync(email, cancellationToken: cancellationToken))
         {
             return Sonuc<PersonelCevap>.Basarisiz("Bu e-posta adresiyle kayıtlı personel zaten var.");
         }
@@ -138,26 +140,26 @@ public sealed class KimlikPersonelServisi(
         };
 
         personelRepository.Ekle(personel);
-        personelRepository.Kaydet();
+        await personelRepository.KaydetAsync(cancellationToken);
 
         return Sonuc<PersonelCevap>.Basarili(PersonelCevabaDonustur(personel));
     }
 
-    public Sonuc<PersonelCevap> PersonelGuncelle(Guid id, PersonelGuncelleIstek istek)
+    public async Task<Sonuc<PersonelCevap>> PersonelGuncelleAsync(Guid id, PersonelGuncelleIstek istek, CancellationToken cancellationToken = default)
     {
-        var personel = personelRepository.Getir(id);
+        var personel = await personelRepository.GetirAsync(id, cancellationToken);
         if (personel is null)
         {
             return Sonuc<PersonelCevap>.Basarisiz("Personel bulunamadı.");
         }
 
-        if (!departmanRepository.VarMi(istek.DepartmanId))
+        if (!await departmanRepository.VarMiAsync(istek.DepartmanId, cancellationToken))
         {
             return Sonuc<PersonelCevap>.Basarisiz("Departman bulunamadı.");
         }
 
         var email = istek.Email.Trim();
-        if (personelRepository.EmailKullaniliyorMu(email, id))
+        if (await personelRepository.EmailKullaniliyorMuAsync(email, id, cancellationToken))
         {
             return Sonuc<PersonelCevap>.Basarisiz("Bu e-posta adresi başka bir personel tarafından kullanılıyor.");
         }
@@ -175,16 +177,16 @@ public sealed class KimlikPersonelServisi(
         {
             personel.AktifMi = false;
             personel.IstenAyrilisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
-            PersonelHesaplariniPasiflestir(personel.Id);
+            await PersonelHesaplariniPasiflestirAsync(personel.Id, cancellationToken);
         }
 
-        personelRepository.Kaydet();
+        await personelRepository.KaydetAsync(cancellationToken);
         return Sonuc<PersonelCevap>.Basarili(PersonelCevabaDonustur(personel));
     }
 
-    public Sonuc<PersonelCevap> PersoneliIstenAyrildiYap(Guid id)
+    public async Task<Sonuc<PersonelCevap>> PersoneliIstenAyrildiYapAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var personel = personelRepository.Getir(id);
+        var personel = await personelRepository.GetirAsync(id, cancellationToken);
         if (personel is null)
         {
             return Sonuc<PersonelCevap>.Basarisiz("Personel bulunamadı.");
@@ -195,25 +197,31 @@ public sealed class KimlikPersonelServisi(
         personel.IstenAyrilisTarihi = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // Personel işten ayrıldığında bağlı kullanıcı hesabı da giriş yapamasın diye pasifleştirilir.
-        PersonelHesaplariniPasiflestir(personel.Id);
+        await PersonelHesaplariniPasiflestirAsync(personel.Id, cancellationToken);
 
-        personelRepository.Kaydet();
+        await personelRepository.KaydetAsync(cancellationToken);
         return Sonuc<PersonelCevap>.Basarili(PersonelCevabaDonustur(personel));
     }
 
-    public IReadOnlyCollection<KullaniciCevap> KullanicilariListele()
+    public async Task<IReadOnlyCollection<KullaniciCevap>> KullanicilariListeleAsync(CancellationToken cancellationToken = default)
     {
-        return userManager.Users
+        var kullanicilar = await userManager.Users
             .AsNoTracking()
             .OrderBy(kullanici => kullanici.UserName)
-            .AsEnumerable()
-            .Select(KullaniciCevabaDonustur)
-            .ToList();
+            .ToListAsync(cancellationToken);
+
+        var cevaplar = new List<KullaniciCevap>();
+        foreach (var kullanici in kullanicilar)
+        {
+            cevaplar.Add(await KullaniciCevabaDonusturAsync(kullanici));
+        }
+
+        return cevaplar;
     }
 
-    public Sonuc<KullaniciCevap> KullaniciOlustur(KullaniciOlusturIstek istek)
+    public async Task<Sonuc<KullaniciCevap>> KullaniciOlusturAsync(KullaniciOlusturIstek istek, CancellationToken cancellationToken = default)
     {
-        var personel = personelRepository.Getir(istek.PersonelId);
+        var personel = await personelRepository.GetirAsync(istek.PersonelId, cancellationToken);
         if (personel is null)
         {
             return Sonuc<KullaniciCevap>.Basarisiz("Kullanıcı oluşturmak için personel kaydı zorunludur.");
@@ -226,17 +234,17 @@ public sealed class KimlikPersonelServisi(
 
         var kullaniciAdi = istek.KullaniciAdi.Trim();
         var rolAdi = istek.Rol.ToString();
-        if (!roleManager.RoleExistsAsync(rolAdi).GetAwaiter().GetResult())
+        if (!await roleManager.RoleExistsAsync(rolAdi))
         {
             return Sonuc<KullaniciCevap>.Basarisiz("Geçerli bir kullanıcı rolü seçilmelidir.");
         }
 
-        if (userManager.FindByNameAsync(kullaniciAdi).GetAwaiter().GetResult() is not null)
+        if (await userManager.FindByNameAsync(kullaniciAdi) is not null)
         {
             return Sonuc<KullaniciCevap>.Basarisiz("Bu kullanıcı adı zaten kullanılıyor.");
         }
 
-        if (userManager.Users.Any(kullanici => kullanici.PersonelId == istek.PersonelId))
+        if (await userManager.Users.AnyAsync(kullanici => kullanici.PersonelId == istek.PersonelId, cancellationToken))
         {
             return Sonuc<KullaniciCevap>.Basarisiz("Bu personel için kullanıcı hesabı zaten oluşturulmuş.");
         }
@@ -248,45 +256,43 @@ public sealed class KimlikPersonelServisi(
             PersonelId = istek.PersonelId
         };
 
-        var kullaniciSonucu = userManager.CreateAsync(kullanici, istek.Sifre).GetAwaiter().GetResult();
+        var kullaniciSonucu = await userManager.CreateAsync(kullanici, istek.Sifre);
         if (!kullaniciSonucu.Succeeded)
         {
             return Sonuc<KullaniciCevap>.Basarisiz(IdentityHatalariniBirlestir(kullaniciSonucu));
         }
 
-        var rolSonucu = userManager.AddToRoleAsync(kullanici, rolAdi).GetAwaiter().GetResult();
+        var rolSonucu = await userManager.AddToRoleAsync(kullanici, rolAdi);
         if (!rolSonucu.Succeeded)
         {
             return Sonuc<KullaniciCevap>.Basarisiz(IdentityHatalariniBirlestir(rolSonucu));
         }
 
-        return Sonuc<KullaniciCevap>.Basarili(KullaniciCevabaDonustur(kullanici));
+        return Sonuc<KullaniciCevap>.Basarili(await KullaniciCevabaDonusturAsync(kullanici));
     }
 
-    public Sonuc<GirisCevap> GirisYap(GirisIstek istek)
+    public async Task<Sonuc<GirisCevap>> GirisYapAsync(GirisIstek istek, CancellationToken cancellationToken = default)
     {
         var kullaniciAdi = istek.KullaniciAdi.Trim();
-        var kullanici = userManager.FindByNameAsync(kullaniciAdi).GetAwaiter().GetResult();
+        var kullanici = await userManager.FindByNameAsync(kullaniciAdi);
         if (kullanici is null || !kullanici.AktifMi)
         {
             return Sonuc<GirisCevap>.Basarisiz("Kullanıcı adı veya şifre hatalı.");
         }
 
-        var sifreSonucu = signInManager.CheckPasswordSignInAsync(kullanici, istek.Sifre, lockoutOnFailure: true)
-            .GetAwaiter()
-            .GetResult();
+        var sifreSonucu = await signInManager.CheckPasswordSignInAsync(kullanici, istek.Sifre, lockoutOnFailure: true);
         if (!sifreSonucu.Succeeded)
         {
             return Sonuc<GirisCevap>.Basarisiz("Kullanıcı adı veya şifre hatalı.");
         }
 
-        var personel = personelRepository.Getir(kullanici.PersonelId);
+        var personel = await personelRepository.GetirAsync(kullanici.PersonelId, cancellationToken);
         if (personel is null || personel.Durum == PersonelDurumu.IstenAyrildi || !personel.AktifMi)
         {
             return Sonuc<GirisCevap>.Basarisiz("Personel kaydı aktif olmadığı için giriş yapılamaz.");
         }
 
-        var rol = userManager.GetRolesAsync(kullanici).GetAwaiter().GetResult().FirstOrDefault()
+        var rol = (await userManager.GetRolesAsync(kullanici)).FirstOrDefault()
             ?? KullaniciRolu.PersonelKullanicisi.ToString();
         var tokenBilgisi = tokenServisi.TokenOlustur(kullanici, rol);
         var cevap = new GirisCevap(
@@ -316,19 +322,22 @@ public sealed class KimlikPersonelServisi(
             personel.IstenAyrilisTarihi,
             personel.AktifMi);
 
-    private void PersonelHesaplariniPasiflestir(Guid personelId)
+    private async Task PersonelHesaplariniPasiflestirAsync(Guid personelId, CancellationToken cancellationToken = default)
     {
-        var kullanicilar = userManager.Users.Where(kullanici => kullanici.PersonelId == personelId).ToList();
+        var kullanicilar = await userManager.Users
+            .Where(kullanici => kullanici.PersonelId == personelId)
+            .ToListAsync(cancellationToken);
+
         foreach (var kullanici in kullanicilar)
         {
             kullanici.AktifMi = false;
-            userManager.UpdateAsync(kullanici).GetAwaiter().GetResult();
+            await userManager.UpdateAsync(kullanici);
         }
     }
 
-    private KullaniciCevap KullaniciCevabaDonustur(UygulamaKullanici kullanici)
+    private async Task<KullaniciCevap> KullaniciCevabaDonusturAsync(UygulamaKullanici kullanici)
     {
-        var rol = userManager.GetRolesAsync(kullanici).GetAwaiter().GetResult().FirstOrDefault()
+        var rol = (await userManager.GetRolesAsync(kullanici)).FirstOrDefault()
             ?? KullaniciRolu.PersonelKullanicisi.ToString();
 
         return new(

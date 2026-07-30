@@ -310,6 +310,62 @@ Neden yapıldı:
 Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+## 2026-07-30
+
+### Faz 3 - Envanter temeli başlatıldı
+
+Ne yapıldı:
+
+- `EnvanterServisi.Api` projesine PostgreSQL ve EF Core altyapısı eklendi.
+- `EnvanterDbContext` oluşturuldu ve varsayılan schema `envanter` olarak belirlendi.
+- Envanter domain modeli oluşturuldu:
+  - `Kategori`
+  - `Lokasyon`
+  - `Cihaz`
+  - `SarfMalzeme`
+  - `StokHareketi`
+  - `KritikStokKurali`
+- Cihaz durum modeli eklendi:
+  - `DepodaHazir`
+  - `Zimmetli`
+  - `Incelemede`
+  - `Bakimda`
+  - `Arizali`
+  - `Kayip`
+  - `Calindi`
+  - `HurdaIskartaDepoda`
+  - `EldenCikarildi`
+- `SeriNumarasi` veya `AssetTag` alanlarından en az birinin dolu olması hem servis katmanında hem de veritabanı check constraint ile güvence altına alındı.
+- Generic repository ve özel repository yapısı EnvanterServisi içinde de uygulandı.
+- `IEnvanterServisi` ve `EnvanterYonetimServisi` eklendi.
+- Controller endpointleri eklendi:
+  - `GET/POST/PUT /api/kategoriler`
+  - `GET/POST/PUT /api/lokasyonlar`
+  - `GET/POST/PUT /api/cihazlar`
+  - `GET/POST/PUT /api/sarf-malzemeler`
+  - `GET /api/stok/ozet`
+  - `GET/POST/PUT /api/stok/kritik-kurallar`
+- Envanter endpointleri JWT doğrulama ve `AdminVeyaITPersoneli` policy ile korundu.
+- Demo kategori, lokasyon, cihaz, sarf malzeme ve kritik stok kuralı seed verileri eklendi.
+- İlk migration oluşturuldu: `IlkEnvanterSemasi`.
+
+Neden yapıldı:
+
+- Faz 3 ile projenin ana iş alanı olan cihaz ve stok yönetimi görünür hale getirildi.
+- Seri numaralı cihazlar ve sarf malzemeler ayrı takip edildiği için veri modeli iki varlık tipini farklı kurallarla ele alacak şekilde tasarlandı.
+- Kullanılabilir stok, seri numaralı cihazlarda cihaz durumundan; sarf malzemelerde `EldekiMiktar` alanından hesaplanır.
+- Kritik stok bildirimi ileride SignalR fazında yalnızca kritik stok altına düşme senaryosunda üretileceği için kritik stok raporu ve kural altyapısı erken eklendi.
+
+Doğrulama:
+
+- `dotnet restore ITEnvanterTakipSistemi.sln` başarıyla tamamlandı.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+- `IlkEnvanterSemasi` migration'ı PostgreSQL veritabanına başarıyla uygulandı.
+- Tokensız `GET /api/kategoriler` isteği `401 Unauthorized` döndü.
+- Admin token ile `GET /api/kategoriler` isteği demo kategorileri döndürdü.
+- Admin token ile `GET /api/stok/ozet` isteği stok özetini ve kritik stok listesini döndürdü.
+- `SeriNumarasi` ve `AssetTag` boş cihaz oluşturma isteği `400 Bad Request` döndü.
 - PostgreSQL geliştirme volume'ü temiz sıfırlandı ve `IlkIdentityKimlikPersonelSemasi` migration'ı başarıyla uygulandı.
 - API açılışında demo departman, personel, rol ve kullanıcı seed kayıtları Identity üzerinden oluşturuldu.
 - `admin / Admin123!` ile login sonucu JWT token üretildi.
@@ -318,3 +374,46 @@ Doğrulama:
 - `PersonelKullanicisi` token ile `GET /api/kullanicilar` isteği `403 Forbidden` döndü.
 - Geçici bir kullanıcıyla işten ayrılma senaryosu denendi; personel işten ayrıldıktan sonra bağlı kullanıcı login yapamadı.
 - Test verileri temizlendi ve veritabanı tekrar yalnızca demo seed kayıtları kalacak şekilde sıfırlandı.
+
+### Generic repository ve özel repository birlikte uygulandı
+
+Ne yapıldı:
+
+- Ortak CRUD işlemleri için `IGenericRepository<TEntity>` arayüzü eklendi.
+- EF Core tabanlı ortak implementasyon için `EfGenericRepository<TEntity>` sınıfı eklendi.
+- `IDepartmanRepository`, `IGenericRepository<Departman>` arayüzünden miras alacak şekilde düzenlendi.
+- `IPersonelRepository`, `IGenericRepository<Personel>` arayüzünden miras alacak şekilde düzenlendi.
+- `EfDepartmanRepository` ve `EfPersonelRepository`, `EfGenericRepository<T>` sınıfından türetildi.
+- Departman ve personel repositorylerinde yalnızca domain'e özel sorgular bırakıldı.
+- Dependency injection içinde açık generic repository kaydı eklendi.
+
+Neden yapıldı:
+
+- Basit CRUD metotlarının her repository'de tekrar yazılmasını engellemek istiyoruz.
+- Departman ve personel gibi entity'lerde ortak işlemler generic repository üzerinden gelirken, `AdKullaniliyorMuAsync` veya `EmailKullaniliyorMuAsync` gibi özel sorgular ilgili repository içinde kalmalıdır.
+- Faz 3'te eklenecek kategori, lokasyon, cihaz ve sarf malzeme yapıları için tekrar kullanılabilir bir veri erişim temeli oluşturuldu.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### KimlikVePersonelServisi asenkron veri erişimine taşındı
+
+Ne yapıldı:
+
+- `IDepartmanRepository` ve `IPersonelRepository` metotları `Task` dönecek şekilde asenkron hale getirildi.
+- EF Core repository implementasyonlarında `ToListAsync`, `FirstOrDefaultAsync`, `AnyAsync` ve `SaveChangesAsync` kullanılmaya başlandı.
+- `IKimlikPersonelServisi` ve `KimlikPersonelServisi` metotları asenkron hale getirildi.
+- Controller action metotları `async Task<ActionResult<...>>` dönecek şekilde güncellendi.
+- ASP.NET Core Identity çağrılarındaki bloklayan `.GetAwaiter().GetResult()` kullanımları `await` ile değiştirildi.
+- Demo seed akışı `SeedAsync` ve `KullaniciOlusturAsync` olarak düzenlendi.
+
+Neden yapıldı:
+
+- Web API tarafında veritabanı ve Identity gibi I/O işlemlerinde thread bloklamamak gerekir.
+- Asenkron akış, özellikle eş zamanlı istek sayısı arttığında API'nin daha verimli çalışmasını sağlar.
+- Faz 3 ve Faz 4'e geçmeden önce temel kimlik/personel katmanının daha doğru bir backend pratiğine taşınması hedeflendi.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
