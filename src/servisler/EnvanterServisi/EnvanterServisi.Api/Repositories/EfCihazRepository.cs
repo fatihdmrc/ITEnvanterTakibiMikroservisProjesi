@@ -71,7 +71,7 @@ public sealed class EfCihazRepository(EnvanterDbContext dbContext)
     {
         return await DbSet.CountAsync(cihaz =>
             cihaz.AktifMi &&
-            cihaz.Durum == CihazDurumu.DepodaHazir &&
+            cihaz.Durum == CihazDurumu.Kullanilabilir &&
             (!kategoriId.HasValue || cihaz.KategoriId == kategoriId.Value) &&
             (!lokasyonId.HasValue || cihaz.LokasyonId == lokasyonId.Value) &&
             (string.IsNullOrWhiteSpace(model) || cihaz.Model == model),

@@ -1,0 +1,610 @@
+@model EnvanterPanelModel
+@{
+    ViewData["Title"] = "Envanter";
+    var seriKategoriler = Model.Kategoriler.Where(kategori => kategori.AktifMi && kategori.VarlikTuru == VarlikTuruModel.SeriNumarali).ToList();
+    var sarfKategoriler = Model.Kategoriler.Where(kategori => kategori.AktifMi && kategori.VarlikTuru == VarlikTuruModel.SarfMalzeme).ToList();
+    var aktifLokasyonlar = Model.Lokasyonlar.Where(lokasyon => lokasyon.AktifMi).ToList();
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Envanter Yönetimi</h1>
+            <p class="text-muted mb-0">Kategori, lokasyon, cihaz, sarf malzeme ve stok durumunu yönet.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="http://localhost:5001/swagger" target="_blank" rel="noopener">Swagger</a>
+            <a class="btn btn-outline-secondary" href="http://localhost:5001/saglik" target="_blank" rel="noopener">Servis Durumu</a>
+        </div>
+    </div>
+
+    @if (!Model.OturumVarMi)
+    {
+        <div class="alert alert-warning" role="alert">Envanter işlemleri için önce kontrol panelinden Admin veya ITPersoneli rolüyle giriş yap.</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
+    {
+        <div class="alert alert-success" role="alert">@Model.BasariMesaji</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+    {
+        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Toplam Varlık</div>
+                <div class="fs-4 fw-semibold">@Model.StokOzet.ToplamVarlik</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Kullanılabilir Cihaz</div>
+                <div class="fs-4 fw-semibold">@Model.StokOzet.KullanilabilirCihazStoku</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Sarf Miktarı</div>
+                <div class="fs-4 fw-semibold">@Model.StokOzet.SarfMalzemeToplamMiktari</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded-2 p-3 h-100">
+                <div class="text-muted small">Kritik Stok</div>
+                <div class="fs-4 fw-semibold">@Model.StokOzet.KritikStoklar.Count</div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="envanterSekmeleri" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="stok-tab" data-bs-toggle="tab" data-bs-target="#stok" type="button" role="tab">Stok Özeti</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="kategori-tab" data-bs-toggle="tab" data-bs-target="#kategori" type="button" role="tab">Kategoriler</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="lokasyon-tab" data-bs-toggle="tab" data-bs-target="#lokasyon" type="button" role="tab">Lokasyonlar</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cihaz-tab" data-bs-toggle="tab" data-bs-target="#cihaz" type="button" role="tab">Cihazlar</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="sarf-tab" data-bs-toggle="tab" data-bs-target="#sarf" type="button" role="tab">Sarf Malzemeler</button>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom-2 p-3">
+        <div class="tab-pane fade show active" id="stok" role="tabpanel" aria-labelledby="stok-tab">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tür</th>
+                            <th>Kategori</th>
+                            <th>Lokasyon</th>
+                            <th>Model</th>
+                            <th>Mevcut</th>
+                            <th>Kritik Seviye</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kritik in Model.StokOzet.KritikStoklar)
+                        {
+                            <tr>
+                                <td>@kritik.VarlikTuru</td>
+                                <td>@KategoriAdi(kritik.KategoriId)</td>
+                                <td>@LokasyonAdi(kritik.LokasyonId)</td>
+                                <td>@(kritik.Model ?? "-")</td>
+                                <td>@kritik.MevcutMiktar</td>
+                                <td>@kritik.KritikStokSeviyesi</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="kategori" role="tabpanel" aria-labelledby="kategori-tab">
+            <div class="row g-4">
+                <div class="col-xl-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Güncelle</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var kategori in Model.Kategoriler)
+                                {
+                                    <tr>
+                                        <td>
+                                            <form asp-action="KategoriGuncelle" method="post" class="row g-2 align-items-end">
+                                                <input type="hidden" name="Id" value="@kategori.Id" />
+                                                <div class="col-md-3">
+                                                    <label class="form-label small">Ad</label>
+                                                    <input name="Ad" class="form-control form-control-sm" value="@kategori.Ad" />
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small">Üst Kategori</label>
+                                                    <select name="UstKategoriId" class="form-select form-select-sm">
+                                                        <option value="">Yok</option>
+                                                        @foreach (var ust in Model.Kategoriler.Where(ust => ust.Id != kategori.Id))
+                                                        {
+                                                            <option value="@ust.Id" selected="@(ust.Id == kategori.UstKategoriId ? "selected" : null)">@ust.Ad</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">Tür</label>
+                                                    <select name="VarlikTuru" class="form-select form-select-sm">
+                                                        @foreach (var tur in Enum.GetValues<VarlikTuruModel>())
+                                                        {
+                                                            <option value="@tur" selected="@(tur == kategori.VarlikTuru ? "selected" : null)">@tur</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">Kritik</label>
+                                                    <input name="KritikStokSeviyesi" type="number" min="0" class="form-control form-control-sm" value="@kategori.KritikStokSeviyesi" />
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <input type="hidden" name="AktifMi" value="false" />
+                                                    <div class="form-check">
+                                                        <input name="AktifMi" value="true" class="form-check-input" type="checkbox" checked="@kategori.AktifMi" />
+                                                        <label class="form-check-label small">Aktif</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-1 d-grid">
+                                                    <button class="btn btn-sm btn-primary" type="submit">Kaydet</button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <form asp-action="KategoriOlustur" method="post" class="border rounded-2 p-3">
+                        <h2 class="h6">Kategori oluştur</h2>
+                        <div class="mb-3">
+                            <label class="form-label">Ad</label>
+                            <input name="Ad" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Üst kategori</label>
+                            <select name="UstKategoriId" class="form-select">
+                                <option value="">Yok</option>
+                                @foreach (var kategori in Model.Kategoriler)
+                                {
+                                    <option value="@kategori.Id">@kategori.Ad</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-sm-6">
+                                <label class="form-label">Tür</label>
+                                <select name="VarlikTuru" class="form-select">
+                                    @foreach (var tur in Enum.GetValues<VarlikTuruModel>())
+                                    {
+                                        <option value="@tur">@tur</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Kritik stok</label>
+                                <input name="KritikStokSeviyesi" type="number" min="0" class="form-control" />
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3" type="submit">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="lokasyon" role="tabpanel" aria-labelledby="lokasyon-tab">
+            <div class="row g-4">
+                <div class="col-xl-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Güncelle</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var lokasyon in Model.Lokasyonlar)
+                                {
+                                    <tr>
+                                        <td>
+                                            <form asp-action="LokasyonGuncelle" method="post" class="row g-2 align-items-end">
+                                                <input type="hidden" name="Id" value="@lokasyon.Id" />
+                                                <div class="col-md-5">
+                                                    <label class="form-label small">Ad</label>
+                                                    <input name="Ad" class="form-control form-control-sm" value="@lokasyon.Ad" />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small">Üst Lokasyon</label>
+                                                    <select name="UstLokasyonId" class="form-select form-select-sm">
+                                                        <option value="">Yok</option>
+                                                        @foreach (var ust in Model.Lokasyonlar.Where(ust => ust.Id != lokasyon.Id))
+                                                        {
+                                                            <option value="@ust.Id" selected="@(ust.Id == lokasyon.UstLokasyonId ? "selected" : null)">@ust.Ad</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <input type="hidden" name="AktifMi" value="false" />
+                                                    <div class="form-check">
+                                                        <input name="AktifMi" value="true" class="form-check-input" type="checkbox" checked="@lokasyon.AktifMi" />
+                                                        <label class="form-check-label small">Aktif</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 d-grid">
+                                                    <button class="btn btn-sm btn-primary" type="submit">Kaydet</button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <form asp-action="LokasyonOlustur" method="post" class="border rounded-2 p-3">
+                        <h2 class="h6">Lokasyon oluştur</h2>
+                        <div class="mb-3">
+                            <label class="form-label">Ad</label>
+                            <input name="Ad" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Üst lokasyon</label>
+                            <select name="UstLokasyonId" class="form-select">
+                                <option value="">Yok</option>
+                                @foreach (var lokasyon in Model.Lokasyonlar)
+                                {
+                                    <option value="@lokasyon.Id">@lokasyon.Ad</option>
+                                }
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" type="submit">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="cihaz" role="tabpanel" aria-labelledby="cihaz-tab">
+            <div class="row g-4">
+                <div class="col-xl-8">
+                    @foreach (var cihaz in Model.Cihazlar)
+                    {
+                        <form asp-action="CihazGuncelle" method="post" class="border rounded-2 p-3 mb-3">
+                            <input type="hidden" name="Id" value="@cihaz.Id" />
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Ad</label>
+                                    <input name="Ad" class="form-control form-control-sm" value="@cihaz.Ad" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Marka</label>
+                                    <input name="Marka" class="form-control form-control-sm" value="@cihaz.Marka" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Model</label>
+                                    <input name="Model" class="form-control form-control-sm" value="@cihaz.Model" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Seri No</label>
+                                    <input name="SeriNumarasi" class="form-control form-control-sm" value="@cihaz.SeriNumarasi" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Asset Tag</label>
+                                    <input name="AssetTag" class="form-control form-control-sm" value="@cihaz.AssetTag" />
+                                </div>
+                                <div class="col-md-1 d-grid">
+                                    <button class="btn btn-sm btn-primary" type="submit">Kaydet</button>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Kategori</label>
+                                    <select name="KategoriId" class="form-select form-select-sm">
+                                        @foreach (var kategori in seriKategoriler)
+                                        {
+                                            <option value="@kategori.Id" selected="@(kategori.Id == cihaz.KategoriId ? "selected" : null)">@kategori.Ad</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Lokasyon</label>
+                                    <select name="LokasyonId" class="form-select form-select-sm">
+                                        @foreach (var lokasyon in aktifLokasyonlar)
+                                        {
+                                            <option value="@lokasyon.Id" selected="@(lokasyon.Id == cihaz.LokasyonId ? "selected" : null)">@lokasyon.Ad</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Durum</label>
+                                    <select name="Durum" class="form-select form-select-sm">
+                                        @foreach (var durum in Enum.GetValues<CihazDurumuModel>())
+                                        {
+                                            <option value="@durum" selected="@(durum == cihaz.Durum ? "selected" : null)">@durum</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Giriş</label>
+                                    <input name="EnvantereGirisTarihi" type="date" class="form-control form-control-sm" value="@cihaz.EnvantereGirisTarihi.ToString("yyyy-MM-dd")" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Çıkış</label>
+                                    <input name="EnvanterdenCikisTarihi" type="date" class="form-control form-control-sm" value="@(cihaz.EnvanterdenCikisTarihi?.ToString("yyyy-MM-dd"))" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Elden Çıkarma</label>
+                                    <select name="EldenCikarmaTipi" class="form-select form-select-sm">
+                                        @foreach (var tip in Enum.GetValues<EldenCikarmaTipiModel>())
+                                        {
+                                            <option value="@tip" selected="@(tip == cihaz.EldenCikarmaTipi ? "selected" : null)">@tip</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Açıklama</label>
+                                    <input name="EldenCikarmaAciklamasi" class="form-control form-control-sm" value="@cihaz.EldenCikarmaAciklamasi" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Satılan kişi/kurum</label>
+                                    <input name="SatilanKisiVeyaKurum" class="form-control form-control-sm" value="@cihaz.SatilanKisiVeyaKurum" />
+                                </div>
+                                <div class="col-md-1">
+                                    <input type="hidden" name="AktifMi" value="false" />
+                                    <div class="form-check">
+                                        <input name="AktifMi" value="true" class="form-check-input" type="checkbox" checked="@cihaz.AktifMi" />
+                                        <label class="form-check-label small">Aktif</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="hidden" name="ToplamVarligaDahilMi" value="false" />
+                                    <div class="form-check">
+                                        <input name="ToplamVarligaDahilMi" value="true" class="form-check-input" type="checkbox" checked="@cihaz.ToplamVarligaDahilMi" />
+                                        <label class="form-check-label small">Toplamda</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        <form asp-action="CihazStokHareketi" method="post" class="border rounded-2 p-3 mb-3 bg-light">
+                            <input type="hidden" name="Id" value="@cihaz.Id" />
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Cihaz stok hareketi</label>
+                                    <select name="Neden" class="form-select form-select-sm">
+                                        @foreach (var neden in Enum.GetValues<StokHareketNedeniModel>().Where(neden => neden != StokHareketNedeniModel.EnvantereGiris))
+                                        {
+                                            <option value="@neden">@neden</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Elden çıkarma</label>
+                                    <select name="EldenCikarmaTipi" class="form-select form-select-sm">
+                                        @foreach (var tip in Enum.GetValues<EldenCikarmaTipiModel>())
+                                        {
+                                            <option value="@tip" selected="@(tip == EldenCikarmaTipiModel.Diger ? "selected" : null)">@tip</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Açıklama</label>
+                                    <input name="Aciklama" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Satış/kurum</label>
+                                    <input name="SatilanKisiVeyaKurum" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2 d-grid">
+                                    <button class="btn btn-sm btn-outline-primary" type="submit">Hareket İşle</button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+                </div>
+                <div class="col-xl-4">
+                    <form asp-action="CihazOlustur" method="post" class="border rounded-2 p-3">
+                        <h2 class="h6">Cihaz oluştur</h2>
+                        <div class="row g-2">
+                            <div class="col-sm-6">
+                                <label class="form-label">Ad</label>
+                                <input name="Ad" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Marka</label>
+                                <input name="Marka" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Model</label>
+                                <input name="Model" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Seri No</label>
+                                <input name="SeriNumarasi" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Asset Tag</label>
+                                <input name="AssetTag" class="form-control" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Giriş</label>
+                                <input name="EnvantereGirisTarihi" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Kategori</label>
+                                <select name="KategoriId" class="form-select">
+                                    @foreach (var kategori in seriKategoriler)
+                                    {
+                                        <option value="@kategori.Id">@kategori.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Lokasyon</label>
+                                <select name="LokasyonId" class="form-select">
+                                    @foreach (var lokasyon in aktifLokasyonlar)
+                                    {
+                                        <option value="@lokasyon.Id">@lokasyon.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3" type="submit">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="sarf" role="tabpanel" aria-labelledby="sarf-tab">
+            <div class="row g-4">
+                <div class="col-xl-8">
+                    @foreach (var sarf in Model.SarfMalzemeler)
+                    {
+                        <form asp-action="SarfMalzemeGuncelle" method="post" class="border rounded-2 p-3 mb-3">
+                            <input type="hidden" name="Id" value="@sarf.Id" />
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Ad</label>
+                                    <input name="Ad" class="form-control form-control-sm" value="@sarf.Ad" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Kategori</label>
+                                    <select name="KategoriId" class="form-select form-select-sm">
+                                        @foreach (var kategori in sarfKategoriler)
+                                        {
+                                            <option value="@kategori.Id" selected="@(kategori.Id == sarf.KategoriId ? "selected" : null)">@kategori.Ad</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Lokasyon</label>
+                                    <select name="LokasyonId" class="form-select form-select-sm">
+                                        @foreach (var lokasyon in aktifLokasyonlar)
+                                        {
+                                            <option value="@lokasyon.Id" selected="@(lokasyon.Id == sarf.LokasyonId ? "selected" : null)">@lokasyon.Ad</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small">Miktar</label>
+                                    <input name="EldekiMiktar" type="number" min="0" class="form-control form-control-sm" value="@sarf.EldekiMiktar" />
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small">Kritik</label>
+                                    <input name="KritikStokSeviyesi" type="number" min="0" class="form-control form-control-sm" value="@sarf.KritikStokSeviyesi" />
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small">Birim</label>
+                                    <input name="Birim" class="form-control form-control-sm" value="@sarf.Birim" />
+                                </div>
+                                <div class="col-md-1 d-grid">
+                                    <input type="hidden" name="AktifMi" value="false" />
+                                    <input name="AktifMi" value="true" class="form-check-input align-self-center" type="checkbox" checked="@sarf.AktifMi" />
+                                    <button class="btn btn-sm btn-primary mt-1" type="submit">Kaydet</button>
+                                </div>
+                            </div>
+                        </form>
+                        <form asp-action="SarfMalzemeStokHareketi" method="post" class="border rounded-2 p-3 mb-3 bg-light">
+                            <input type="hidden" name="Id" value="@sarf.Id" />
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-2">
+                                    <label class="form-label small">Hareket</label>
+                                    <select name="HareketTipi" class="form-select form-select-sm">
+                                        @foreach (var tip in Enum.GetValues<StokHareketTipiModel>())
+                                        {
+                                            <option value="@tip" selected="@(tip == StokHareketTipiModel.Cikis ? "selected" : null)">@tip</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Neden</label>
+                                    <select name="Neden" class="form-select form-select-sm">
+                                        @foreach (var neden in Enum.GetValues<StokHareketNedeniModel>())
+                                        {
+                                            <option value="@neden" selected="@(neden == StokHareketNedeniModel.ManuelStokCikisi ? "selected" : null)">@neden</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Miktar</label>
+                                    <input name="Miktar" type="number" min="1" class="form-control form-control-sm" value="1" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Açıklama</label>
+                                    <input name="Aciklama" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2 d-grid">
+                                    <button class="btn btn-sm btn-outline-primary" type="submit">Hareket İşle</button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+                </div>
+                <div class="col-xl-4">
+                    <form asp-action="SarfMalzemeOlustur" method="post" class="border rounded-2 p-3">
+                        <h2 class="h6">Sarf malzeme oluştur</h2>
+                        <div class="mb-3">
+                            <label class="form-label">Ad</label>
+                            <input name="Ad" class="form-control" />
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-sm-6">
+                                <label class="form-label">Kategori</label>
+                                <select name="KategoriId" class="form-select">
+                                    @foreach (var kategori in sarfKategoriler)
+                                    {
+                                        <option value="@kategori.Id">@kategori.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">Lokasyon</label>
+                                <select name="LokasyonId" class="form-select">
+                                    @foreach (var lokasyon in aktifLokasyonlar)
+                                    {
+                                        <option value="@lokasyon.Id">@lokasyon.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">Miktar</label>
+                                <input name="EldekiMiktar" type="number" min="0" class="form-control" value="0" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">Kritik</label>
+                                <input name="KritikStokSeviyesi" type="number" min="0" class="form-control" value="0" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">Birim</label>
+                                <input name="Birim" class="form-control" value="Adet" />
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3" type="submit">Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string KategoriAdi(Guid id)
+        => Model.Kategoriler.FirstOrDefault(kategori => kategori.Id == id)?.Ad ?? "-";
+
+    private string LokasyonAdi(Guid id)
+        => Model.Lokasyonlar.FirstOrDefault(lokasyon => lokasyon.Id == id)?.Ad ?? "-";
+}

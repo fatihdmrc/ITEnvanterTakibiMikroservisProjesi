@@ -258,9 +258,9 @@ public sealed class EnvanterYonetimServisi(
         cihaz.EldenCikarmaAciklamasi = BosIseNull(istek.EldenCikarmaAciklamasi);
         cihaz.SatilanKisiVeyaKurum = BosIseNull(istek.SatilanKisiVeyaKurum);
         cihaz.AktifMi = istek.AktifMi;
-        cihaz.ToplamVarligaDahilMi = istek.Durum == CihazDurumu.EldenCikarildi ? false : istek.ToplamVarligaDahilMi;
+        cihaz.ToplamVarligaDahilMi = istek.Durum == CihazDurumu.KullanimDisi ? false : istek.ToplamVarligaDahilMi;
 
-        if (cihaz.Durum == CihazDurumu.EldenCikarildi)
+        if (cihaz.Durum == CihazDurumu.KullanimDisi)
         {
             cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
         }
@@ -542,7 +542,7 @@ public sealed class EnvanterYonetimServisi(
         switch (istek.Neden)
         {
             case StokHareketNedeni.Ariza:
-                cihaz.Durum = CihazDurumu.Arizali;
+                cihaz.Durum = CihazDurumu.Bakimda;
                 cihaz.ToplamVarligaDahilMi = true;
                 return Sonuc<bool>.Basarili(true);
 
@@ -561,13 +561,13 @@ public sealed class EnvanterYonetimServisi(
             case StokHareketNedeni.HurdaIskarta:
                 if (istek.EldenCikarmaTipi == EldenCikarmaTipi.Yok)
                 {
-                    cihaz.Durum = CihazDurumu.HurdaIskartaDepoda;
+                    cihaz.Durum = CihazDurumu.HurdaIskarta;
                     cihaz.ToplamVarligaDahilMi = true;
                     cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
                     return Sonuc<bool>.Basarili(true);
                 }
 
-                cihaz.Durum = CihazDurumu.EldenCikarildi;
+                cihaz.Durum = CihazDurumu.KullanimDisi;
                 cihaz.ToplamVarligaDahilMi = false;
                 cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi;
@@ -578,7 +578,7 @@ public sealed class EnvanterYonetimServisi(
             case StokHareketNedeni.ManuelStokCikisi:
             case StokHareketNedeni.KullanimOmruBitti:
             case StokHareketNedeni.FizikselSayimDuzeltmesi:
-                cihaz.Durum = CihazDurumu.EldenCikarildi;
+                cihaz.Durum = CihazDurumu.KullanimDisi;
                 cihaz.ToplamVarligaDahilMi = false;
                 cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi == EldenCikarmaTipi.Yok

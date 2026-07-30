@@ -35,7 +35,7 @@ public static class DemoVeriSeeder
                 Model = "Latitude 5440",
                 KategoriId = laptop.Id,
                 LokasyonId = depo.Id,
-                Durum = CihazDurumu.DepodaHazir
+                Durum = CihazDurumu.Kullanilabilir
             },
             new Cihaz
             {
@@ -46,7 +46,7 @@ public static class DemoVeriSeeder
                 Model = "P2422H",
                 KategoriId = monitor.Id,
                 LokasyonId = depo.Id,
-                Durum = CihazDurumu.DepodaHazir
+                Durum = CihazDurumu.Kullanilabilir
             });
 
         dbContext.SarfMalzemeler.Add(new SarfMalzeme

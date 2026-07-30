@@ -11,7 +11,7 @@ public sealed class Cihaz : TemelEntity
     public string Model { get; set; } = string.Empty;
     public Guid KategoriId { get; set; }
     public Guid LokasyonId { get; set; }
-    public CihazDurumu Durum { get; set; } = CihazDurumu.DepodaHazir;
+    public CihazDurumu Durum { get; set; } = CihazDurumu.Kullanilabilir;
     public DateOnly EnvantereGirisTarihi { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
     public DateOnly? EnvanterdenCikisTarihi { get; set; }
     public EldenCikarmaTipi EldenCikarmaTipi { get; set; } = EldenCikarmaTipi.Yok;

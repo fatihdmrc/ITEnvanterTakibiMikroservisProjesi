@@ -21,6 +21,13 @@ builder.Services.AddHttpClient<KimlikPersonelApiClient>(client =>
     // Client şu aşamada servise doğrudan gider; ApiGateway eklendiğinde yalnızca bu adres değişecektir.
     client.BaseAddress = new Uri(servisAdresi);
 });
+builder.Services.AddHttpClient<EnvanterApiClient>(client =>
+{
+    var servisAdresi = builder.Configuration["ServisAdresleri:EnvanterServisi"]
+        ?? throw new InvalidOperationException("Envanter servisi adresi tanımlı değil.");
+
+    client.BaseAddress = new Uri(servisAdresi);
+});
 
 var app = builder.Build();
 
