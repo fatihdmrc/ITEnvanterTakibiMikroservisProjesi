@@ -1,4 +1,4 @@
-# Geliştirme Günlüğü
+﻿# Geliştirme Günlüğü
 
 Bu doküman, kodlama aşamasında yapılan işleri ve bu işlerin neden yapıldığını takip etmek için tutulur.
 
@@ -417,3 +417,103 @@ Neden yapıldı:
 Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+## 2026-08-02
+
+### Faz 4 sınırı netleştirildi
+
+Ne yapıldı:
+
+- Geliştirme kapsamının şimdilik Faz 4'te bırakılmasına karar verildi.
+- Daha önce deneme olarak eklenen Faz 5 ve Faz 6 kapsamındaki `ZimmetServisi` ve `ApiGateway` dosyaları kaldırıldı.
+- Solution dosyasında yalnızca şu projelerin kalması doğrulandı:
+  - `EnvanterTakip.MvcClient`
+  - `KimlikVePersonelServisi.Api`
+  - `EnvanterServisi.Api`
+
+Neden yapıldı:
+
+- Projenin mevcut aşamada kimlik/personel, envanter ve MVC client temelini sağlamlaştırması hedeflendi.
+- Zimmet, ApiGateway ve event tabanlı konular daha sonra ayrı fazlarda ele alınacaktır.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### MVC client hata yönetimi ve AktifMi pasifleştirme akışı güncellendi
+
+Ne yapıldı:
+
+- MVC client tarafında ortak sonuç modelleri eklendi:
+  - `ApiIslemSonucu<T>`
+  - `ApiListeSonucu<T>`
+- Kimlik/personel ve envanter API client sınıflarında servis kapalı, yetkisiz, rol yetersiz ve beklenmeyen cevap durumları Türkçe hata mesajlarıyla yakalanacak hale getirildi.
+- Listeleme çağrılarında hata olduğunda sessizce boş liste göstermek yerine kullanıcıya açık hata mesajı gösterilmesi sağlandı.
+- Departman ve personel güncelleme işlemleri client tarafına eklendi.
+- Departman, personel, kategori, lokasyon, cihaz ve sarf malzeme için `AktifMi` alanı üzerinden pasifleştirme yaklaşımı client tarafında desteklendi.
+- Envanter ekranındaki checkbox gönderim sırası düzeltildi; işaretli checkbox değerlerinin yanlışlıkla `false` okunma riski giderildi.
+
+Neden yapıldı:
+
+- Kayıt silmek yerine pasifleştirme yapmak proje veri bütünlüğü açısından daha güvenli bulundu.
+- Client ekranlarında servis hatalarının boş veri gibi görünmesi kullanıcıyı yanıltıyordu.
+- `AktifMi` yaklaşımı backend'de bulunduğu için aynı davranışın MVC client üzerinden de yönetilebilir olması gerekiyordu.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Personel yönetimi ayrı düzenleme ve onay sayfalarına taşındı
+
+Ne yapıldı:
+
+- Kontrol panelindeki Personeller sekmesi tablo yapısına dönüştürüldü.
+- Personel tablosunda şu alanlar gösterildi:
+  - Ad Soyad
+  - Departman
+  - Sorumlu mu?
+  - Aktif mi?
+  - E-posta
+- Personel arama eklendi. Arama ad, soyad, ad soyad ve e-posta alanlarında çalışır.
+- Departmana göre personel filtreleme eklendi.
+- Satır içi personel düzenleme kaldırıldı.
+- `PersonelDuzenle` sayfası eklendi.
+- Personel düzenleme kaydedildikten sonra kullanıcı tekrar kontrol panelindeki Personeller sekmesine yönlendirilir.
+- `PersonelIstenAyrilOnay` sayfası eklendi.
+- İşten ayrıldı yap işlemi artık ayrı onay sayfasından çalışır.
+- Onay sonrası kullanıcı Personeller sekmesine döner ve `{Ad Soyad} {Departman} personeli işten ayrıldı yapıldı` formatında başarı mesajı görür.
+- `KimlikPersonelApiClient` içine tekil personel getirme desteği eklendi.
+
+Neden yapıldı:
+
+- Personel sayısı arttığında tek sayfa üzerinde satır içi düzenleme yönetimi zorlaşır.
+- Düzenleme ve işten ayrılma gibi kritik işlemler ayrı ekranlarda daha anlaşılır ve kontrollü yapılır.
+- İşten ayrılma işlemi bağlı kullanıcı hesabını da pasifleştirdiği için açık onay adımı gerektirir.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Cihaz durum enum verileri için migration eklendi
+
+Ne yapıldı:
+
+- Cihaz durum enum adları dokümandaki güncel modele uygun hale getirildikten sonra eski veritabanı kayıtlarında eski string değerler kaldığı görüldü.
+- Bu nedenle `CihazDurumuEskiDegerleriniGuncelle` migration'ı eklendi.
+- Migration şu dönüşümleri yapar:
+  - `DepodaHazir` -> `Kullanilabilir`
+  - `Arizali` -> `Bakimda`
+  - `HurdaIskartaDepoda` -> `HurdaIskarta`
+  - `EldenCikarildi` -> `KullanimDisi`
+- Migration mevcut PostgreSQL veritabanına uygulandı.
+
+Neden yapıldı:
+
+- EF Core string enum conversion kullanıldığı için veritabanındaki eski enum adları yeni enum değerlerine çevrilmeden cihaz listesi okunamıyordu.
+- Veri migration'ı ile hem mevcut veriler düzeltildi hem de aynı sorunun diğer geliştirme ortamlarında tekrar etmesi engellendi.
+
+Doğrulama:
+
+- `dotnet ef database update --project src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj --startup-project src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj` komutu başarıyla tamamlandı.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

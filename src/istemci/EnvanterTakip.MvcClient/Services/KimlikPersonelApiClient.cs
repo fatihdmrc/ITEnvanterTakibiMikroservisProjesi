@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -22,10 +23,8 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
         });
     }
 
-    public async Task<IReadOnlyCollection<DepartmanModel>> DepartmanlariListeleAsync(string? token)
-    {
-        return await GetListeAsync<DepartmanModel>("/api/departmanlar", token);
-    }
+    public Task<ApiListeSonucu<DepartmanModel>> DepartmanlariListeleAsync(string? token)
+        => GetListeAsync<DepartmanModel>("/api/departmanlar", token);
 
     public Task<ApiIslemSonucu<DepartmanModel>> DepartmanOlusturAsync(DepartmanOlusturFormModel form, string? token)
     {
@@ -36,10 +35,21 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
         }, token);
     }
 
-    public async Task<IReadOnlyCollection<PersonelModel>> PersonelleriListeleAsync(string? token)
+    public Task<ApiIslemSonucu<DepartmanModel>> DepartmanGuncelleAsync(DepartmanGuncelleFormModel form, string? token)
     {
-        return await GetListeAsync<PersonelModel>("/api/personeller", token);
+        return PutAsync<DepartmanModel>($"/api/departmanlar/{form.Id}", new
+        {
+            form.Ad,
+            form.SorumluPersonelId,
+            form.AktifMi
+        }, token);
     }
+
+    public Task<ApiListeSonucu<PersonelModel>> PersonelleriListeleAsync(string? token)
+        => GetListeAsync<PersonelModel>("/api/personeller", token);
+
+    public Task<ApiIslemSonucu<PersonelModel>> PersonelGetirAsync(Guid personelId, string? token)
+        => GetAsync<PersonelModel>($"/api/personeller/{personelId}", token);
 
     public Task<ApiIslemSonucu<PersonelModel>> PersonelOlusturAsync(PersonelOlusturFormModel form, string? token)
     {
@@ -55,15 +65,28 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
         }, token);
     }
 
+    public Task<ApiIslemSonucu<PersonelModel>> PersonelGuncelleAsync(PersonelGuncelleFormModel form, string? token)
+    {
+        return PutAsync<PersonelModel>($"/api/personeller/{form.Id}", new
+        {
+            form.Ad,
+            form.Soyad,
+            form.Email,
+            form.DepartmanId,
+            form.Unvan,
+            form.DepartmanSorumlusuMu,
+            form.Durum,
+            form.AktifMi
+        }, token);
+    }
+
     public Task<ApiIslemSonucu<PersonelModel>> PersoneliIstenAyrildiYapAsync(Guid personelId, string? token)
     {
         return PostAsync<PersonelModel>($"/api/personeller/{personelId}/isten-ayrildi", new { }, token);
     }
 
-    public async Task<IReadOnlyCollection<KullaniciModel>> KullanicilariListeleAsync(string? token)
-    {
-        return await GetListeAsync<KullaniciModel>("/api/kullanicilar", token);
-    }
+    public Task<ApiListeSonucu<KullaniciModel>> KullanicilariListeleAsync(string? token)
+        => GetListeAsync<KullaniciModel>("/api/kullanicilar", token);
 
     public Task<ApiIslemSonucu<KullaniciModel>> KullaniciOlusturAsync(KullaniciOlusturFormModel form, string? token)
     {
@@ -76,7 +99,31 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
         }, token);
     }
 
-    private async Task<IReadOnlyCollection<T>> GetListeAsync<T>(string adres, string? token)
+    private async Task<ApiIslemSonucu<T>> GetAsync<T>(string adres, string? token)
+    {
+        try
+        {
+            using var istek = new HttpRequestMessage(HttpMethod.Get, adres);
+            TokenEkle(istek, token);
+
+            using var cevap = await httpClient.SendAsync(istek);
+            return await CevabiOku<T>(cevap);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Kimlik ve personel servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Kimlik ve personel servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Kimlik ve personel servisi beklenmeyen formatta cevap döndürdü.");
+        }
+    }
+
+    private async Task<ApiListeSonucu<T>> GetListeAsync<T>(string adres, string? token)
     {
         try
         {
@@ -86,30 +133,61 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
             using var cevap = await httpClient.SendAsync(istek);
             if (!cevap.IsSuccessStatusCode)
             {
-                return [];
+                var hataIcerigi = await cevap.Content.ReadAsStringAsync();
+                return ApiListeSonucu<T>.Basarisiz(HataMesajiniOku(cevap.StatusCode, hataIcerigi));
             }
 
             var icerik = await cevap.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<IReadOnlyCollection<T>>(icerik, JsonAyarlari) ?? [];
+            var veri = JsonSerializer.Deserialize<IReadOnlyCollection<T>>(icerik, JsonAyarlari) ?? [];
+            return ApiListeSonucu<T>.Basarili(veri);
         }
         catch (HttpRequestException)
         {
-            return [];
+            return ApiListeSonucu<T>.Basarisiz("Kimlik ve personel servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiListeSonucu<T>.Basarisiz("Kimlik ve personel servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiListeSonucu<T>.Basarisiz("Kimlik ve personel servisi beklenmeyen formatta cevap döndürdü.");
         }
     }
 
-    private async Task<ApiIslemSonucu<T>> PostAsync<T>(string adres, object govde, string? token = null)
+    private Task<ApiIslemSonucu<T>> PostAsync<T>(string adres, object govde, string? token = null)
+        => SendAsync<T>(HttpMethod.Post, adres, govde, token);
+
+    private Task<ApiIslemSonucu<T>> PutAsync<T>(string adres, object govde, string? token)
+        => SendAsync<T>(HttpMethod.Put, adres, govde, token);
+
+    private async Task<ApiIslemSonucu<T>> SendAsync<T>(HttpMethod method, string adres, object govde, string? token)
     {
-        var json = JsonSerializer.Serialize(govde, JsonAyarlari);
-        using var istek = new HttpRequestMessage(HttpMethod.Post, adres)
+        try
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
+            var json = JsonSerializer.Serialize(govde, JsonAyarlari);
+            using var istek = new HttpRequestMessage(method, adres)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
 
-        TokenEkle(istek, token);
+            TokenEkle(istek, token);
 
-        using var cevap = await httpClient.SendAsync(istek);
-        return await CevabiOku<T>(cevap);
+            using var cevap = await httpClient.SendAsync(istek);
+            return await CevabiOku<T>(cevap);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Kimlik ve personel servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Kimlik ve personel servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Kimlik ve personel servisi beklenmeyen formatta cevap döndürdü.");
+        }
     }
 
     private static void TokenEkle(HttpRequestMessage istek, string? token)
@@ -131,27 +209,57 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
                 : ApiIslemSonucu<T>.Basarili(veri);
         }
 
-        var hata = HataMesajiniOku(icerik);
-        return ApiIslemSonucu<T>.Basarisiz(hata);
+        return ApiIslemSonucu<T>.Basarisiz(HataMesajiniOku(cevap.StatusCode, icerik));
     }
 
-    private static string HataMesajiniOku(string icerik)
+    private static string HataMesajiniOku(HttpStatusCode durumKodu, string icerik)
+    {
+        var servisMesaji = ServisHataMesajiniOku(icerik);
+        if (!string.IsNullOrWhiteSpace(servisMesaji))
+        {
+            return servisMesaji;
+        }
+
+        return durumKodu switch
+        {
+            HttpStatusCode.Unauthorized => "Oturum bulunamadı veya süresi doldu. Lütfen tekrar giriş yap.",
+            HttpStatusCode.Forbidden => "Bu işlem için yetkin yok.",
+            HttpStatusCode.NotFound => "İstenen kayıt bulunamadı.",
+            HttpStatusCode.BadRequest => "Gönderilen bilgiler geçerli değil.",
+            _ => "Servis hata döndürdü."
+        };
+    }
+
+    private static string? ServisHataMesajiniOku(string icerik)
     {
         if (string.IsNullOrWhiteSpace(icerik))
         {
-            return "Servis hata döndürdü.";
+            return null;
         }
 
-        using var belge = JsonDocument.Parse(icerik);
-        return belge.RootElement.TryGetProperty("hata", out var hata)
-            ? hata.GetString() ?? "Servis hata döndürdü."
-            : icerik;
+        try
+        {
+            using var belge = JsonDocument.Parse(icerik);
+            if (belge.RootElement.TryGetProperty("hata", out var hata))
+            {
+                return hata.GetString();
+            }
+
+            if (belge.RootElement.TryGetProperty("title", out var title))
+            {
+                return title.GetString();
+            }
+
+            if (belge.RootElement.TryGetProperty("detail", out var detail))
+            {
+                return detail.GetString();
+            }
+        }
+        catch (JsonException)
+        {
+            return icerik;
+        }
+
+        return icerik;
     }
-}
-
-public sealed record ApiIslemSonucu<T>(bool BasariliMi, T? Veri, string? Hata)
-{
-    public static ApiIslemSonucu<T> Basarili(T veri) => new(true, veri, null);
-
-    public static ApiIslemSonucu<T> Basarisiz(string hata) => new(false, default, hata);
 }

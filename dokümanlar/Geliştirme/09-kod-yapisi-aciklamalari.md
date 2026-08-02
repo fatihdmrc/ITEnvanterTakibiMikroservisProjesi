@@ -172,3 +172,61 @@ HTTP Request
 ```
 
 Controller içinde iş kuralı yazmamaya dikkat edilir. Controller'ın görevi HTTP isteğini almak, servisi çağırmak ve uygun HTTP cevabını döndürmektir.
+
+## MVC Client Güncel Akışı
+
+MVC client, Faz 4 sınırında iki ana ekran grubuna ayrılmıştır:
+
+- `HomeController`: Kimlik, departman, personel ve kullanıcı yönetimi ekranlarını yönetir.
+- `EnvanterController`: Kategori, lokasyon, cihaz, sarf malzeme ve stok ekranlarını yönetir.
+
+Kimlik/personel client akışındaki önemli parçalar:
+
+- `Views/Home/Index.cshtml`: Kontrol panelidir. Departmanlar, Personeller ve Kullanıcılar sekmelerini içerir.
+- Personeller sekmesi artık tablo şeklindedir. Personel arama ve departmana göre filtreleme bu sekmede yapılır.
+- `Views/Home/PersonelDuzenle.cshtml`: Tek bir personelin düzenlendiği ayrı sayfadır.
+- `Views/Home/PersonelIstenAyrilOnay.cshtml`: Personeli işten ayrıldı yapmadan önce kullanılan onay sayfasıdır.
+- Personel düzenleme veya işten ayrılma işlemi tamamlandıktan sonra kullanıcı tekrar kontrol panelindeki Personeller sekmesine yönlendirilir.
+
+API client tarafındaki önemli parçalar:
+
+- `ApiIslemSonucu<T>`: Tekil işlem sonucunu, varsa dönen veriyi ve hata mesajını taşır.
+- `ApiListeSonucu<T>`: Listeleme işlemlerinde veri ile hata durumunu ayrı ayrı taşır.
+- `KimlikPersonelApiClient`: KimlikVePersonelServisi'ne yapılan HTTP isteklerini kapsar.
+- `EnvanterApiClient`: EnvanterServisi'ne yapılan HTTP isteklerini kapsar.
+
+Listeleme çağrıları başarısız olduğunda client artık boş listeyi sessizce göstermek yerine Türkçe hata mesajı üretir. Bu sayede servis kapalı, oturum süresi dolmuş, yetki yetersiz veya beklenmeyen cevap gibi durumlar kullanıcı tarafından ayırt edilebilir.
+
+## AktifMi ile Pasifleştirme Yaklaşımı
+
+Bu projede yönetimsel silme işlemleri için doğrudan fiziksel silme yerine `AktifMi` alanı kullanılır.
+
+Bu yaklaşım şu entitylerde uygulanır:
+
+- `Departman`
+- `Personel`
+- `Kategori`
+- `Lokasyon`
+- `Cihaz`
+- `SarfMalzeme`
+
+Amaç:
+
+- Geçmiş kayıtlarla ilişkileri korumak
+- Audit ve raporlama senaryolarında veri kaybını önlemek
+- Yanlışlıkla yapılan silme işlemlerinin etkisini azaltmak
+
+Personel işten ayrıldı yapıldığında normal pasifleştirmeden daha özel bir iş kuralı çalışır. Personelin durumu `IstenAyrildi` olur, `AktifMi` değeri `false` yapılır ve bağlı kullanıcı hesabı da pasifleştirilir.
+
+## Cihaz Durumu Enum Migration Notu
+
+EnvanterServisi cihaz durumlarını veritabanında string olarak saklar. Bu nedenle enum adları değiştirildiğinde mevcut veritabanındaki eski string değerlerin de migration ile dönüştürülmesi gerekir.
+
+`CihazDurumuEskiDegerleriniGuncelle` migration'ı şu eski değerleri yeni değerlere dönüştürür:
+
+- `DepodaHazir` -> `Kullanilabilir`
+- `Arizali` -> `Bakimda`
+- `HurdaIskartaDepoda` -> `HurdaIskarta`
+- `EldenCikarildi` -> `KullanimDisi`
+
+Bu migration uygulanmadan eski veritabanı kayıtları okunmaya çalışılırsa EF Core enum conversion hatası verir.

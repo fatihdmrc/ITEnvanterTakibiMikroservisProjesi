@@ -5,6 +5,12 @@
     var hesapAcilabilirPersoneller = Model.Personeller
         .Where(personel => personel.AktifMi && personel.Durum != PersonelDurumuModel.IstenAyrildi && !kullaniciPersonelIdleri.Contains(personel.Id))
         .ToList();
+    var aktifPersoneller = Model.Personeller
+        .Where(personel => personel.AktifMi && personel.Durum != PersonelDurumuModel.IstenAyrildi)
+        .ToList();
+    var departmanAktif = Model.AktifSekme == "departman";
+    var personelAktif = Model.AktifSekme == "personel";
+    var kullaniciAktif = Model.AktifSekme == "kullanici";
 }
 
 <div class="py-3">
@@ -27,6 +33,19 @@
     @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
     {
         <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    @if (Model.ListelemeHatalari.Count > 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <div class="fw-semibold mb-1">Bazı bilgiler alınamadı.</div>
+            <ul class="mb-0">
+                @foreach (var hata in Model.ListelemeHatalari)
+                {
+                    <li>@hata</li>
+                }
+            </ul>
+        </div>
     }
 
     <section class="border rounded-2 p-3 mb-4">
@@ -97,43 +116,58 @@
 
     <ul class="nav nav-tabs" id="kimlikPersonelSekmeleri" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="departman-tab" data-bs-toggle="tab" data-bs-target="#departman" type="button" role="tab">Departmanlar</button>
+            <button class="nav-link @(departmanAktif ? "active" : "")" id="departman-tab" data-bs-toggle="tab" data-bs-target="#departman" type="button" role="tab">Departmanlar</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="personel-tab" data-bs-toggle="tab" data-bs-target="#personel" type="button" role="tab">Personeller</button>
+            <button class="nav-link @(personelAktif ? "active" : "")" id="personel-tab" data-bs-toggle="tab" data-bs-target="#personel" type="button" role="tab">Personeller</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="kullanici-tab" data-bs-toggle="tab" data-bs-target="#kullanici" type="button" role="tab">Kullanıcılar</button>
+            <button class="nav-link @(kullaniciAktif ? "active" : "")" id="kullanici-tab" data-bs-toggle="tab" data-bs-target="#kullanici" type="button" role="tab">Kullanıcılar</button>
         </li>
     </ul>
 
     <div class="tab-content border border-top-0 rounded-bottom-2 p-3">
-        <div class="tab-pane fade show active" id="departman" role="tabpanel" aria-labelledby="departman-tab">
+        <div class="tab-pane fade @(departmanAktif ? "show active" : "")" id="departman" role="tabpanel" aria-labelledby="departman-tab">
             <div class="row g-4">
-                <div class="col-lg-8">
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Departman</th>
-                                    <th>Sorumlu PersonelId</th>
-                                    <th>Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var departman in Model.Departmanlar)
-                                {
-                                    <tr>
-                                        <td>@departman.Ad</td>
-                                        <td class="font-monospace small">@(departman.SorumluPersonelId?.ToString() ?? "-")</td>
-                                        <td>@(departman.AktifMi ? "Aktif" : "Pasif")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="col-xl-8">
+                    @if (Model.Departmanlar.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Gösterilecek departman bulunamadı.</p>
+                    }
+                    @foreach (var departman in Model.Departmanlar)
+                    {
+                        <form asp-action="DepartmanGuncelle" method="post" class="border rounded-2 p-3 mb-3">
+                            <input type="hidden" name="Id" value="@departman.Id" />
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label small">Departman adı</label>
+                                    <input name="Ad" class="form-control form-control-sm" value="@departman.Ad" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Sorumlu</label>
+                                    <select name="SorumluPersonelId" class="form-select form-select-sm">
+                                        <option value="">Seçilmedi</option>
+                                        @foreach (var personel in Model.Personeller.Where(personel => personel.AktifMi || personel.Id == departman.SorumluPersonelId))
+                                        {
+                                            <option value="@personel.Id" selected="@(personel.Id == departman.SorumluPersonelId ? "selected" : null)">@personel.Ad @personel.Soyad</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-check">
+                                        <input name="AktifMi" value="true" class="form-check-input" type="checkbox" checked="@departman.AktifMi" />
+                                        <input type="hidden" name="AktifMi" value="false" />
+                                        <label class="form-check-label small">Aktif</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-grid">
+                                    <button class="btn btn-sm btn-primary" type="submit">Kaydet</button>
+                                </div>
+                            </div>
+                        </form>
+                    }
                 </div>
-                <div class="col-lg-4">
+                <div class="col-xl-4">
                     <form asp-action="DepartmanOlustur" method="post" class="border rounded-2 p-3">
                         <h3 class="h6">Departman oluştur</h3>
                         <div class="mb-3">
@@ -144,7 +178,7 @@
                             <label class="form-label">Sorumlu</label>
                             <select name="SorumluPersonelId" class="form-select">
                                 <option value="">Seçilmedi</option>
-                                @foreach (var personel in Model.Personeller.Where(personel => personel.AktifMi))
+                                @foreach (var personel in aktifPersoneller)
                                 {
                                     <option value="@personel.Id">@personel.Ad @personel.Soyad</option>
                                 }
@@ -156,37 +190,72 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="personel" role="tabpanel" aria-labelledby="personel-tab">
+        <div class="tab-pane fade @(personelAktif ? "show active" : "")" id="personel" role="tabpanel" aria-labelledby="personel-tab">
             <div class="row g-4">
                 <div class="col-xl-8">
+                    <form asp-action="Index" method="get" class="row g-2 align-items-end border rounded-2 p-3 mb-3">
+                        <input type="hidden" name="sekme" value="personel" />
+                        <div class="col-md-5">
+                            <label class="form-label">Personel ara</label>
+                            <input name="personelArama" class="form-control" value="@Model.PersonelArama" placeholder="Ad, soyad veya e-posta" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Departman</label>
+                            <select name="personelDepartmanId" class="form-select">
+                                <option value="">Tüm departmanlar</option>
+                                @foreach (var departman in Model.Departmanlar)
+                                {
+                                    <option value="@departman.Id" selected="@(departman.Id == Model.PersonelDepartmanId ? "selected" : null)">@departman.Ad</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-grid gap-2">
+                            <button class="btn btn-primary" type="submit">Filtrele</button>
+                            <a asp-action="Index" asp-route-sekme="personel" class="btn btn-outline-secondary">Temizle</a>
+                        </div>
+                    </form>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 mb-0">Personel Listesi</h2>
+                        <span class="text-muted small">@Model.FiltreliPersoneller.Count / @Model.Personeller.Count kayıt</span>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
                             <thead>
                                 <tr>
                                     <th>Ad Soyad</th>
-                                    <th>E-posta</th>
                                     <th>Departman</th>
-                                    <th>Durum</th>
-                                    <th></th>
+                                    <th>Sorumlu mu?</th>
+                                    <th>Aktif mi?</th>
+                                    <th>E-posta</th>
+                                    <th class="text-end">İşlem</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var personel in Model.Personeller)
+                                @if (Model.FiltreliPersoneller.Count == 0)
                                 {
-                                    var departmanAdi = Model.Departmanlar.FirstOrDefault(departman => departman.Id == personel.DepartmanId)?.Ad ?? "-";
+                                    <tr>
+                                        <td colspan="6" class="text-muted">Filtreye uygun personel bulunamadı.</td>
+                                    </tr>
+                                }
+                                @foreach (var personel in Model.FiltreliPersoneller)
+                                {
+                                    var departmanAdi = DepartmanAdi(personel.DepartmanId);
                                     <tr>
                                         <td>@personel.Ad @personel.Soyad</td>
-                                        <td>@personel.Email</td>
                                         <td>@departmanAdi</td>
-                                        <td>@personel.Durum</td>
+                                        <td>@(personel.DepartmanSorumlusuMu ? "Evet" : "Hayır")</td>
+                                        <td>@(personel.AktifMi ? "Aktif" : "Pasif")</td>
+                                        <td>@personel.Email</td>
                                         <td class="text-end">
-                                            @if (personel.Durum != PersonelDurumuModel.IstenAyrildi)
-                                            {
-                                                <form asp-action="PersoneliIstenAyrildiYap" method="post">
-                                                    <input type="hidden" name="id" value="@personel.Id" />
-                                                    <button class="btn btn-sm btn-outline-danger" type="submit">İşten ayrıldı</button>
-                                                </form>
-                                            }
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a asp-action="PersonelDuzenle" asp-route-id="@personel.Id" class="btn btn-outline-primary">Düzenle</a>
+                                                @if (personel.Durum != PersonelDurumuModel.IstenAyrildi)
+                                                {
+                                                    <a asp-action="PersonelIstenAyrilOnay" asp-route-id="@personel.Id" class="btn btn-outline-danger">İşten ayrıldı yap</a>
+                                                }
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -240,7 +309,7 @@
             </div>
         </div>
 
-        <div class="tab-pane fade" id="kullanici" role="tabpanel" aria-labelledby="kullanici-tab">
+        <div class="tab-pane fade @(kullaniciAktif ? "show active" : "")" id="kullanici" role="tabpanel" aria-labelledby="kullanici-tab">
             <div class="row g-4">
                 <div class="col-lg-8">
                     <div class="table-responsive">
@@ -303,3 +372,8 @@
         </div>
     </div>
 </div>
+
+@functions {
+    private string DepartmanAdi(Guid id)
+        => Model.Departmanlar.FirstOrDefault(departman => departman.Id == id)?.Ad ?? "-";
+}

@@ -7,9 +7,31 @@ public sealed class KimlikPersonelPanelModel
     public OturumKullaniciModel? OturumKullanici { get; set; }
     public IReadOnlyCollection<DepartmanModel> Departmanlar { get; set; } = [];
     public IReadOnlyCollection<PersonelModel> Personeller { get; set; } = [];
+    public IReadOnlyCollection<PersonelModel> FiltreliPersoneller { get; set; } = [];
     public IReadOnlyCollection<KullaniciModel> Kullanicilar { get; set; } = [];
+    public List<string> ListelemeHatalari { get; set; } = [];
+    public string AktifSekme { get; set; } = "departman";
+    public string? PersonelArama { get; set; }
+    public Guid? PersonelDepartmanId { get; set; }
     public string? BasariMesaji { get; set; }
     public string? HataMesaji { get; set; }
+}
+
+public sealed class PersonelDuzenleSayfaModel
+{
+    public PersonelGuncelleFormModel Form { get; set; } = new();
+    public IReadOnlyCollection<DepartmanModel> Departmanlar { get; set; } = [];
+    public string? HataMesaji { get; set; }
+}
+
+public sealed class PersonelIstenAyrilOnayModel
+{
+    public Guid Id { get; set; }
+    public string AdSoyad { get; set; } = string.Empty;
+    public string DepartmanAdi { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Unvan { get; set; } = string.Empty;
+    public PersonelDurumuModel Durum { get; set; } = PersonelDurumuModel.Aktif;
 }
 
 public sealed class GirisFormModel
@@ -21,12 +43,18 @@ public sealed class GirisFormModel
     public string Sifre { get; set; } = string.Empty;
 }
 
-public sealed class DepartmanOlusturFormModel
+public class DepartmanOlusturFormModel
 {
     [Required(ErrorMessage = "Departman adı zorunludur.")]
     public string Ad { get; set; } = string.Empty;
 
     public Guid? SorumluPersonelId { get; set; }
+}
+
+public sealed class DepartmanGuncelleFormModel : DepartmanOlusturFormModel
+{
+    public Guid Id { get; set; }
+    public bool AktifMi { get; set; } = true;
 }
 
 public sealed class PersonelOlusturFormModel
@@ -49,6 +77,31 @@ public sealed class PersonelOlusturFormModel
 
     public bool DepartmanSorumlusuMu { get; set; }
     public DateOnly IseGirisTarihi { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+}
+
+public sealed class PersonelGuncelleFormModel
+{
+    public Guid Id { get; set; }
+
+    [Required(ErrorMessage = "Ad zorunludur.")]
+    public string Ad { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Soyad zorunludur.")]
+    public string Soyad { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "E-posta zorunludur.")]
+    [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi girilmelidir.")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Departman zorunludur.")]
+    public Guid DepartmanId { get; set; }
+
+    [Required(ErrorMessage = "Unvan zorunludur.")]
+    public string Unvan { get; set; } = string.Empty;
+
+    public bool DepartmanSorumlusuMu { get; set; }
+    public PersonelDurumuModel Durum { get; set; } = PersonelDurumuModel.Aktif;
+    public bool AktifMi { get; set; } = true;
 }
 
 public sealed class KullaniciOlusturFormModel

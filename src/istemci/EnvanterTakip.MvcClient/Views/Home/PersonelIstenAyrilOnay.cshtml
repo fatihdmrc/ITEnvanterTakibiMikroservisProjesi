@@ -1,0 +1,39 @@
+@model PersonelIstenAyrilOnayModel
+@{
+    ViewData["Title"] = "İşten Ayrılma Onayı";
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">İşten Ayrılma Onayı</h1>
+            <p class="text-muted mb-0">Bu işlem personeli pasifleştirir ve bağlı kullanıcı hesabının girişini kapatır.</p>
+        </div>
+        <a asp-action="Index" asp-route-sekme="personel" class="btn btn-outline-secondary">Personellere Dön</a>
+    </div>
+
+    <section class="border rounded-2 p-3 mb-3">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Personel</dt>
+            <dd class="col-sm-9">@Model.AdSoyad</dd>
+            <dt class="col-sm-3">Departman</dt>
+            <dd class="col-sm-9">@Model.DepartmanAdi</dd>
+            <dt class="col-sm-3">E-posta</dt>
+            <dd class="col-sm-9">@Model.Email</dd>
+            <dt class="col-sm-3">Unvan</dt>
+            <dd class="col-sm-9">@Model.Unvan</dd>
+            <dt class="col-sm-3">Mevcut Durum</dt>
+            <dd class="col-sm-9">@Model.Durum</dd>
+        </dl>
+    </section>
+
+    <div class="alert alert-warning" role="alert">
+        @Model.AdSoyad personelini işten ayrıldı yapmak istediğine emin misin?
+    </div>
+
+    <form asp-action="PersonelIstenAyrilOnayla" method="post" class="d-flex justify-content-end gap-2">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <a asp-action="Index" asp-route-sekme="personel" class="btn btn-outline-secondary">Vazgeç</a>
+        <button class="btn btn-danger" type="submit">Onayla</button>
+    </form>
+</div>

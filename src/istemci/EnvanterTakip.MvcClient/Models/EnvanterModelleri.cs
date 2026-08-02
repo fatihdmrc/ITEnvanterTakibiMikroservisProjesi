@@ -9,6 +9,7 @@ public sealed class EnvanterPanelModel
     public IReadOnlyCollection<CihazModel> Cihazlar { get; set; } = [];
     public IReadOnlyCollection<SarfMalzemeModel> SarfMalzemeler { get; set; } = [];
     public StokOzetModel StokOzet { get; set; } = new(0, 0, 0, []);
+    public List<string> ListelemeHatalari { get; set; } = [];
     public string? BasariMesaji { get; set; }
     public string? HataMesaji { get; set; }
     public bool OturumVarMi { get; set; }

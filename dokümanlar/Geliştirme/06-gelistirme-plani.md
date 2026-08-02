@@ -144,3 +144,23 @@ Başlangıçta uygulanacak sıra:
 6. JWT login
 7. Personel, departman, kategori, lokasyon ve cihaz temel ekranları
 
+## 5. Güncel Faz Durumu - 2026-08-02
+
+Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel durumunu göstermek için eklenmiştir.
+
+### Tamamlanan veya Faz 4 sınırında bırakılan işler
+
+- Faz 1 kapsamında KimlikVePersonelServisi, ASP.NET Core Identity, JWT, PostgreSQL, EF Core migration, rol bazlı yetkilendirme, departman/personel/kullanıcı temel endpointleri ve işten ayrılma akışıyla çalışır durumdadır.
+- Faz 2 kapsamında MVC client login, session içinde token saklama, departman listeleme/oluşturma/güncelleme, personel listeleme/oluşturma/güncelleme ve kullanıcı listeleme/oluşturma işlemlerini destekler.
+- Faz 2 personel yönetimi tek satır düzenleme yerine ayrı sayfa akışına taşınmıştır. Personeller artık tabloda listelenir, arama ve departman filtresiyle süzülebilir, düzenleme ayrı sayfada yapılır.
+- Personeli işten ayrıldı yapma işlemi artık doğrudan listeden çalışmaz; ayrı bir onay sayfası üzerinden yapılır.
+- Faz 3 kapsamında EnvanterServisi kategori, lokasyon, cihaz, sarf malzeme, stok hareketi ve kritik stok altyapısıyla çalışır durumdadır.
+- Faz 3 cihaz durum modeli güncel enum adlarıyla hizalanmıştır: `Kullanilabilir`, `Zimmetli`, `Incelemede`, `Bakimda`, `HasarliTeslimAlindi`, `Kayip`, `Calindi`, `HurdaIskarta`, `KullanimDisi`.
+- Eski veritabanı kayıtlarında kalan cihaz durum değerlerini yeni enum değerlerine dönüştüren migration eklenmiştir.
+- Faz 4 kapsamında MVC client üzerinde envanter listeleme, ekleme, güncelleme, stok hareketi işleme, stok özeti ve kritik stok gösterimi çalışır durumdadır.
+- Client tarafında servis kapalı, yetkisiz, rol yetersiz veya beklenmeyen cevap durumları Türkçe hata mesajlarıyla gösterilir.
+
+### Uygulama kararı
+
+- Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
+- Faz 5 ve sonrası şu an geliştirme kapsamı dışında bırakılmıştır. ZimmetServisi, ApiGateway, event bus, audit log, cache ve bildirim fazları daha sonra ele alınacaktır.

@@ -574,3 +574,13 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - ER diyagramı hazırlanacak mı?
 - Servis iletişim diyagramı hazırlanacak mı?
 - Docker Compose dosyası plan dokümanına dahil edilecek mi?
+
+## 18. Güncel Uygulama Kararları - 2026-08-02
+
+- Proje geliştirmesi şimdilik Faz 4 sınırında tutulacaktır.
+- Faz 5 ve sonrası için ZimmetServisi, ApiGateway, CAP/RabbitMQ, audit log, Redis ve SignalR daha sonra ele alınacaktır.
+- Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
+- `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
+- Personelin işten ayrılması normal pasifleştirmeden ayrı bir iş kuralıdır. Bu işlem personelin durumunu `IstenAyrildi` yapar, personeli pasifleştirir ve bağlı kullanıcı hesabını da pasifleştirir.
+- MVC client tarafında personel yönetimi tek sayfada satır içi düzenleme şeklinde büyütülmeyecektir. Personel listesi tabloda gösterilecek, düzenleme ve işten ayrılma onayı ayrı sayfalarda yapılacaktır.
+- EnvanterServisi cihaz durum enum değerleri güncel modelle uyumlu tutulacaktır. Eski veritabanı değerleri migration ile yeni değerlere dönüştürülecektir.

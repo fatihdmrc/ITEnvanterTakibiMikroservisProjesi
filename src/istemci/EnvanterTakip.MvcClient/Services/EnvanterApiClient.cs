@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -13,7 +14,7 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public Task<IReadOnlyCollection<KategoriModel>> KategorileriListeleAsync(string? token)
+    public Task<ApiListeSonucu<KategoriModel>> KategorileriListeleAsync(string? token)
         => GetListeAsync<KategoriModel>("/api/kategoriler", token);
 
     public Task<ApiIslemSonucu<KategoriModel>> KategoriOlusturAsync(KategoriOlusturFormModel form, string? token)
@@ -35,7 +36,7 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             form.AktifMi
         }, token);
 
-    public Task<IReadOnlyCollection<LokasyonModel>> LokasyonlariListeleAsync(string? token)
+    public Task<ApiListeSonucu<LokasyonModel>> LokasyonlariListeleAsync(string? token)
         => GetListeAsync<LokasyonModel>("/api/lokasyonlar", token);
 
     public Task<ApiIslemSonucu<LokasyonModel>> LokasyonOlusturAsync(LokasyonOlusturFormModel form, string? token)
@@ -53,7 +54,7 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             form.AktifMi
         }, token);
 
-    public Task<IReadOnlyCollection<CihazModel>> CihazlariListeleAsync(string? token)
+    public Task<ApiListeSonucu<CihazModel>> CihazlariListeleAsync(string? token)
         => GetListeAsync<CihazModel>("/api/cihazlar", token);
 
     public Task<ApiIslemSonucu<CihazModel>> CihazOlusturAsync(CihazOlusturFormModel form, string? token)
@@ -98,7 +99,7 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             form.SatilanKisiVeyaKurum
         }, token);
 
-    public Task<IReadOnlyCollection<SarfMalzemeModel>> SarfMalzemeleriListeleAsync(string? token)
+    public Task<ApiListeSonucu<SarfMalzemeModel>> SarfMalzemeleriListeleAsync(string? token)
         => GetListeAsync<SarfMalzemeModel>("/api/sarf-malzemeler", token);
 
     public Task<ApiIslemSonucu<SarfMalzemeModel>> SarfMalzemeOlusturAsync(SarfMalzemeOlusturFormModel form, string? token)
@@ -133,7 +134,7 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             form.Aciklama
         }, token);
 
-    public async Task<StokOzetModel> StokOzetiniGetirAsync(string? token)
+    public async Task<ApiIslemSonucu<StokOzetModel>> StokOzetiniGetirAsync(string? token)
     {
         try
         {
@@ -141,22 +142,23 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             TokenEkle(istek, token);
 
             using var cevap = await httpClient.SendAsync(istek);
-            if (!cevap.IsSuccessStatusCode)
-            {
-                return new StokOzetModel(0, 0, 0, []);
-            }
-
-            var icerik = await cevap.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<StokOzetModel>(icerik, JsonAyarlari)
-                ?? new StokOzetModel(0, 0, 0, []);
+            return await CevabiOku<StokOzetModel>(cevap);
         }
         catch (HttpRequestException)
         {
-            return new StokOzetModel(0, 0, 0, []);
+            return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
         }
     }
 
-    private async Task<IReadOnlyCollection<T>> GetListeAsync<T>(string adres, string? token)
+    private async Task<ApiListeSonucu<T>> GetListeAsync<T>(string adres, string? token)
     {
         try
         {
@@ -166,15 +168,25 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             using var cevap = await httpClient.SendAsync(istek);
             if (!cevap.IsSuccessStatusCode)
             {
-                return [];
+                var hataIcerigi = await cevap.Content.ReadAsStringAsync();
+                return ApiListeSonucu<T>.Basarisiz(HataMesajiniOku(cevap.StatusCode, hataIcerigi));
             }
 
             var icerik = await cevap.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<IReadOnlyCollection<T>>(icerik, JsonAyarlari) ?? [];
+            var veri = JsonSerializer.Deserialize<IReadOnlyCollection<T>>(icerik, JsonAyarlari) ?? [];
+            return ApiListeSonucu<T>.Basarili(veri);
         }
         catch (HttpRequestException)
         {
-            return [];
+            return ApiListeSonucu<T>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiListeSonucu<T>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiListeSonucu<T>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
         }
     }
 
@@ -186,16 +198,31 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
 
     private async Task<ApiIslemSonucu<T>> SendAsync<T>(HttpMethod method, string adres, object govde, string? token)
     {
-        var json = JsonSerializer.Serialize(govde, JsonAyarlari);
-        using var istek = new HttpRequestMessage(method, adres)
+        try
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
+            var json = JsonSerializer.Serialize(govde, JsonAyarlari);
+            using var istek = new HttpRequestMessage(method, adres)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
 
-        TokenEkle(istek, token);
+            TokenEkle(istek, token);
 
-        using var cevap = await httpClient.SendAsync(istek);
-        return await CevabiOku<T>(cevap);
+            using var cevap = await httpClient.SendAsync(istek);
+            return await CevabiOku<T>(cevap);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
+        }
     }
 
     private static void TokenEkle(HttpRequestMessage istek, string? token)
@@ -217,19 +244,57 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
                 : ApiIslemSonucu<T>.Basarili(veri);
         }
 
-        return ApiIslemSonucu<T>.Basarisiz(HataMesajiniOku(icerik));
+        return ApiIslemSonucu<T>.Basarisiz(HataMesajiniOku(cevap.StatusCode, icerik));
     }
 
-    private static string HataMesajiniOku(string icerik)
+    private static string HataMesajiniOku(HttpStatusCode durumKodu, string icerik)
+    {
+        var servisMesaji = ServisHataMesajiniOku(icerik);
+        if (!string.IsNullOrWhiteSpace(servisMesaji))
+        {
+            return servisMesaji;
+        }
+
+        return durumKodu switch
+        {
+            HttpStatusCode.Unauthorized => "Oturum bulunamadı veya süresi doldu. Lütfen tekrar giriş yap.",
+            HttpStatusCode.Forbidden => "Bu işlem için yetkin yok.",
+            HttpStatusCode.NotFound => "İstenen kayıt bulunamadı.",
+            HttpStatusCode.BadRequest => "Gönderilen bilgiler geçerli değil.",
+            _ => "Servis hata döndürdü."
+        };
+    }
+
+    private static string? ServisHataMesajiniOku(string icerik)
     {
         if (string.IsNullOrWhiteSpace(icerik))
         {
-            return "Servis hata döndürdü.";
+            return null;
         }
 
-        using var belge = JsonDocument.Parse(icerik);
-        return belge.RootElement.TryGetProperty("hata", out var hata)
-            ? hata.GetString() ?? "Servis hata döndürdü."
-            : icerik;
+        try
+        {
+            using var belge = JsonDocument.Parse(icerik);
+            if (belge.RootElement.TryGetProperty("hata", out var hata))
+            {
+                return hata.GetString();
+            }
+
+            if (belge.RootElement.TryGetProperty("title", out var title))
+            {
+                return title.GetString();
+            }
+
+            if (belge.RootElement.TryGetProperty("detail", out var detail))
+            {
+                return detail.GetString();
+            }
+        }
+        catch (JsonException)
+        {
+            return icerik;
+        }
+
+        return icerik;
     }
 }

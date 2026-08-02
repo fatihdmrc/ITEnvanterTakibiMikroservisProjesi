@@ -382,3 +382,25 @@ Stop-Process -Id 21256 -Force
 ```
 
 Buradaki `21256` örnektir; hata mesajında hangi process id yazıyorsa onu kullanmalısın.
+
+## 11. Güncel MVC Client Notları - 2026-08-02
+
+MVC client üzerinden şu işlemler güncel olarak denenebilir:
+
+- Demo kullanıcı ile giriş yapmak
+- Departmanları listelemek, oluşturmak, güncellemek ve `AktifMi` ile pasifleştirmek
+- Personelleri tablo halinde listelemek
+- Personelleri ad, soyad veya e-posta ile aramak
+- Personelleri departmana göre filtrelemek
+- Personel oluşturmak
+- Personeli ayrı düzenleme sayfasında güncellemek
+- Personeli ayrı onay sayfası üzerinden işten ayrıldı yapmak
+- Kullanıcıları listelemek ve yeni kullanıcı oluşturmak
+- Envanter ekranında kategori, lokasyon, cihaz ve sarf malzeme kayıtlarını listelemek, oluşturmak, güncellemek ve `AktifMi` ile pasifleştirmek
+- Cihaz ve sarf malzeme stok hareketi işlemek
+- Basit stok özetini ve kritik stok listesini görmek
+
+Notlar:
+
+- Client tarafındaki listeleme hataları artık boş liste gibi gösterilmez; Türkçe hata mesajı olarak ekrana yansıtılır.
+- Envanter veritabanında eski cihaz durum değerleri varsa `CihazDurumuEskiDegerleriniGuncelle` migration'ı uygulanmalıdır. Uygulama açılışında `Database.MigrateAsync()` çalıştığı için servis başlatıldığında bekleyen migration'lar otomatik uygulanır.
