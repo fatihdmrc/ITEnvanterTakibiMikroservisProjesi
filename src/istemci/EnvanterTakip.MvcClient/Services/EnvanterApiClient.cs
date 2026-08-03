@@ -57,6 +57,9 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
     public Task<ApiListeSonucu<CihazModel>> CihazlariListeleAsync(string? token)
         => GetListeAsync<CihazModel>("/api/cihazlar", token);
 
+    public Task<ApiIslemSonucu<CihazModel>> CihazGetirAsync(Guid id, string? token)
+        => GetAsync<CihazModel>($"/api/cihazlar/{id}", token);
+
     public Task<ApiIslemSonucu<CihazModel>> CihazOlusturAsync(CihazOlusturFormModel form, string? token)
         => PostAsync<CihazModel>("/api/cihazlar", new
         {
@@ -101,6 +104,9 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
 
     public Task<ApiListeSonucu<SarfMalzemeModel>> SarfMalzemeleriListeleAsync(string? token)
         => GetListeAsync<SarfMalzemeModel>("/api/sarf-malzemeler", token);
+
+    public Task<ApiIslemSonucu<SarfMalzemeModel>> SarfMalzemeGetirAsync(Guid id, string? token)
+        => GetAsync<SarfMalzemeModel>($"/api/sarf-malzemeler/{id}", token);
 
     public Task<ApiIslemSonucu<SarfMalzemeModel>> SarfMalzemeOlusturAsync(SarfMalzemeOlusturFormModel form, string? token)
         => PostAsync<SarfMalzemeModel>("/api/sarf-malzemeler", new
@@ -155,6 +161,30 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         catch (JsonException)
         {
             return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
+        }
+    }
+
+    private async Task<ApiIslemSonucu<T>> GetAsync<T>(string adres, string? token)
+    {
+        try
+        {
+            using var istek = new HttpRequestMessage(HttpMethod.Get, adres);
+            TokenEkle(istek, token);
+
+            using var cevap = await httpClient.SendAsync(istek);
+            return await CevabiOku<T>(cevap);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+        }
+        catch (JsonException)
+        {
+            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
         }
     }
 

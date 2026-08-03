@@ -517,3 +517,30 @@ Doğrulama:
 - `dotnet ef database update --project src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj --startup-project src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj` komutu başarıyla tamamlandı.
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+## 2026-08-03
+
+### Envanter client cihaz ve sarf malzeme yönetimi ayrıştırıldı
+
+Ne yapıldı:
+
+- Envanter ekranındaki Cihazlar sekmesi satır içi düzenleme yerine tablo listeleme yapısına taşındı.
+- Cihaz tablosunda cihaz adı, marka/model, seri no, asset tag, kategori, lokasyon, durum ve aktiflik bilgileri gösterilecek hale getirildi.
+- Cihaz işlemleri için `CihazIslemleri` sayfası eklendi.
+- Cihaz bilgisi güncelleme ve cihaz stok hareketi işleme formları bu ayrı işlem sayfasına taşındı.
+- Sarf Malzemeler sekmesi de tablo listeleme yapısına taşındı.
+- Sarf malzeme tablosunda ad, kategori, lokasyon, miktar, kritik stok seviyesi, birim ve aktiflik bilgileri gösterilecek hale getirildi.
+- Sarf malzeme işlemleri için `SarfMalzemeIslemleri` sayfası eklendi.
+- Sarf malzeme bilgisi güncelleme ve sarf malzeme stok hareketi işleme formları bu ayrı işlem sayfasına taşındı.
+- `EnvanterApiClient` içine tekil cihaz ve tekil sarf malzeme getirme metotları eklendi.
+- Envanter sekmeleri işlem sonrası ilgili sekmede kalacak şekilde yönlendirme desteği aldı.
+
+Neden yapıldı:
+
+- Cihaz ve sarf malzeme sayısı arttığında tek sayfada hem liste hem düzenleme hem stok hareketi formu kullanışsız hale geliyordu.
+- Ana envanter ekranının listeleme ve hızlı tarama amacıyla sade kalması, detay işlemlerinin ayrı sayfada yapılması daha sürdürülebilir bulundu.
+- Stok hareketi gibi dikkat gerektiren işlemlerin ayrı işlem ekranında yapılması kullanıcı hatası riskini azaltır.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

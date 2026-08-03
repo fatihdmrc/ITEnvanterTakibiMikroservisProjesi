@@ -164,3 +164,15 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
 - Faz 5 ve sonrası şu an geliştirme kapsamı dışında bırakılmıştır. ZimmetServisi, ApiGateway, event bus, audit log, cache ve bildirim fazları daha sonra ele alınacaktır.
+
+## 6. Güncel Faz 4 Client Kararı - 2026-08-03
+
+Envanter client tarafında cihaz ve sarf malzeme yönetimi, kayıt sayısı arttığında kullanılabilirliği korumak için listeleme ve işlem ekranı olarak ayrılmıştır.
+
+- Cihazlar ana envanter ekranında tablo halinde listelenir.
+- Cihaz düzenleme ve cihaz stok hareketi işleme işlemleri `CihazIslemleri` sayfasında yapılır.
+- Sarf malzemeler ana envanter ekranında tablo halinde listelenir.
+- Sarf malzeme düzenleme ve sarf malzeme stok hareketi işleme işlemleri `SarfMalzemeIslemleri` sayfasında yapılır.
+- Kategori ve lokasyon yönetimi şimdilik tek sayfa üzerindeki satır içi yönetim yapısını korur.
+
+Bu karar Faz 4 sınırı içindedir. Faz 5 ve sonrası hâlâ geliştirme kapsamı dışında tutulmaktadır.

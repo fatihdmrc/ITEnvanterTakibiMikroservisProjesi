@@ -404,3 +404,16 @@ Notlar:
 
 - Client tarafındaki listeleme hataları artık boş liste gibi gösterilmez; Türkçe hata mesajı olarak ekrana yansıtılır.
 - Envanter veritabanında eski cihaz durum değerleri varsa `CihazDurumuEskiDegerleriniGuncelle` migration'ı uygulanmalıdır. Uygulama açılışında `Database.MigrateAsync()` çalıştığı için servis başlatıldığında bekleyen migration'lar otomatik uygulanır.
+
+## 12. Güncel Envanter Client Notları - 2026-08-03
+
+Envanter ekranında cihaz ve sarf malzeme yönetimi artık listeleme ve işlem sayfası olarak ayrılmıştır:
+
+- Cihazlar sekmesinde cihazlar tablo halinde listelenir.
+- Cihaz satırındaki `İşlemler` butonu `CihazIslemleri` sayfasına gider.
+- Cihaz bilgisi güncelleme ve cihaz stok hareketi işleme bu sayfada yapılır.
+- Sarf Malzemeler sekmesinde sarf malzemeler tablo halinde listelenir.
+- Sarf malzeme satırındaki `İşlemler` butonu `SarfMalzemeIslemleri` sayfasına gider.
+- Sarf malzeme bilgisi güncelleme ve sarf malzeme stok hareketi işleme bu sayfada yapılır.
+
+Kategori ve lokasyon yönetimi mevcut tek sayfa akışını korur.

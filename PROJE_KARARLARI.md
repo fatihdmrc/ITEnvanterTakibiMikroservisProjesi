@@ -584,3 +584,11 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Personelin işten ayrılması normal pasifleştirmeden ayrı bir iş kuralıdır. Bu işlem personelin durumunu `IstenAyrildi` yapar, personeli pasifleştirir ve bağlı kullanıcı hesabını da pasifleştirir.
 - MVC client tarafında personel yönetimi tek sayfada satır içi düzenleme şeklinde büyütülmeyecektir. Personel listesi tabloda gösterilecek, düzenleme ve işten ayrılma onayı ayrı sayfalarda yapılacaktır.
 - EnvanterServisi cihaz durum enum değerleri güncel modelle uyumlu tutulacaktır. Eski veritabanı değerleri migration ile yeni değerlere dönüştürülecektir.
+
+## 19. Envanter Client Listeleme ve İşlem Sayfası Kararı - 2026-08-03
+
+- MVC client tarafında cihaz ve sarf malzeme yönetimi tek sayfada satır içi düzenleme şeklinde büyütülmeyecektir.
+- Cihazlar ve sarf malzemeler ana envanter ekranında tablo halinde listelenecektir.
+- Cihazla ilgili bilgi güncelleme ve stok hareketi işlemleri `CihazIslemleri` sayfasında yapılacaktır.
+- Sarf malzemeyle ilgili bilgi güncelleme ve stok hareketi işlemleri `SarfMalzemeIslemleri` sayfasında yapılacaktır.
+- Bu ayrım, kayıt sayısı arttığında ana envanter ekranının taranabilir kalması ve kritik stok hareketlerinin ayrı bir işlem ekranında yürütülmesi için tercih edilmiştir.

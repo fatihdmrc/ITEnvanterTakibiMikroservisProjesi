@@ -10,9 +10,30 @@ public sealed class EnvanterPanelModel
     public IReadOnlyCollection<SarfMalzemeModel> SarfMalzemeler { get; set; } = [];
     public StokOzetModel StokOzet { get; set; } = new(0, 0, 0, []);
     public List<string> ListelemeHatalari { get; set; } = [];
+    public string AktifSekme { get; set; } = "stok";
     public string? BasariMesaji { get; set; }
     public string? HataMesaji { get; set; }
     public bool OturumVarMi { get; set; }
+}
+
+public sealed class CihazIslemleriSayfaModel
+{
+    public CihazGuncelleFormModel Form { get; set; } = new();
+    public CihazStokHareketiFormModel StokHareketi { get; set; } = new();
+    public IReadOnlyCollection<KategoriModel> Kategoriler { get; set; } = [];
+    public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
+    public string? BasariMesaji { get; set; }
+    public string? HataMesaji { get; set; }
+}
+
+public sealed class SarfMalzemeIslemleriSayfaModel
+{
+    public SarfMalzemeGuncelleFormModel Form { get; set; } = new();
+    public SarfMalzemeStokHareketiFormModel StokHareketi { get; set; } = new();
+    public IReadOnlyCollection<KategoriModel> Kategoriler { get; set; } = [];
+    public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
+    public string? BasariMesaji { get; set; }
+    public string? HataMesaji { get; set; }
 }
 
 public class KategoriOlusturFormModel

@@ -1,0 +1,164 @@
+@model CihazIslemleriSayfaModel
+@{
+    ViewData["Title"] = "Cihaz İşlemleri";
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Cihaz İşlemleri</h1>
+            <p class="text-muted mb-0">@Model.Form.Ad için bilgi güncelle ve stok hareketi işle.</p>
+        </div>
+        <a asp-action="Index" asp-route-sekme="cihaz" class="btn btn-outline-secondary">Cihazlara Dön</a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
+    {
+        <div class="alert alert-success" role="alert">@Model.BasariMesaji</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+    {
+        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <form asp-action="CihazGuncelle" method="post" class="border rounded-2 p-3">
+                <input type="hidden" name="Id" value="@Model.Form.Id" />
+                <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                    <h2 class="h6 mb-0">Cihaz Bilgileri</h2>
+                    <span class="badge text-bg-@(Model.Form.AktifMi ? "success" : "secondary")">@(Model.Form.AktifMi ? "Aktif" : "Pasif")</span>
+                </div>
+                <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ad</label>
+                        <input name="Ad" class="form-control" value="@Model.Form.Ad" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Marka</label>
+                        <input name="Marka" class="form-control" value="@Model.Form.Marka" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Model</label>
+                        <input name="Model" class="form-control" value="@Model.Form.Model" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Seri No</label>
+                        <input name="SeriNumarasi" class="form-control" value="@Model.Form.SeriNumarasi" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Asset Tag</label>
+                        <input name="AssetTag" class="form-control" value="@Model.Form.AssetTag" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Kategori</label>
+                        <select name="KategoriId" class="form-select">
+                            @foreach (var kategori in Model.Kategoriler)
+                            {
+                                <option value="@kategori.Id" selected="@(kategori.Id == Model.Form.KategoriId ? "selected" : null)">@kategori.Ad</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Lokasyon</label>
+                        <select name="LokasyonId" class="form-select">
+                            @foreach (var lokasyon in Model.Lokasyonlar)
+                            {
+                                <option value="@lokasyon.Id" selected="@(lokasyon.Id == Model.Form.LokasyonId ? "selected" : null)">@lokasyon.Ad</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Durum</label>
+                        <select name="Durum" class="form-select">
+                            @foreach (var durum in Enum.GetValues<CihazDurumuModel>())
+                            {
+                                <option value="@durum" selected="@(durum == Model.Form.Durum ? "selected" : null)">@durum</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Giriş Tarihi</label>
+                        <input name="EnvantereGirisTarihi" type="date" class="form-control" value="@(Model.Form.EnvantereGirisTarihi.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Çıkış Tarihi</label>
+                        <input name="EnvanterdenCikisTarihi" type="date" class="form-control" value="@(Model.Form.EnvanterdenCikisTarihi?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Elden Çıkarma</label>
+                        <select name="EldenCikarmaTipi" class="form-select">
+                            @foreach (var tip in Enum.GetValues<EldenCikarmaTipiModel>())
+                            {
+                                <option value="@tip" selected="@(tip == Model.Form.EldenCikarmaTipi ? "selected" : null)">@tip</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Satılan Kişi veya Kurum</label>
+                        <input name="SatilanKisiVeyaKurum" class="form-control" value="@Model.Form.SatilanKisiVeyaKurum" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Elden Çıkarma Açıklaması</label>
+                        <textarea name="EldenCikarmaAciklamasi" class="form-control" rows="3">@Model.Form.EldenCikarmaAciklamasi</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input name="AktifMi" value="true" class="form-check-input" type="checkbox" checked="@Model.Form.AktifMi" />
+                            <input type="hidden" name="AktifMi" value="false" />
+                            <label class="form-check-label">Aktif</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input name="ToplamVarligaDahilMi" value="true" class="form-check-input" type="checkbox" checked="@Model.Form.ToplamVarligaDahilMi" />
+                            <input type="hidden" name="ToplamVarligaDahilMi" value="false" />
+                            <label class="form-check-label">Toplam varlığa dahil</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button class="btn btn-primary" type="submit">Bilgileri Kaydet</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-xl-4">
+            <form asp-action="CihazStokHareketi" method="post" class="border rounded-2 p-3">
+                <input type="hidden" name="Id" value="@Model.Form.Id" />
+                <h2 class="h6 mb-3">Stok Hareketi</h2>
+                <div class="mb-3">
+                    <label class="form-label">Neden</label>
+                    <select name="Neden" class="form-select">
+                        @foreach (var neden in Enum.GetValues<StokHareketNedeniModel>())
+                        {
+                            <option value="@neden" selected="@(neden == Model.StokHareketi.Neden ? "selected" : null)">@neden</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Elden Çıkarma</label>
+                    <select name="EldenCikarmaTipi" class="form-select">
+                        @foreach (var tip in Enum.GetValues<EldenCikarmaTipiModel>())
+                        {
+                            <option value="@tip" selected="@(tip == Model.StokHareketi.EldenCikarmaTipi ? "selected" : null)">@tip</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Satılan Kişi veya Kurum</label>
+                    <input name="SatilanKisiVeyaKurum" class="form-control" value="@Model.StokHareketi.SatilanKisiVeyaKurum" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Açıklama</label>
+                    <textarea name="Aciklama" class="form-control" rows="4">@Model.StokHareketi.Aciklama</textarea>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Stok Hareketi İşle</button>
+            </form>
+        </div>
+    </div>
+</div>

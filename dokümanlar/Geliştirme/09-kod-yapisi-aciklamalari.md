@@ -230,3 +230,15 @@ EnvanterServisi cihaz durumlarını veritabanında string olarak saklar. Bu nede
 - `EldenCikarildi` -> `KullanimDisi`
 
 Bu migration uygulanmadan eski veritabanı kayıtları okunmaya çalışılırsa EF Core enum conversion hatası verir.
+
+## Envanter MVC Client İşlem Sayfaları
+
+Envanter yönetimi tarafında ana `Views/Envanter/Index.cshtml` ekranı listeleme ve yeni kayıt oluşturma amacıyla sade tutulur.
+
+- `Views/Envanter/Index.cshtml`: Stok özeti, kategori, lokasyon, cihaz ve sarf malzeme sekmelerini gösterir. Cihaz ve sarf malzeme sekmeleri tablo listeleme yapısındadır.
+- `Views/Envanter/CihazIslemleri.cshtml`: Tek bir cihazın bilgi güncelleme ve stok hareketi işleme formlarını içerir.
+- `Views/Envanter/SarfMalzemeIslemleri.cshtml`: Tek bir sarf malzemenin bilgi güncelleme ve stok hareketi işleme formlarını içerir.
+
+`EnvanterController` içinde `CihazIslemleri` ve `SarfMalzemeIslemleri` GET action'ları ilgili kaydı API'den tekil olarak çeker. Bu nedenle `EnvanterApiClient` içinde `CihazGetirAsync` ve `SarfMalzemeGetirAsync` metotları bulunur.
+
+Bu ayrım sayesinde büyük listelerde ana ekran taranabilir kalır; düzenleme ve stok hareketi gibi detay işlemler ayrı sayfada yapılır.
