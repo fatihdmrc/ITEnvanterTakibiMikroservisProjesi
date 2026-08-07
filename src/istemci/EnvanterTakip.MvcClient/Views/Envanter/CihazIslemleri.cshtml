@@ -51,7 +51,8 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Asset Tag</label>
-                        <input name="AssetTag" class="form-control" value="@Model.Form.AssetTag" />
+                        <input type="hidden" name="AssetTag" value="@Model.Form.AssetTag" />
+                        <div class="form-control bg-light">@(Model.Form.AssetTag ?? "-")</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Kategori</label>
@@ -159,6 +160,43 @@
                 </div>
                 <button class="btn btn-primary w-100" type="submit">Stok Hareketi İşle</button>
             </form>
+        </div>
+    </div>
+
+    <div class="border rounded-2 p-3 mt-4">
+        <h2 class="h6 mb-3">Stok Hareketi Geçmişi</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Hareket</th>
+                        <th>Neden</th>
+                        <th>Miktar</th>
+                        <th>Açıklama</th>
+                        <th>İşlemi Yapan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.StokHareketleri.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-muted">Stok hareketi bulunamadı.</td>
+                        </tr>
+                    }
+                    @foreach (var hareket in Model.StokHareketleri)
+                    {
+                        <tr>
+                            <td>@hareket.OlusturulmaTarihi.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@hareket.HareketTipi</td>
+                            <td>@hareket.Neden</td>
+                            <td>@(hareket.Miktar?.ToString() ?? "-")</td>
+                            <td>@(hareket.Aciklama ?? "-")</td>
+                            <td>@hareket.OlusturanKullaniciId</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

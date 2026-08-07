@@ -592,3 +592,13 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Cihazla ilgili bilgi güncelleme ve stok hareketi işlemleri `CihazIslemleri` sayfasında yapılacaktır.
 - Sarf malzemeyle ilgili bilgi güncelleme ve stok hareketi işlemleri `SarfMalzemeIslemleri` sayfasında yapılacaktır.
 - Bu ayrım, kayıt sayısı arttığında ana envanter ekranının taranabilir kalması ve kritik stok hareketlerinin ayrı bir işlem ekranında yürütülmesi için tercih edilmiştir.
+
+## 20. Cihaz AssetTag ve Stok Çıkışı Kararı - 2026-08-03
+
+- `AssetTag` kurum içi kalıcı demirbaş numarasıdır ve yeni cihaz oluşturulurken sistem tarafından otomatik üretilecektir.
+- Varsayılan format `BT-000001` şeklindedir.
+- MVC client üzerinde yeni cihaz oluştururken kullanıcıdan `AssetTag` istenmeyecektir.
+- Cihaz düzenleme sayfasında `AssetTag` salt okunur bilgi olarak gösterilecektir.
+- Cihaz listesi aktiflik, kategori ve lokasyon filtreleriyle süzülebilecektir.
+- Stok hareketi kayıtları veritabanında cihaz veya sarf malzeme bazında tutulacaktır ve cihaz işlem sayfasında cihaz geçmişi gösterilecektir.
+- Manuel stok çıkışı, kullanım ömrü bitişi, çalınma, kaybolma ve elden çıkarılmış hurda/ıskarta durumlarında cihaz pasif ve toplam varlık dışı yapılacaktır.

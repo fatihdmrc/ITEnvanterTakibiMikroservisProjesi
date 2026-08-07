@@ -180,9 +180,9 @@ public sealed class EnvanterYonetimServisi(
         return Sonuc<LokasyonCevap>.Basarili(LokasyonCevabaDonustur(lokasyon));
     }
 
-    public async Task<IReadOnlyCollection<CihazCevap>> CihazlariListeleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, CihazDurumu? durum = null, string? arama = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<CihazCevap>> CihazlariListeleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, bool? aktifMi = null, CihazDurumu? durum = null, string? arama = null, CancellationToken cancellationToken = default)
     {
-        var cihazlar = await cihazRepository.FiltreleAsync(kategoriId, lokasyonId, durum, arama, cancellationToken);
+        var cihazlar = await cihazRepository.FiltreleAsync(kategoriId, lokasyonId, aktifMi, durum, arama, cancellationToken);
         return cihazlar.Select(CihazCevabaDonustur).ToList();
     }
 
@@ -194,7 +194,9 @@ public sealed class EnvanterYonetimServisi(
 
     public async Task<Sonuc<CihazCevap>> CihazOlusturAsync(CihazOlusturIstek istek, CancellationToken cancellationToken = default)
     {
-        var kimlikKontrolu = await CihazKimlikBilgisiniDogrulaAsync(istek.SeriNumarasi, istek.AssetTag, null, cancellationToken);
+        var assetTag = BosIseNull(istek.AssetTag) ?? await SiradakiAssetTagUretAsync(cancellationToken);
+
+        var kimlikKontrolu = await CihazKimlikBilgisiniDogrulaAsync(istek.SeriNumarasi, assetTag, null, cancellationToken);
         if (!kimlikKontrolu.BasariliMi)
         {
             return Sonuc<CihazCevap>.Basarisiz(kimlikKontrolu.Hata!);
@@ -209,7 +211,7 @@ public sealed class EnvanterYonetimServisi(
         var cihaz = new Cihaz
         {
             SeriNumarasi = BosIseNull(istek.SeriNumarasi),
-            AssetTag = BosIseNull(istek.AssetTag),
+            AssetTag = assetTag,
             Ad = istek.Ad.Trim(),
             Marka = istek.Marka.Trim(),
             Model = istek.Model.Trim(),
@@ -232,7 +234,9 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<CihazCevap>.Basarisiz("Cihaz bulunamadı.");
         }
 
-        var kimlikKontrolu = await CihazKimlikBilgisiniDogrulaAsync(istek.SeriNumarasi, istek.AssetTag, id, cancellationToken);
+        var assetTag = BosIseNull(istek.AssetTag) ?? cihaz.AssetTag ?? await SiradakiAssetTagUretAsync(cancellationToken);
+
+        var kimlikKontrolu = await CihazKimlikBilgisiniDogrulaAsync(istek.SeriNumarasi, assetTag, id, cancellationToken);
         if (!kimlikKontrolu.BasariliMi)
         {
             return Sonuc<CihazCevap>.Basarisiz(kimlikKontrolu.Hata!);
@@ -245,7 +249,7 @@ public sealed class EnvanterYonetimServisi(
         }
 
         cihaz.SeriNumarasi = BosIseNull(istek.SeriNumarasi);
-        cihaz.AssetTag = BosIseNull(istek.AssetTag);
+        cihaz.AssetTag = assetTag;
         cihaz.Ad = istek.Ad.Trim();
         cihaz.Marka = istek.Marka.Trim();
         cihaz.Model = istek.Model.Trim();
@@ -430,9 +434,9 @@ public sealed class EnvanterYonetimServisi(
         return Sonuc<SarfMalzemeCevap>.Basarili(SarfMalzemeCevabaDonustur(sarfMalzeme));
     }
 
-    public async Task<IReadOnlyCollection<StokHareketiCevap>> StokHareketleriniListeleAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<StokHareketiCevap>> StokHareketleriniListeleAsync(Guid? cihazId = null, Guid? sarfMalzemeId = null, CancellationToken cancellationToken = default)
     {
-        var hareketler = await stokHareketiRepository.ListeleAsync(cancellationToken);
+        var hareketler = await stokHareketiRepository.FiltreleAsync(cihazId, sarfMalzemeId, cancellationToken);
         return hareketler.Select(StokHareketiCevabaDonustur).ToList();
     }
 
@@ -537,6 +541,22 @@ public sealed class EnvanterYonetimServisi(
         return Sonuc<bool>.Basarili(true);
     }
 
+    private async Task<string> SiradakiAssetTagUretAsync(CancellationToken cancellationToken)
+    {
+        var siraNumarasi = await cihazRepository.SonAssetTagSiraNumarasiAsync(cancellationToken);
+
+        while (true)
+        {
+            siraNumarasi++;
+            var assetTag = $"BT-{siraNumarasi:000000}";
+
+            if (!await cihazRepository.SeriNumarasiVeyaAssetTagKullaniliyorMuAsync(null, assetTag, null, cancellationToken))
+            {
+                return assetTag;
+            }
+        }
+    }
+
     private static Sonuc<bool> CihazDurumunuStokHareketineGoreGuncelle(Cihaz cihaz, CihazStokHareketiIstek istek)
     {
         switch (istek.Neden)
@@ -548,12 +568,14 @@ public sealed class EnvanterYonetimServisi(
 
             case StokHareketNedeni.Calinma:
                 cihaz.Durum = CihazDurumu.Calindi;
+                cihaz.AktifMi = false;
                 cihaz.ToplamVarligaDahilMi = false;
                 cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 return Sonuc<bool>.Basarili(true);
 
             case StokHareketNedeni.Kaybolma:
                 cihaz.Durum = CihazDurumu.Kayip;
+                cihaz.AktifMi = false;
                 cihaz.ToplamVarligaDahilMi = false;
                 cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 return Sonuc<bool>.Basarili(true);
@@ -568,6 +590,7 @@ public sealed class EnvanterYonetimServisi(
                 }
 
                 cihaz.Durum = CihazDurumu.KullanimDisi;
+                cihaz.AktifMi = false;
                 cihaz.ToplamVarligaDahilMi = false;
                 cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi;
@@ -579,6 +602,7 @@ public sealed class EnvanterYonetimServisi(
             case StokHareketNedeni.KullanimOmruBitti:
             case StokHareketNedeni.FizikselSayimDuzeltmesi:
                 cihaz.Durum = CihazDurumu.KullanimDisi;
+                cihaz.AktifMi = false;
                 cihaz.ToplamVarligaDahilMi = false;
                 cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi == EldenCikarmaTipi.Yok

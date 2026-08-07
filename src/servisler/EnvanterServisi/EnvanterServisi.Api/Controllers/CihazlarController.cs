@@ -16,11 +16,12 @@ public sealed class CihazlarController(IEnvanterServisi envanterServisi) : Contr
     public async Task<ActionResult<IReadOnlyCollection<CihazCevap>>> Listele(
         [FromQuery] Guid? kategoriId,
         [FromQuery] Guid? lokasyonId,
+        [FromQuery] bool? aktifMi,
         [FromQuery] CihazDurumu? durum,
         [FromQuery] string? arama,
         CancellationToken cancellationToken)
     {
-        return Ok(await envanterServisi.CihazlariListeleAsync(kategoriId, lokasyonId, durum, arama, cancellationToken));
+        return Ok(await envanterServisi.CihazlariListeleAsync(kategoriId, lokasyonId, aktifMi, durum, arama, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]

@@ -417,3 +417,11 @@ Envanter ekranında cihaz ve sarf malzeme yönetimi artık listeleme ve işlem s
 - Sarf malzeme bilgisi güncelleme ve sarf malzeme stok hareketi işleme bu sayfada yapılır.
 
 Kategori ve lokasyon yönetimi mevcut tek sayfa akışını korur.
+
+Ek cihaz yönetimi notları:
+
+- Yeni cihaz oluştururken AssetTag girilmez; sistem otomatik `BT-...` numarası üretir.
+- Cihazlar sekmesinde aktif/pasif, kategori ve lokasyon filtreleriyle liste daraltılabilir.
+- Cihaz işlem sayfasında stok hareketi işlendiğinde aynı sayfada hareket geçmişi görülebilir.
+- Manuel stok çıkışı ve benzeri envanter dışına çıkarma işlemlerinden sonra cihaz pasif ve toplam varlık dışı hale gelir.
+- Boş AssetTag değerlerini dolduran `AssetTagBosCihazlariDoldur` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.

@@ -55,7 +55,29 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         }, token);
 
     public Task<ApiListeSonucu<CihazModel>> CihazlariListeleAsync(string? token)
-        => GetListeAsync<CihazModel>("/api/cihazlar", token);
+        => CihazlariListeleAsync(new CihazFiltreModel(), token);
+
+    public Task<ApiListeSonucu<CihazModel>> CihazlariListeleAsync(CihazFiltreModel filtre, string? token)
+    {
+        var parametreler = new List<KeyValuePair<string, string>>();
+
+        if (filtre.KategoriId.HasValue)
+        {
+            parametreler.Add(new("kategoriId", filtre.KategoriId.Value.ToString()));
+        }
+
+        if (filtre.LokasyonId.HasValue)
+        {
+            parametreler.Add(new("lokasyonId", filtre.LokasyonId.Value.ToString()));
+        }
+
+        if (filtre.AktifMi.HasValue)
+        {
+            parametreler.Add(new("aktifMi", filtre.AktifMi.Value.ToString().ToLowerInvariant()));
+        }
+
+        return GetListeAsync<CihazModel>(QueryStringEkle("/api/cihazlar", parametreler), token);
+    }
 
     public Task<ApiIslemSonucu<CihazModel>> CihazGetirAsync(Guid id, string? token)
         => GetAsync<CihazModel>($"/api/cihazlar/{id}", token);
@@ -64,7 +86,6 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         => PostAsync<CihazModel>("/api/cihazlar", new
         {
             form.SeriNumarasi,
-            form.AssetTag,
             form.Ad,
             form.Marka,
             form.Model,
@@ -139,6 +160,23 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             form.Miktar,
             form.Aciklama
         }, token);
+
+    public Task<ApiListeSonucu<StokHareketiModel>> StokHareketleriniListeleAsync(Guid? cihazId, Guid? sarfMalzemeId, string? token)
+    {
+        var parametreler = new List<KeyValuePair<string, string>>();
+
+        if (cihazId.HasValue)
+        {
+            parametreler.Add(new("cihazId", cihazId.Value.ToString()));
+        }
+
+        if (sarfMalzemeId.HasValue)
+        {
+            parametreler.Add(new("sarfMalzemeId", sarfMalzemeId.Value.ToString()));
+        }
+
+        return GetListeAsync<StokHareketiModel>(QueryStringEkle("/api/stok/hareketler", parametreler), token);
+    }
 
     public async Task<ApiIslemSonucu<StokOzetModel>> StokOzetiniGetirAsync(string? token)
     {
@@ -261,6 +299,19 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         {
             istek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
+    }
+
+    private static string QueryStringEkle(string adres, IReadOnlyCollection<KeyValuePair<string, string>> parametreler)
+    {
+        if (parametreler.Count == 0)
+        {
+            return adres;
+        }
+
+        var query = string.Join("&", parametreler.Select(parametre =>
+            $"{Uri.EscapeDataString(parametre.Key)}={Uri.EscapeDataString(parametre.Value)}"));
+
+        return $"{adres}?{query}";
     }
 
     private static async Task<ApiIslemSonucu<T>> CevabiOku<T>(HttpResponseMessage cevap)

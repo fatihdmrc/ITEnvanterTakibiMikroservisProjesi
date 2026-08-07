@@ -11,13 +11,19 @@ public sealed class EnvanterController(
 {
     private const string TokenSessionKey = "KimlikToken";
 
-    public async Task<IActionResult> Index(string? sekme)
+    public async Task<IActionResult> Index(string? sekme, Guid? cihazKategoriId, Guid? cihazLokasyonId, bool? cihazAktifMi)
     {
         var token = TokenAl();
         var model = new EnvanterPanelModel
         {
             OturumVarMi = !string.IsNullOrWhiteSpace(token),
             AktifSekme = SekmeDogrula(sekme),
+            CihazFiltre = new CihazFiltreModel
+            {
+                KategoriId = cihazKategoriId,
+                LokasyonId = cihazLokasyonId,
+                AktifMi = cihazAktifMi
+            },
             BasariMesaji = TempData["BasariMesaji"] as string,
             HataMesaji = TempData["HataMesaji"] as string
         };
@@ -30,7 +36,7 @@ public sealed class EnvanterController(
             var lokasyonSonucu = await envanterApiClient.LokasyonlariListeleAsync(token);
             model.Lokasyonlar = ListeSonucunuYansit(model, "Lokasyonlar", lokasyonSonucu);
 
-            var cihazSonucu = await envanterApiClient.CihazlariListeleAsync(token);
+            var cihazSonucu = await envanterApiClient.CihazlariListeleAsync(model.CihazFiltre, token);
             model.Cihazlar = ListeSonucunuYansit(model, "Cihazlar", cihazSonucu);
 
             var sarfSonucu = await envanterApiClient.SarfMalzemeleriListeleAsync(token);
@@ -366,6 +372,7 @@ public sealed class EnvanterController(
 
         var kategoriler = await KategorileriGetir(token, VarlikTuruModel.SeriNumarali, cihazSonucu.Veri.KategoriId);
         var lokasyonlar = await LokasyonlariGetir(token, cihazSonucu.Veri.LokasyonId);
+        var stokHareketleriSonucu = await envanterApiClient.StokHareketleriniListeleAsync(cihazSonucu.Veri.Id, null, token);
 
         return new CihazIslemleriSayfaModel
         {
@@ -389,8 +396,12 @@ public sealed class EnvanterController(
                 ToplamVarligaDahilMi = cihazSonucu.Veri.ToplamVarligaDahilMi
             },
             StokHareketi = new CihazStokHareketiFormModel { Id = cihazSonucu.Veri.Id },
+            StokHareketleri = stokHareketleriSonucu.BasariliMi ? stokHareketleriSonucu.Veri : [],
             Kategoriler = kategoriler,
-            Lokasyonlar = lokasyonlar
+            Lokasyonlar = lokasyonlar,
+            HataMesaji = stokHareketleriSonucu.BasariliMi
+                ? null
+                : $"Stok hareketi geÃ§miÅŸi alÄ±namadÄ±: {stokHareketleriSonucu.Hata}"
         };
     }
 

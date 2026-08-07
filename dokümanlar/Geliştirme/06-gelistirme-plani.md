@@ -174,5 +174,9 @@ Envanter client tarafında cihaz ve sarf malzeme yönetimi, kayıt sayısı artt
 - Sarf malzemeler ana envanter ekranında tablo halinde listelenir.
 - Sarf malzeme düzenleme ve sarf malzeme stok hareketi işleme işlemleri `SarfMalzemeIslemleri` sayfasında yapılır.
 - Kategori ve lokasyon yönetimi şimdilik tek sayfa üzerindeki satır içi yönetim yapısını korur.
+- Yeni cihaz oluşturulurken `AssetTag` sistem tarafından `BT-000001` formatında otomatik üretilir.
+- Cihazlar sekmesinde aktiflik, kategori ve lokasyon filtreleri bulunur.
+- Cihaz işlem sayfasında ilgili cihazın stok hareketi geçmişi görüntülenir.
+- Cihaz stok çıkışı gerçekten envanter dışına çıkarma anlamı taşıyorsa cihaz otomatik pasif ve toplam varlık dışı yapılır.
 
 Bu karar Faz 4 sınırı içindedir. Faz 5 ve sonrası hâlâ geliştirme kapsamı dışında tutulmaktadır.

@@ -9,6 +9,7 @@ public sealed class EnvanterPanelModel
     public IReadOnlyCollection<CihazModel> Cihazlar { get; set; } = [];
     public IReadOnlyCollection<SarfMalzemeModel> SarfMalzemeler { get; set; } = [];
     public StokOzetModel StokOzet { get; set; } = new(0, 0, 0, []);
+    public CihazFiltreModel CihazFiltre { get; set; } = new();
     public List<string> ListelemeHatalari { get; set; } = [];
     public string AktifSekme { get; set; } = "stok";
     public string? BasariMesaji { get; set; }
@@ -20,6 +21,7 @@ public sealed class CihazIslemleriSayfaModel
 {
     public CihazGuncelleFormModel Form { get; set; } = new();
     public CihazStokHareketiFormModel StokHareketi { get; set; } = new();
+    public IReadOnlyCollection<StokHareketiModel> StokHareketleri { get; set; } = [];
     public IReadOnlyCollection<KategoriModel> Kategoriler { get; set; } = [];
     public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
     public string? BasariMesaji { get; set; }
@@ -34,6 +36,13 @@ public sealed class SarfMalzemeIslemleriSayfaModel
     public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
     public string? BasariMesaji { get; set; }
     public string? HataMesaji { get; set; }
+}
+
+public sealed class CihazFiltreModel
+{
+    public Guid? KategoriId { get; set; }
+    public Guid? LokasyonId { get; set; }
+    public bool? AktifMi { get; set; }
 }
 
 public class KategoriOlusturFormModel
@@ -69,7 +78,6 @@ public sealed class LokasyonGuncelleFormModel : LokasyonOlusturFormModel
 public class CihazOlusturFormModel
 {
     public string? SeriNumarasi { get; set; }
-    public string? AssetTag { get; set; }
 
     [Required(ErrorMessage = "Cihaz adı zorunludur.")]
     public string Ad { get; set; } = string.Empty;
@@ -92,6 +100,7 @@ public class CihazOlusturFormModel
 public sealed class CihazGuncelleFormModel : CihazOlusturFormModel
 {
     public Guid Id { get; set; }
+    public string? AssetTag { get; set; }
     public CihazDurumuModel Durum { get; set; } = CihazDurumuModel.Kullanilabilir;
     public DateOnly? EnvanterdenCikisTarihi { get; set; }
     public EldenCikarmaTipiModel EldenCikarmaTipi { get; set; } = EldenCikarmaTipiModel.Yok;
@@ -196,6 +205,17 @@ public sealed record KritikStokModel(
     string? Model,
     int MevcutMiktar,
     int KritikStokSeviyesi);
+
+public sealed record StokHareketiModel(
+    Guid Id,
+    Guid? CihazId,
+    Guid? SarfMalzemeId,
+    StokHareketTipiModel HareketTipi,
+    StokHareketNedeniModel Neden,
+    int? Miktar,
+    string? Aciklama,
+    Guid OlusturanKullaniciId,
+    DateTime OlusturulmaTarihi);
 
 public enum VarlikTuruModel
 {

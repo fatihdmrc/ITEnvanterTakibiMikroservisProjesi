@@ -14,4 +14,23 @@ public sealed class EfStokHareketiRepository(EnvanterDbContext dbContext)
             .OrderByDescending(stokHareketi => stokHareketi.OlusturulmaTarihi)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyCollection<StokHareketi>> FiltreleAsync(Guid? cihazId = null, Guid? sarfMalzemeId = null, CancellationToken cancellationToken = default)
+    {
+        var sorgu = DbSet.AsNoTracking();
+
+        if (cihazId.HasValue)
+        {
+            sorgu = sorgu.Where(stokHareketi => stokHareketi.CihazId == cihazId.Value);
+        }
+
+        if (sarfMalzemeId.HasValue)
+        {
+            sorgu = sorgu.Where(stokHareketi => stokHareketi.SarfMalzemeId == sarfMalzemeId.Value);
+        }
+
+        return await sorgu
+            .OrderByDescending(stokHareketi => stokHareketi.OlusturulmaTarihi)
+            .ToListAsync(cancellationToken);
+    }
 }

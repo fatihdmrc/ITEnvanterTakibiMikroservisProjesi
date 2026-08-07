@@ -3,6 +3,8 @@
     ViewData["Title"] = "Envanter";
     var seriKategoriler = Model.Kategoriler.Where(kategori => kategori.AktifMi && kategori.VarlikTuru == VarlikTuruModel.SeriNumarali).ToList();
     var sarfKategoriler = Model.Kategoriler.Where(kategori => kategori.AktifMi && kategori.VarlikTuru == VarlikTuruModel.SarfMalzeme).ToList();
+    var cihazFiltreKategorileri = Model.Kategoriler.Where(kategori => kategori.VarlikTuru == VarlikTuruModel.SeriNumarali).ToList();
+    var cihazFiltreLokasyonlari = Model.Lokasyonlar.ToList();
     var aktifLokasyonlar = Model.Lokasyonlar.Where(lokasyon => lokasyon.AktifMi).ToList();
     var stokAktif = Model.AktifSekme == "stok";
     var kategoriAktif = Model.AktifSekme == "kategori";
@@ -136,6 +138,43 @@
         <div class="tab-pane fade @(kategoriAktif ? "show active" : "")" id="kategori" role="tabpanel" aria-labelledby="kategori-tab">
             <div class="row g-4">
                 <div class="col-xl-8">
+                    <form asp-action="Index" method="get" class="border rounded-2 p-3 mb-3">
+                        <input type="hidden" name="sekme" value="cihaz" />
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label small">Aktiflik</label>
+                                <select name="cihazAktifMi" class="form-select form-select-sm">
+                                    <option value="" selected="@(Model.CihazFiltre.AktifMi is null ? "selected" : null)">Tümü</option>
+                                    <option value="true" selected="@(Model.CihazFiltre.AktifMi == true ? "selected" : null)">Aktif</option>
+                                    <option value="false" selected="@(Model.CihazFiltre.AktifMi == false ? "selected" : null)">Pasif</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Kategori</label>
+                                <select name="cihazKategoriId" class="form-select form-select-sm">
+                                    <option value="">Tümü</option>
+                                    @foreach (var kategori in cihazFiltreKategorileri)
+                                    {
+                                        <option value="@kategori.Id" selected="@(kategori.Id == Model.CihazFiltre.KategoriId ? "selected" : null)">@kategori.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Lokasyon</label>
+                                <select name="cihazLokasyonId" class="form-select form-select-sm">
+                                    <option value="">Tümü</option>
+                                    @foreach (var lokasyon in cihazFiltreLokasyonlari)
+                                    {
+                                        <option value="@lokasyon.Id" selected="@(lokasyon.Id == Model.CihazFiltre.LokasyonId ? "selected" : null)">@lokasyon.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12 d-flex gap-2">
+                                <button class="btn btn-sm btn-primary" type="submit">Filtrele</button>
+                                <a asp-action="Index" asp-route-sekme="cihaz" class="btn btn-sm btn-outline-secondary">Temizle</a>
+                            </div>
+                        </div>
+                    </form>
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
                             <thead>
@@ -369,10 +408,6 @@
                             <div class="col-sm-6">
                                 <label class="form-label">Seri No</label>
                                 <input name="SeriNumarasi" class="form-control" />
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label">Asset Tag</label>
-                                <input name="AssetTag" class="form-control" />
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label">Giriş</label>

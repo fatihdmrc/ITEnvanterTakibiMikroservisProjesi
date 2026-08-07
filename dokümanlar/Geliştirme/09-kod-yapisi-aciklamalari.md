@@ -242,3 +242,13 @@ Envanter yönetimi tarafında ana `Views/Envanter/Index.cshtml` ekranı listelem
 `EnvanterController` içinde `CihazIslemleri` ve `SarfMalzemeIslemleri` GET action'ları ilgili kaydı API'den tekil olarak çeker. Bu nedenle `EnvanterApiClient` içinde `CihazGetirAsync` ve `SarfMalzemeGetirAsync` metotları bulunur.
 
 Bu ayrım sayesinde büyük listelerde ana ekran taranabilir kalır; düzenleme ve stok hareketi gibi detay işlemler ayrı sayfada yapılır.
+
+## Cihaz AssetTag ve Stok Hareketi Akışı
+
+Yeni cihaz oluşturma isteklerinde `AssetTag` boş gelirse `EnvanterYonetimServisi` sıradaki `BT-000001` formatlı değeri üretir. MVC client cihaz oluşturma formu artık asset tag alanı göstermez; cihaz düzenleme sayfasında değer salt okunur gösterilir.
+
+`GET /api/cihazlar` endpointi kategori, lokasyon, durum, arama ve `aktifMi` filtrelerini destekler. MVC Envanter ekranındaki Cihazlar sekmesi aktiflik, kategori ve lokasyon filtrelerini bu endpoint üzerinden uygular.
+
+Stok hareketleri `StokHareketleri` tablosunda tutulur. `GET /api/stok/hareketler` endpointi cihaz veya sarf malzeme id'siyle filtrelenebilir. `CihazIslemleri` sayfası ilgili cihazın geçmiş stok hareketlerini bu endpoint üzerinden gösterir.
+
+Manuel stok çıkışı, kullanım ömrü bitişi, çalınma, kaybolma ve elden çıkarma içeren hurda/ıskarta işlemleri cihazın `AktifMi` değerini `false`, `ToplamVarligaDahilMi` değerini `false` yapar ve çıkış tarihini doldurur.

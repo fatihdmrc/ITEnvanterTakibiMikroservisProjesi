@@ -544,3 +544,27 @@ Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+### Cihaz AssetTag, filtreleme ve stok hareketi geçmişi iyileştirildi
+
+Ne yapıldı:
+
+- Yeni cihaz oluştururken `AssetTag` alanı MVC client formundan kaldırıldı.
+- EnvanterServisi, boş gelen `AssetTag` için `BT-000001` formatında sıradaki demirbaş numarasını otomatik üretir hale getirildi.
+- `AssetTagBosCihazlariDoldur` migration'ı eklendi. Bu migration mevcut veritabanında `AssetTag` değeri boş olan cihazları benzersiz `BT-...` değerleriyle doldurur.
+- Cihaz güncelleme ekranında `AssetTag` salt okunur bilgi olarak gösterilir ve form gönderiminde mevcut değer korunur.
+- `GET /api/cihazlar` endpointine `aktifMi` filtresi eklendi.
+- MVC Cihazlar sekmesine aktiflik, kategori ve lokasyon filtreleri eklendi.
+- `GET /api/stok/hareketler` endpointi `cihazId` ve `sarfMalzemeId` query filtrelerini destekler hale getirildi.
+- `CihazIslemleri` sayfasında ilgili cihazın stok hareketi geçmişi gösterilmeye başlandı.
+- Cihaz stok çıkışında çalınma, kaybolma, elden çıkarılmış hurda/ıskarta, manuel stok çıkışı, kullanım ömrü bitişi ve fiziksel sayım düzeltmesi cihazı otomatik pasif ve toplam varlık dışı yapacak şekilde netleştirildi.
+
+Neden yapıldı:
+
+- Asset tag kurum içi kalıcı demirbaş numarası olduğu için kullanıcı hatasına açık elle giriş yerine sistem tarafından üretilmelidir.
+- Cihaz sayısı arttığında aktif/pasif, kategori ve lokasyon filtreleri olmadan liste yönetimi zorlaşır.
+- Stok hareketi işlendiğinde geçmişin görünmemesi operasyon takibini eksik bırakıyordu.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

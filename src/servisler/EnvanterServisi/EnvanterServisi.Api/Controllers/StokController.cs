@@ -15,8 +15,13 @@ public sealed class StokController(IEnvanterServisi envanterServisi) : Controlle
         => Ok(await envanterServisi.StokOzetiniGetirAsync(cancellationToken));
 
     [HttpGet("hareketler")]
-    public async Task<ActionResult<IReadOnlyCollection<StokHareketiCevap>>> HareketleriListele(CancellationToken cancellationToken)
-        => Ok(await envanterServisi.StokHareketleriniListeleAsync(cancellationToken));
+    public async Task<ActionResult<IReadOnlyCollection<StokHareketiCevap>>> HareketleriListele(
+        [FromQuery] Guid? cihazId,
+        [FromQuery] Guid? sarfMalzemeId,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await envanterServisi.StokHareketleriniListeleAsync(cihazId, sarfMalzemeId, cancellationToken));
+    }
 
     [HttpGet("kritik-kurallar")]
     public async Task<ActionResult<IReadOnlyCollection<KritikStokKuraliCevap>>> KritikKurallariListele(CancellationToken cancellationToken)

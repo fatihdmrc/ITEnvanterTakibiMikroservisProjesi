@@ -17,7 +17,7 @@ public sealed class EfCihazRepository(EnvanterDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<Cihaz>> FiltreleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, CihazDurumu? durum = null, string? arama = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<Cihaz>> FiltreleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, bool? aktifMi = null, CihazDurumu? durum = null, string? arama = null, CancellationToken cancellationToken = default)
     {
         var sorgu = DbSet.AsNoTracking();
 
@@ -29,6 +29,11 @@ public sealed class EfCihazRepository(EnvanterDbContext dbContext)
         if (lokasyonId.HasValue)
         {
             sorgu = sorgu.Where(cihaz => cihaz.LokasyonId == lokasyonId.Value);
+        }
+
+        if (aktifMi.HasValue)
+        {
+            sorgu = sorgu.Where(cihaz => cihaz.AktifMi == aktifMi.Value);
         }
 
         if (durum.HasValue)
@@ -62,6 +67,20 @@ public sealed class EfCihazRepository(EnvanterDbContext dbContext)
             cancellationToken);
     }
 
+    public async Task<int> SonAssetTagSiraNumarasiAsync(CancellationToken cancellationToken = default)
+    {
+        var assetTagler = await DbSet
+            .AsNoTracking()
+            .Where(cihaz => cihaz.AssetTag != null && cihaz.AssetTag.StartsWith("BT-"))
+            .Select(cihaz => cihaz.AssetTag!)
+            .ToListAsync(cancellationToken);
+
+        return assetTagler
+            .Select(AssetTagSiraNumarasiniCoz)
+            .DefaultIfEmpty(0)
+            .Max();
+    }
+
     public async Task<int> ToplamVarlikSayisiAsync(CancellationToken cancellationToken = default)
     {
         return await DbSet.CountAsync(cihaz => cihaz.AktifMi && cihaz.ToplamVarligaDahilMi, cancellationToken);
@@ -76,5 +95,12 @@ public sealed class EfCihazRepository(EnvanterDbContext dbContext)
             (!lokasyonId.HasValue || cihaz.LokasyonId == lokasyonId.Value) &&
             (string.IsNullOrWhiteSpace(model) || cihaz.Model == model),
             cancellationToken);
+    }
+
+    private static int AssetTagSiraNumarasiniCoz(string assetTag)
+    {
+        return int.TryParse(assetTag["BT-".Length..], out var siraNumarasi)
+            ? siraNumarasi
+            : 0;
     }
 }

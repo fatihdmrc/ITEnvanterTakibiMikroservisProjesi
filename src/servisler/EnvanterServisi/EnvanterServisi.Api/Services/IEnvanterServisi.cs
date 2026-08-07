@@ -19,7 +19,7 @@ public interface IEnvanterServisi
     Task<Sonuc<LokasyonCevap>> LokasyonOlusturAsync(LokasyonOlusturIstek istek, CancellationToken cancellationToken = default);
     Task<Sonuc<LokasyonCevap>> LokasyonGuncelleAsync(Guid id, LokasyonGuncelleIstek istek, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<CihazCevap>> CihazlariListeleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, CihazDurumu? durum = null, string? arama = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<CihazCevap>> CihazlariListeleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, bool? aktifMi = null, CihazDurumu? durum = null, string? arama = null, CancellationToken cancellationToken = default);
     Task<CihazCevap?> CihazGetirAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Sonuc<CihazCevap>> CihazOlusturAsync(CihazOlusturIstek istek, CancellationToken cancellationToken = default);
     Task<Sonuc<CihazCevap>> CihazGuncelleAsync(Guid id, CihazGuncelleIstek istek, CancellationToken cancellationToken = default);
@@ -31,7 +31,7 @@ public interface IEnvanterServisi
     Task<Sonuc<SarfMalzemeCevap>> SarfMalzemeGuncelleAsync(Guid id, SarfMalzemeGuncelleIstek istek, CancellationToken cancellationToken = default);
     Task<Sonuc<SarfMalzemeCevap>> SarfMalzemeStokHareketiIsleAsync(Guid id, SarfMalzemeStokHareketiIstek istek, Guid olusturanKullaniciId, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<StokHareketiCevap>> StokHareketleriniListeleAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<StokHareketiCevap>> StokHareketleriniListeleAsync(Guid? cihazId = null, Guid? sarfMalzemeId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<KritikStokKuraliCevap>> KritikStokKurallariniListeleAsync(CancellationToken cancellationToken = default);
     Task<Sonuc<KritikStokKuraliCevap>> KritikStokKuraliOlusturAsync(KritikStokKuraliOlusturIstek istek, CancellationToken cancellationToken = default);
     Task<Sonuc<KritikStokKuraliCevap>> KritikStokKuraliGuncelleAsync(Guid id, KritikStokKuraliGuncelleIstek istek, CancellationToken cancellationToken = default);
