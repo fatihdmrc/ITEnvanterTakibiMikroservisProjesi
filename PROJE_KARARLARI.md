@@ -581,7 +581,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 ## 18. Güncel Uygulama Kararları - 2026-08-02
 
 - Proje geliştirmesi şimdilik Faz 4 sınırında tutulacaktır.
-- Faz 5 ve sonrası için ZimmetServisi, ApiGateway, CAP/RabbitMQ, audit log, Redis ve SignalR daha sonra ele alınacaktır.
+- Faz 5 ve sonrası için ZimmetServisi, CAP/RabbitMQ, audit log, Redis, SignalR ve ApiGateway daha sonra ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
 - Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
 - `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
 - Cihazlarda `AktifMi` manuel pasifleştirme checkbox'ı olarak kullanılmayacaktır. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden sistem tarafından hesaplanacaktır.

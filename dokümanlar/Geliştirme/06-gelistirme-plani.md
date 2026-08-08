@@ -88,14 +88,7 @@ Bu hedefin seçilme nedeni:
 - İade kontrolünde cihaz durumu `Incelemede`, `Kullanilabilir`, `Bakimda` veya `HurdaIskarta` olarak güncellenir.
 - Zimmet ve iade fotoğraf dosya yolu kayıtları eklenir.
 
-### Faz 6 - ApiGateway Entegrasyonu
-
-- YARP tabanlı ApiGateway projesi eklenir.
-- Client uygulamasının servis çağrıları ApiGateway üzerinden yapılacak hale getirilir.
-- Route bazlı yönlendirme yapılandırılır.
-- Gerekli route'larda JWT doğrulama ve rol bazlı yetkilendirme uygulanır.
-
-### Faz 7 - CAP + RabbitMQ + Outbox
+### Faz 6 - CAP + RabbitMQ + Outbox
 
 - RabbitMQ Docker Compose'a eklenir.
 - DotNetCore.CAP servislerde yapılandırılır.
@@ -103,7 +96,7 @@ Bu hedefin seçilme nedeni:
 - Zimmet, iade, stok ve personel ayrılış eventleri yayınlanır.
 - Eventlerde gerekli kullanıcı bağlamı taşınır.
 
-### Faz 8 - DenetimKaydiServisi
+### Faz 7 - DenetimKaydiServisi
 
 - MongoDB Docker Compose'a eklenir.
 - DenetimKaydiServisi oluşturulur.
@@ -112,18 +105,26 @@ Bu hedefin seçilme nedeni:
 - CRUD audit log yaklaşımı tasarlanır ve uygulanır.
 - Audit sorgulama endpointleri hazırlanır.
 
-### Faz 9 - Redis Cache
+### Faz 8 - Redis Cache
 
 - Redis Docker Compose'a eklenir.
 - Kategori ve lokasyon listeleri cache'lenir.
 - Kategori veya lokasyon değiştiğinde cache invalidation uygulanır.
 
-### Faz 10 - SignalR Bildirimleri
+### Faz 9 - SignalR Bildirimleri
 
 - BildirimServisi oluşturulur.
 - Sadece `KritikStokSeviyesineDusuldu` eventi dinlenir.
 - SignalR NotificationHub geliştirilir.
 - MVC client üzerinde kritik stok bildirim paneli hazırlanır.
+
+### Faz 10 - ApiGateway Entegrasyonu
+
+- YARP tabanlı ApiGateway projesi eklenir.
+- Client uygulamasının servis çağrıları ApiGateway üzerinden yapılacak hale getirilir.
+- Route bazlı yönlendirme yapılandırılır.
+- Gerekli route'larda JWT doğrulama ve rol bazlı yetkilendirme uygulanır.
+- ApiGateway, servis yüzeyi ve bildirim/audit akışları netleştikten sonra Demo ve Dokümantasyon fazından hemen önce eklenecektir.
 
 ### Faz 11 - Demo ve Dokümantasyon
 
@@ -163,7 +164,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 ### Uygulama kararı
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
-- Faz 5 ve sonrası şu an geliştirme kapsamı dışında bırakılmıştır. ZimmetServisi, ApiGateway, event bus, audit log, cache ve bildirim fazları daha sonra ele alınacaktır.
+- Faz 5 ve sonrası şu an geliştirme kapsamı dışında bırakılmıştır. Sıradaki fazlar sırasıyla ZimmetServisi, CAP/RabbitMQ, audit log, cache, bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
 
 ## 6. Güncel Faz 4 Client Kararı - 2026-08-03
 

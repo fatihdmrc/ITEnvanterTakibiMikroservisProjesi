@@ -425,7 +425,7 @@ Doğrulama:
 Ne yapıldı:
 
 - Geliştirme kapsamının şimdilik Faz 4'te bırakılmasına karar verildi.
-- Daha önce deneme olarak eklenen Faz 5 ve Faz 6 kapsamındaki `ZimmetServisi` ve `ApiGateway` dosyaları kaldırıldı.
+- Daha önce deneme olarak eklenen `ZimmetServisi` ve `ApiGateway` dosyaları kaldırıldı.
 - Solution dosyasında yalnızca şu projelerin kalması doğrulandı:
   - `EnvanterTakip.MvcClient`
   - `KimlikVePersonelServisi.Api`
@@ -670,4 +670,23 @@ Neden yapıldı:
 Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### ApiGateway faz sırası Demo öncesine taşındı
+
+Ne yapıldı:
+
+- ApiGateway entegrasyonu mevcut Faz 6 konumundan çıkarıldı.
+- CAP/RabbitMQ, DenetimKaydiServisi, Redis ve SignalR fazları birer sıra öne çekildi.
+- ApiGateway entegrasyonu Faz 10 olarak Demo ve Dokümantasyon fazından hemen önceye alındı.
+- Demo ve Dokümantasyon fazı son faz olarak korundu.
+
+Neden yapıldı:
+
+- ApiGateway erken eklendiğinde servis yüzeyi ve client akışları değiştikçe gateway route'ları tekrar tekrar düzenlenmek zorunda kalabilir.
+- Zimmet, event, audit, cache ve bildirim akışları netleştikten sonra gateway tüm servis yüzeyini daha doğru biçimde merkezileştirir.
+- Demo öncesinde gateway eklemek, demo akışının nihai mimariye daha yakın gösterilmesini sağlar.
+
+Doğrulama:
+
+- `rg "Faz 6|Faz 10|ApiGateway"` ile faz numaraları ve ApiGateway referansları kontrol edildi.
 
