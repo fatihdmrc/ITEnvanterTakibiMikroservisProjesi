@@ -220,6 +220,8 @@ public sealed class EnvanterYonetimServisi(
             EnvantereGirisTarihi = istek.EnvantereGirisTarihi
         };
 
+        CihazKapsamAlanlariniDurumaGoreGuncelle(cihaz);
+
         cihazRepository.Ekle(cihaz);
         await cihazRepository.KaydetAsync(cancellationToken);
 
@@ -255,25 +257,14 @@ public sealed class EnvanterYonetimServisi(
         cihaz.Model = istek.Model.Trim();
         cihaz.KategoriId = istek.KategoriId;
         cihaz.LokasyonId = istek.LokasyonId;
-        cihaz.Durum = istek.Durum;
         cihaz.EnvantereGirisTarihi = istek.EnvantereGirisTarihi;
-        cihaz.EnvanterdenCikisTarihi = istek.EnvanterdenCikisTarihi;
-        cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi;
-        cihaz.EldenCikarmaAciklamasi = BosIseNull(istek.EldenCikarmaAciklamasi);
-        cihaz.SatilanKisiVeyaKurum = BosIseNull(istek.SatilanKisiVeyaKurum);
-        cihaz.AktifMi = istek.AktifMi;
-        cihaz.ToplamVarligaDahilMi = istek.Durum == CihazDurumu.KullanimDisi ? false : istek.ToplamVarligaDahilMi;
-
-        if (cihaz.Durum == CihazDurumu.KullanimDisi)
-        {
-            cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
-        }
+        CihazKapsamAlanlariniDurumaGoreGuncelle(cihaz);
 
         await cihazRepository.KaydetAsync(cancellationToken);
         return Sonuc<CihazCevap>.Basarili(CihazCevabaDonustur(cihaz));
     }
 
-    public async Task<Sonuc<CihazCevap>> CihazStokHareketiIsleAsync(Guid id, CihazStokHareketiIstek istek, Guid olusturanKullaniciId, CancellationToken cancellationToken = default)
+    public async Task<Sonuc<CihazCevap>> CihazDurumHareketiIsleAsync(Guid id, CihazDurumHareketiIstek istek, Guid olusturanKullaniciId, CancellationToken cancellationToken = default)
     {
         var cihaz = await cihazRepository.GetirAsync(id, cancellationToken);
         if (cihaz is null)
@@ -281,7 +272,7 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<CihazCevap>.Basarisiz("Cihaz bulunamadı.");
         }
 
-        var durumSonucu = CihazDurumunuStokHareketineGoreGuncelle(cihaz, istek);
+        var durumSonucu = CihazDurumunuHareketeGoreGuncelle(cihaz, istek);
         if (!durumSonucu.BasariliMi)
         {
             return Sonuc<CihazCevap>.Basarisiz(durumSonucu.Hata!);
@@ -290,7 +281,7 @@ public sealed class EnvanterYonetimServisi(
         stokHareketiRepository.Ekle(new StokHareketi
         {
             CihazId = cihaz.Id,
-            HareketTipi = StokHareketTipi.Cikis,
+            HareketTipi = CihazDurumHareketTipiniBelirle(istek),
             Neden = istek.Neden,
             Aciklama = BosIseNull(istek.Aciklama),
             OlusturanKullaniciId = olusturanKullaniciId
@@ -400,6 +391,11 @@ public sealed class EnvanterYonetimServisi(
         if (sarfMalzeme is null)
         {
             return Sonuc<SarfMalzemeCevap>.Basarisiz("Sarf malzeme bulunamadı.");
+        }
+
+        if (!SarfMalzemeStokHareketNedeniMi(istek.Neden))
+        {
+            return Sonuc<SarfMalzemeCevap>.Basarisiz("Bu neden sarf malzeme stok hareketi için desteklenmiyor.");
         }
 
         if (istek.Miktar <= 0)
@@ -557,65 +553,146 @@ public sealed class EnvanterYonetimServisi(
         }
     }
 
-    private static Sonuc<bool> CihazDurumunuStokHareketineGoreGuncelle(Cihaz cihaz, CihazStokHareketiIstek istek)
+    private static Sonuc<bool> CihazDurumunuHareketeGoreGuncelle(Cihaz cihaz, CihazDurumHareketiIstek istek)
     {
         switch (istek.Neden)
         {
             case StokHareketNedeni.Ariza:
                 cihaz.Durum = CihazDurumu.Bakimda;
-                cihaz.ToplamVarligaDahilMi = true;
-                return Sonuc<bool>.Basarili(true);
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = null;
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
+
+            case StokHareketNedeni.BakimdanDondu:
+                cihaz.Durum = CihazDurumu.Kullanilabilir;
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = null;
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
+
+            case StokHareketNedeni.Zimmetlendi:
+                cihaz.Durum = CihazDurumu.Zimmetli;
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = null;
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
+
+            case StokHareketNedeni.ZimmetIadeAlindi:
+                cihaz.Durum = CihazDurumu.Incelemede;
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = null;
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
+
+            case StokHareketNedeni.IncelemeyeAlindi:
+                cihaz.Durum = CihazDurumu.Incelemede;
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = null;
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
+
+            case StokHareketNedeni.HasarliTeslimAlindi:
+                cihaz.Durum = CihazDurumu.HasarliTeslimAlindi;
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = null;
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
 
             case StokHareketNedeni.Calinma:
                 cihaz.Durum = CihazDurumu.Calindi;
-                cihaz.AktifMi = false;
-                cihaz.ToplamVarligaDahilMi = false;
-                cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
-                return Sonuc<bool>.Basarili(true);
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = BosIseNull(istek.Aciklama);
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
 
             case StokHareketNedeni.Kaybolma:
                 cihaz.Durum = CihazDurumu.Kayip;
-                cihaz.AktifMi = false;
-                cihaz.ToplamVarligaDahilMi = false;
-                cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
-                return Sonuc<bool>.Basarili(true);
+                cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+                cihaz.EldenCikarmaAciklamasi = BosIseNull(istek.Aciklama);
+                cihaz.SatilanKisiVeyaKurum = null;
+                break;
 
             case StokHareketNedeni.HurdaIskarta:
-                if (istek.EldenCikarmaTipi == EldenCikarmaTipi.Yok)
-                {
-                    cihaz.Durum = CihazDurumu.HurdaIskarta;
-                    cihaz.ToplamVarligaDahilMi = true;
-                    cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
-                    return Sonuc<bool>.Basarili(true);
-                }
-
-                cihaz.Durum = CihazDurumu.KullanimDisi;
-                cihaz.AktifMi = false;
-                cihaz.ToplamVarligaDahilMi = false;
-                cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
+                cihaz.Durum = CihazDurumu.HurdaIskarta;
                 cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi;
                 cihaz.EldenCikarmaAciklamasi = BosIseNull(istek.Aciklama);
                 cihaz.SatilanKisiVeyaKurum = BosIseNull(istek.SatilanKisiVeyaKurum);
-                return Sonuc<bool>.Basarili(true);
+                break;
 
             case StokHareketNedeni.ManuelStokCikisi:
             case StokHareketNedeni.KullanimOmruBitti:
             case StokHareketNedeni.FizikselSayimDuzeltmesi:
                 cihaz.Durum = CihazDurumu.KullanimDisi;
-                cihaz.AktifMi = false;
-                cihaz.ToplamVarligaDahilMi = false;
-                cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
                 cihaz.EldenCikarmaTipi = istek.EldenCikarmaTipi == EldenCikarmaTipi.Yok
                     ? EldenCikarmaTipi.Diger
                     : istek.EldenCikarmaTipi;
                 cihaz.EldenCikarmaAciklamasi = BosIseNull(istek.Aciklama);
                 cihaz.SatilanKisiVeyaKurum = BosIseNull(istek.SatilanKisiVeyaKurum);
-                return Sonuc<bool>.Basarili(true);
+                break;
 
             default:
-                return Sonuc<bool>.Basarisiz("Bu neden cihaz stok çıkışı için desteklenmiyor.");
+                return Sonuc<bool>.Basarisiz("Bu neden cihaz durum hareketi için desteklenmiyor.");
+        }
+
+        CihazKapsamAlanlariniDurumaGoreGuncelle(cihaz);
+        return Sonuc<bool>.Basarili(true);
+    }
+
+    private static void CihazKapsamAlanlariniDurumaGoreGuncelle(Cihaz cihaz)
+    {
+        var envanterDisindaMi = cihaz.Durum is CihazDurumu.Kayip or CihazDurumu.Calindi or CihazDurumu.KullanimDisi
+            || (cihaz.Durum == CihazDurumu.HurdaIskarta && cihaz.EldenCikarmaTipi != EldenCikarmaTipi.Yok);
+
+        cihaz.AktifMi = !envanterDisindaMi;
+        cihaz.ToplamVarligaDahilMi = !envanterDisindaMi;
+
+        if (!envanterDisindaMi)
+        {
+            cihaz.EnvanterdenCikisTarihi = null;
+            cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+            cihaz.EldenCikarmaAciklamasi = null;
+            cihaz.SatilanKisiVeyaKurum = null;
+            return;
+        }
+
+        cihaz.EnvanterdenCikisTarihi ??= DateOnly.FromDateTime(DateTime.UtcNow);
+
+        if (cihaz.Durum == CihazDurumu.KullanimDisi && cihaz.EldenCikarmaTipi == EldenCikarmaTipi.Yok)
+        {
+            cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Diger;
+        }
+
+        if (cihaz.Durum is CihazDurumu.Kayip or CihazDurumu.Calindi)
+        {
+            cihaz.EldenCikarmaTipi = EldenCikarmaTipi.Yok;
+            cihaz.EldenCikarmaAciklamasi = null;
+            cihaz.SatilanKisiVeyaKurum = null;
+            return;
+        }
+
+        if (cihaz.EldenCikarmaTipi != EldenCikarmaTipi.Satildi)
+        {
+            cihaz.SatilanKisiVeyaKurum = null;
         }
     }
+
+    private static StokHareketTipi CihazDurumHareketTipiniBelirle(CihazDurumHareketiIstek istek)
+        => (istek.Neden is StokHareketNedeni.ManuelStokCikisi
+                or StokHareketNedeni.FizikselSayimDuzeltmesi
+                or StokHareketNedeni.Calinma
+                or StokHareketNedeni.Kaybolma
+                or StokHareketNedeni.KullanimOmruBitti)
+            || (istek.Neden == StokHareketNedeni.HurdaIskarta && istek.EldenCikarmaTipi != EldenCikarmaTipi.Yok)
+            ? StokHareketTipi.Cikis
+            : StokHareketTipi.Duzeltme;
+
+    private static bool SarfMalzemeStokHareketNedeniMi(StokHareketNedeni neden)
+        => neden is not StokHareketNedeni.BakimdanDondu
+            and not StokHareketNedeni.IncelemeyeAlindi
+            and not StokHareketNedeni.HasarliTeslimAlindi
+            and not StokHareketNedeni.Zimmetlendi
+            and not StokHareketNedeni.ZimmetIadeAlindi;
 
     private async Task<Sonuc<bool>> CihazReferanslariniDogrulaAsync(Guid kategoriId, Guid lokasyonId, CancellationToken cancellationToken)
     {

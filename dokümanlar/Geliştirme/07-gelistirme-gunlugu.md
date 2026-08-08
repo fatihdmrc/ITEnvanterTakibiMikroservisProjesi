@@ -568,3 +568,106 @@ Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+## 2026-08-08
+
+### Cihaz aktiflik, toplam varlık ve durum hareketi ayrımı netleştirildi
+
+Ne yapıldı:
+
+- Cihazlarda `AktifMi` ve `ToplamVarligaDahilMi` alanlarının kullanıcı tarafından elle değiştirilmesi kaldırıldı.
+- Bu iki alanın tek kaynağı `EnvanterYonetimServisi` içinde çalışan `CihazKapsamAlanlariniDurumaGoreGuncelle` kuralı oldu.
+- Cihaz oluşturma, cihaz güncelleme ve cihaz durum hareketi işleme akışları aynı kapsam hesaplama kuralına bağlandı.
+- Cihaz güncelleme formundan aktiflik ve toplam varlık checkbox'ları kaldırıldı; değerler salt okunur badge olarak gösterilmeye başlandı.
+- Cihaz tarafındaki işlem dili `Stok Hareketi` yerine `Cihaz Durum Hareketi` olarak güncellendi.
+- Cihaz durum hareketi için `POST /api/cihazlar/{id}/durum-hareketleri` endpointi eklendi.
+- Cihaz geçmişi `Cihaz Durum Geçmişi` olarak gösterilmeye başlandı; sarf malzeme tarafındaki miktar bazlı stok hareketi davranışı değiştirilmedi.
+- `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı eklendi. Bu migration mevcut cihazların aktiflik, toplam varlık ve envanterden çıkış alanlarını durum ve elden çıkarma tipine göre yeniden hesaplar.
+
+Neden yapıldı:
+
+- Cihazın aktif/pasif olması kullanıcı tercihi değil, cihazın yaşam döngüsü sonucudur.
+- `ToplamVarligaDahilMi` raporlama ve sayım kapsamını ifade ettiği için manuel checkbox ile yönetilmesi veri tutarsızlığı oluşturabilir.
+- Cihazlarda adet bazlı stok hareketi olmadığı için “stok hareketi” dili sarf malzemeye bırakıldı; cihaz tarafında durum değişimi daha doğru bir kavramdır.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Eski cihaz stok hareketi endpointi kaldırıldı
+
+Ne yapıldı:
+
+- Cihaz tarafındaki eski `POST /api/cihazlar/{id}/stok-hareketleri` endpointi kaldırıldı.
+- Eski `CihazStokHareketiIstek` contract'ı ve servis wrapper metodu temizlendi.
+- Cihaz durum hareketi için tek yazma endpointi `POST /api/cihazlar/{id}/durum-hareketleri` olarak bırakıldı.
+- Sarf malzeme `POST /api/sarf-malzemeler/{id}/stok-hareketleri` endpointi korunmuştur.
+
+Neden yapıldı:
+
+- Projede şu an eski cihaz stok endpointini kullanan ayrı bir client yoktur.
+- Swagger ve API yüzeyinde cihaz için iki farklı kavram görünmesi kullanıcıyı yanıltabilirdi.
+- Cihazlarda doğru kavram durum hareketi, sarf malzemelerde doğru kavram stok hareketidir.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Cihaz durum değişiklikleri yalnızca durum hareketine taşındı
+
+Ne yapıldı:
+
+- Cihaz bilgi güncelleme isteğinden `Durum`, `EnvanterdenCikisTarihi`, `EldenCikarmaTipi`, `EldenCikarmaAciklamasi` ve `SatilanKisiVeyaKurum` alanları çıkarıldı.
+- `CihazIslemleri` ekranında durum, çıkış tarihi ve elden çıkarma bilgileri salt okunur gösterilmeye başlandı.
+- Cihaz durum hareketi nedenlerine `BakimdanDondu`, `IncelemeyeAlindi` ve `HasarliTeslimAlindi` değerleri eklendi.
+- `BakimdanDondu` hareketi cihazı tekrar `Kullanilabilir` durumuna alır.
+- Cihaz durum hareketi dropdown'ında `EnvantereGiris` seçeneği gizlendi.
+- Cihaz durum geçmişinde envanter dışına çıkarmayan hareketler `Duzeltme`, envanter dışına çıkaran hareketler `Cikis` tipiyle kaydedilecek şekilde ayrıştırıldı.
+
+Neden yapıldı:
+
+- Cihazın durumu bilgi formundan değişirse geçmiş kaydı oluşmuyordu.
+- Durum değişikliklerinin tamamının hareket üzerinden yapılması cihaz yaşam döngüsünü izlenebilir hale getirir.
+- Bakımdan gelen cihazın tekrar kullanılabilir yapılması için ayrı bir hareket nedeni gerekir.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Zimmet kaynaklı cihaz durum hareketleri eklendi
+
+Ne yapıldı:
+
+- Cihaz durum hareketi nedenlerine `Zimmetlendi` ve `ZimmetIadeAlindi` değerleri eklendi.
+- `Zimmetlendi` hareketi cihazı `Zimmetli` durumuna alır.
+- `ZimmetIadeAlindi` hareketi doğrudan depoya kullanılabilir dönüş sayılmaz; cihazı fiziki kontrol için `Incelemede` durumuna alır.
+- Sarf malzeme stok hareketi formunda cihaz durumuna özel nedenler gizlendi.
+- EnvanterServisi sarf stok hareketi API'si cihaz durumuna özel nedenleri reddedecek şekilde doğrulandı.
+
+Neden yapıldı:
+
+- İleride ZimmetServisi ve CAP/RabbitMQ eklendiğinde zimmet oluşturma veya iade eventleri cihaz durumunu aynı EnvanterServisi kuralı üzerinden değiştirmelidir.
+- ZimmetServisi cihaz tablosuna doğrudan yazmamalıdır; cihaz yaşam döngüsünün tek sahibi EnvanterServisi olmalıdır.
+- Ortak enum kullanıldığı için cihaz durum nedenlerinin sarf malzeme stok ekranında görünmesi kullanıcıyı yanıltır.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Sarf malzeme stok hareketi geçmişi clientta gösterildi
+
+Ne yapıldı:
+
+- `SarfMalzemeIslemleriSayfaModel` içine sarf malzemeye ait stok hareketleri listesi eklendi.
+- `SarfMalzemeIslemleri` ekranı açılırken `GET /api/stok/hareketler?sarfMalzemeId=...` çağrısıyla ilgili geçmiş çekilmeye başlandı.
+- Sarf malzeme işlem sayfasına `Stok Hareketi Geçmişi` tablosu eklendi.
+- Tablo tarih, hareket tipi, neden, miktar, açıklama ve işlemi yapan kullanıcı id bilgisini gösterir.
+
+Neden yapıldı:
+
+- Sarf malzeme stok hareketleri zaten veritabanında tutuluyordu ancak MVC client bu geçmişi kullanıcıya göstermiyordu.
+- Cihaz işlem sayfasındaki geçmiş görünümüyle sarf malzeme işlem sayfasının davranışı hizalandı.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

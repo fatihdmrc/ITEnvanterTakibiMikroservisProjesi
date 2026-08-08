@@ -23,7 +23,7 @@ public interface IEnvanterServisi
     Task<CihazCevap?> CihazGetirAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Sonuc<CihazCevap>> CihazOlusturAsync(CihazOlusturIstek istek, CancellationToken cancellationToken = default);
     Task<Sonuc<CihazCevap>> CihazGuncelleAsync(Guid id, CihazGuncelleIstek istek, CancellationToken cancellationToken = default);
-    Task<Sonuc<CihazCevap>> CihazStokHareketiIsleAsync(Guid id, CihazStokHareketiIstek istek, Guid olusturanKullaniciId, CancellationToken cancellationToken = default);
+    Task<Sonuc<CihazCevap>> CihazDurumHareketiIsleAsync(Guid id, CihazDurumHareketiIstek istek, Guid olusturanKullaniciId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<SarfMalzemeCevap>> SarfMalzemeleriListeleAsync(Guid? kategoriId = null, Guid? lokasyonId = null, string? arama = null, CancellationToken cancellationToken = default);
     Task<SarfMalzemeCevap?> SarfMalzemeGetirAsync(Guid id, CancellationToken cancellationToken = default);

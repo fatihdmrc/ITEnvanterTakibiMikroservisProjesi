@@ -154,10 +154,10 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 - Faz 2 kapsamında MVC client login, session içinde token saklama, departman listeleme/oluşturma/güncelleme, personel listeleme/oluşturma/güncelleme ve kullanıcı listeleme/oluşturma işlemlerini destekler.
 - Faz 2 personel yönetimi tek satır düzenleme yerine ayrı sayfa akışına taşınmıştır. Personeller artık tabloda listelenir, arama ve departman filtresiyle süzülebilir, düzenleme ayrı sayfada yapılır.
 - Personeli işten ayrıldı yapma işlemi artık doğrudan listeden çalışmaz; ayrı bir onay sayfası üzerinden yapılır.
-- Faz 3 kapsamında EnvanterServisi kategori, lokasyon, cihaz, sarf malzeme, stok hareketi ve kritik stok altyapısıyla çalışır durumdadır.
+- Faz 3 kapsamında EnvanterServisi kategori, lokasyon, cihaz, sarf malzeme, cihaz durum hareketi, sarf malzeme stok hareketi ve kritik stok altyapısıyla çalışır durumdadır.
 - Faz 3 cihaz durum modeli güncel enum adlarıyla hizalanmıştır: `Kullanilabilir`, `Zimmetli`, `Incelemede`, `Bakimda`, `HasarliTeslimAlindi`, `Kayip`, `Calindi`, `HurdaIskarta`, `KullanimDisi`.
 - Eski veritabanı kayıtlarında kalan cihaz durum değerlerini yeni enum değerlerine dönüştüren migration eklenmiştir.
-- Faz 4 kapsamında MVC client üzerinde envanter listeleme, ekleme, güncelleme, stok hareketi işleme, stok özeti ve kritik stok gösterimi çalışır durumdadır.
+- Faz 4 kapsamında MVC client üzerinde envanter listeleme, ekleme, güncelleme, cihaz durum hareketi, sarf malzeme stok hareketi, stok özeti ve kritik stok gösterimi çalışır durumdadır.
 - Client tarafında servis kapalı, yetkisiz, rol yetersiz veya beklenmeyen cevap durumları Türkçe hata mesajlarıyla gösterilir.
 
 ### Uygulama kararı
@@ -170,13 +170,32 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 Envanter client tarafında cihaz ve sarf malzeme yönetimi, kayıt sayısı arttığında kullanılabilirliği korumak için listeleme ve işlem ekranı olarak ayrılmıştır.
 
 - Cihazlar ana envanter ekranında tablo halinde listelenir.
-- Cihaz düzenleme ve cihaz stok hareketi işleme işlemleri `CihazIslemleri` sayfasında yapılır.
+- Cihaz düzenleme ve cihaz durum hareketi işleme işlemleri `CihazIslemleri` sayfasında yapılır.
 - Sarf malzemeler ana envanter ekranında tablo halinde listelenir.
 - Sarf malzeme düzenleme ve sarf malzeme stok hareketi işleme işlemleri `SarfMalzemeIslemleri` sayfasında yapılır.
+- Sarf malzeme işlem sayfasında ilgili sarf malzemenin stok hareketi geçmişi görüntülenir.
 - Kategori ve lokasyon yönetimi şimdilik tek sayfa üzerindeki satır içi yönetim yapısını korur.
 - Yeni cihaz oluşturulurken `AssetTag` sistem tarafından `BT-000001` formatında otomatik üretilir.
 - Cihazlar sekmesinde aktiflik, kategori ve lokasyon filtreleri bulunur.
-- Cihaz işlem sayfasında ilgili cihazın stok hareketi geçmişi görüntülenir.
-- Cihaz stok çıkışı gerçekten envanter dışına çıkarma anlamı taşıyorsa cihaz otomatik pasif ve toplam varlık dışı yapılır.
+- Cihaz işlem sayfasında ilgili cihazın durum geçmişi görüntülenir.
+- Cihaz durum hareketi gerçekten envanter dışına çıkarma anlamı taşıyorsa cihaz otomatik pasif ve toplam varlık dışı yapılır.
 
 Bu karar Faz 4 sınırı içindedir. Faz 5 ve sonrası hâlâ geliştirme kapsamı dışında tutulmaktadır.
+
+## 7. Cihaz Durum Hareketi ve Kapsam Kararı - 2026-08-08
+
+Faz 3 ve Faz 4 kapsamında cihaz yaşam döngüsü yönetimi netleştirilmiştir.
+
+- Cihazlarda `AktifMi` artık manuel yönetim alanı değildir; cihazın durumuna ve elden çıkarma tipine göre sistem tarafından hesaplanır.
+- `ToplamVarligaDahilMi` kullanıcı tercihi değil, raporlama ve sayım kapsamı sonucudur.
+- Cihaz güncelleme ekranında `AktifMi` ve `ToplamVarligaDahilMi` checkbox'ları bulunmaz; bu alanlar salt okunur bilgi olarak gösterilir.
+- Cihazlarda “stok hareketi” kavramı yerine “cihaz durum hareketi” kavramı kullanılacaktır.
+- Eski cihaz stok hareketi endpointi kaldırılmıştır; cihaz durum hareketi için tek yazma endpointi `POST /api/cihazlar/{id}/durum-hareketleri` olarak kullanılır.
+- Sarf malzemelerde “stok hareketi” kavramı aynı kalır; çünkü sarf malzemeler adet bazlı giriş, çıkış ve düzeltme hareketleriyle yönetilir.
+- Mevcut cihaz kayıtlarını yeni kurala hizalamak için `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı eklenmiştir.
+- Cihaz bilgi güncelleme ekranından cihaz durumu ve elden çıkarma alanları kaldırılmıştır; bu alanlar salt okunur gösterilir.
+- Cihazın bütün durum değişiklikleri `Cihaz Durum Hareketi` formu üzerinden yapılır ve geçmişe kaydedilir.
+- Bakımdan dönen cihaz için `BakimdanDondu` hareketi kullanılır; bu hareket cihazı tekrar `Kullanilabilir` durumuna alır.
+- Zimmet akışları için `Zimmetlendi` hareketi cihazı `Zimmetli`, `ZimmetIadeAlindi` hareketi cihazı `Incelemede` durumuna alır.
+- Bu iki hareket Faz 5 ZimmetServisi için hazırlık niteliğindedir; cihaz durumunun nihai sahibi EnvanterServisi olarak kalır.
+- `EnvantereGiris` cihaz durum hareketi seçeneği değildir; yeni cihaz oluşturma akışının parçasıdır.

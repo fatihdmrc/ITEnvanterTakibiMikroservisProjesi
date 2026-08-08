@@ -210,6 +210,8 @@ Bu yaklaşım şu entitylerde uygulanır:
 - `Cihaz`
 - `SarfMalzeme`
 
+Not: Cihazlarda `AktifMi` artık doğrudan kullanıcı tarafından değiştirilen bir pasifleştirme alanı değildir. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden servis katmanında hesaplanır.
+
 Amaç:
 
 - Geçmiş kayıtlarla ilişkileri korumak
@@ -236,19 +238,38 @@ Bu migration uygulanmadan eski veritabanı kayıtları okunmaya çalışılırsa
 Envanter yönetimi tarafında ana `Views/Envanter/Index.cshtml` ekranı listeleme ve yeni kayıt oluşturma amacıyla sade tutulur.
 
 - `Views/Envanter/Index.cshtml`: Stok özeti, kategori, lokasyon, cihaz ve sarf malzeme sekmelerini gösterir. Cihaz ve sarf malzeme sekmeleri tablo listeleme yapısındadır.
-- `Views/Envanter/CihazIslemleri.cshtml`: Tek bir cihazın bilgi güncelleme ve stok hareketi işleme formlarını içerir.
-- `Views/Envanter/SarfMalzemeIslemleri.cshtml`: Tek bir sarf malzemenin bilgi güncelleme ve stok hareketi işleme formlarını içerir.
+- `Views/Envanter/CihazIslemleri.cshtml`: Tek bir cihazın bilgi güncelleme ve cihaz durum hareketi işleme formlarını içerir.
+- `Views/Envanter/SarfMalzemeIslemleri.cshtml`: Tek bir sarf malzemenin bilgi güncelleme, stok hareketi işleme ve stok hareketi geçmişi görüntüleme alanlarını içerir.
 
 `EnvanterController` içinde `CihazIslemleri` ve `SarfMalzemeIslemleri` GET action'ları ilgili kaydı API'den tekil olarak çeker. Bu nedenle `EnvanterApiClient` içinde `CihazGetirAsync` ve `SarfMalzemeGetirAsync` metotları bulunur.
 
-Bu ayrım sayesinde büyük listelerde ana ekran taranabilir kalır; düzenleme ve stok hareketi gibi detay işlemler ayrı sayfada yapılır.
+Bu ayrım sayesinde büyük listelerde ana ekran taranabilir kalır; düzenleme, cihaz durum hareketi ve sarf malzeme stok hareketi gibi detay işlemler ayrı sayfada yapılır.
 
-## Cihaz AssetTag ve Stok Hareketi Akışı
+## Cihaz AssetTag ve Durum Hareketi Akışı
 
 Yeni cihaz oluşturma isteklerinde `AssetTag` boş gelirse `EnvanterYonetimServisi` sıradaki `BT-000001` formatlı değeri üretir. MVC client cihaz oluşturma formu artık asset tag alanı göstermez; cihaz düzenleme sayfasında değer salt okunur gösterilir.
 
 `GET /api/cihazlar` endpointi kategori, lokasyon, durum, arama ve `aktifMi` filtrelerini destekler. MVC Envanter ekranındaki Cihazlar sekmesi aktiflik, kategori ve lokasyon filtrelerini bu endpoint üzerinden uygular.
 
-Stok hareketleri `StokHareketleri` tablosunda tutulur. `GET /api/stok/hareketler` endpointi cihaz veya sarf malzeme id'siyle filtrelenebilir. `CihazIslemleri` sayfası ilgili cihazın geçmiş stok hareketlerini bu endpoint üzerinden gösterir.
+Cihaz tarafında adet bazlı stok hareketi yerine “cihaz durum hareketi” kavramı kullanılır. MVC client yeni hareketler için `POST /api/cihazlar/{id}/durum-hareketleri` endpointini çağırır. Cihaz tarafındaki eski `POST /api/cihazlar/{id}/stok-hareketleri` endpointi kaldırılmıştır.
 
-Manuel stok çıkışı, kullanım ömrü bitişi, çalınma, kaybolma ve elden çıkarma içeren hurda/ıskarta işlemleri cihazın `AktifMi` değerini `false`, `ToplamVarligaDahilMi` değerini `false` yapar ve çıkış tarihini doldurur.
+Durum hareketi geçmişi teknik olarak mevcut `StokHareketleri` tablosunda, `CihazId` dolu olacak şekilde tutulur. `GET /api/stok/hareketler` endpointi cihaz veya sarf malzeme id'siyle filtrelenebilir. `CihazIslemleri` sayfası ilgili cihazın geçmişini `Cihaz Durum Geçmişi` başlığıyla gösterir.
+
+`AktifMi` ve `ToplamVarligaDahilMi` cihaz formunda kullanıcı tarafından değiştirilmez. `EnvanterYonetimServisi` içindeki `CihazKapsamAlanlariniDurumaGoreGuncelle` metodu cihaz durumuna ve elden çıkarma tipine göre bu alanları hesaplar.
+
+Cihazın `Durum`, `EnvanterdenCikisTarihi`, `EldenCikarmaTipi`, `EldenCikarmaAciklamasi` ve `SatilanKisiVeyaKurum` alanları cihaz bilgi güncelleme isteğiyle yazılmaz. Bu alanlar `Cihaz Durum Hareketi` akışı üzerinden değişir ve geçmişe kaydedilir.
+
+- `Kullanilabilir`, `Zimmetli`, `Incelemede`, `Bakimda`, `HasarliTeslimAlindi` ve kurumda duran `HurdaIskarta` cihazlar aktif ve toplam varlığa dahil kabul edilir.
+- `Kayip`, `Calindi`, `KullanimDisi` ve elden çıkarılmış `HurdaIskarta` cihazlar pasif ve toplam varlık dışı kabul edilir.
+- Pasif ve toplam varlık dışı cihazlarda envanterden çıkış tarihi sistem tarafından doldurulur.
+- `Ariza` hareketi cihazı `Bakimda` yapar.
+- `BakimdanDondu` hareketi cihazı tekrar `Kullanilabilir` yapar.
+- `IncelemeyeAlindi` hareketi cihazı `Incelemede` yapar.
+- `HasarliTeslimAlindi` hareketi cihazı `HasarliTeslimAlindi` yapar.
+- `Zimmetlendi` hareketi cihazı `Zimmetli` yapar.
+- `ZimmetIadeAlindi` hareketi cihazı `Incelemede` yapar.
+- `EnvantereGiris` cihaz durum hareketi olarak kullanılmaz; yeni cihaz oluşturma akışına aittir.
+
+Sarf malzemelerde stok hareketi kavramı aynen korunur. Çünkü sarf malzemelerde giriş, çıkış ve düzeltme gerçek miktar değişimi üretir.
+Sarf malzeme stok hareketi formu ve servis doğrulaması cihaz durumuna özel nedenleri kabul etmez.
+Sarf malzeme stok hareketi geçmişi de aynı `GET /api/stok/hareketler?sarfMalzemeId=...` endpointinden alınır ve `SarfMalzemeIslemleri` sayfasında `Stok Hareketi Geçmişi` olarak gösterilir.

@@ -134,6 +134,14 @@ PostgreSQL çalıştıktan sonra KimlikVePersonelServisi migration'ını uygula:
 dotnet ef database update --project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --startup-project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --context KimlikPersonelDbContext
 ```
 
+EnvanterServisi migration'ını uygulamak için:
+
+```powershell
+dotnet ef database update --project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --startup-project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --context EnvanterDbContext
+```
+
+Not: EnvanterServisi açılışında `Database.MigrateAsync()` çalıştığı için bekleyen migration'lar servis başlatıldığında da uygulanır. `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı mevcut cihazların `AktifMi`, `ToplamVarligaDahilMi` ve çıkış tarihi alanlarını yeni yaşam döngüsü kuralına göre düzeltir.
+
 Not:
 
 ```text
@@ -396,8 +404,9 @@ MVC client üzerinden şu işlemler güncel olarak denenebilir:
 - Personeli ayrı düzenleme sayfasında güncellemek
 - Personeli ayrı onay sayfası üzerinden işten ayrıldı yapmak
 - Kullanıcıları listelemek ve yeni kullanıcı oluşturmak
-- Envanter ekranında kategori, lokasyon, cihaz ve sarf malzeme kayıtlarını listelemek, oluşturmak, güncellemek ve `AktifMi` ile pasifleştirmek
-- Cihaz ve sarf malzeme stok hareketi işlemek
+- Envanter ekranında kategori, lokasyon ve sarf malzeme kayıtlarını listelemek, oluşturmak, güncellemek ve `AktifMi` ile pasifleştirmek
+- Cihazları listelemek, oluşturmak, güncellemek ve cihaz durum hareketi işlemek
+- Sarf malzeme stok hareketi işlemek
 - Basit stok özetini ve kritik stok listesini görmek
 
 Notlar:
@@ -411,10 +420,11 @@ Envanter ekranında cihaz ve sarf malzeme yönetimi artık listeleme ve işlem s
 
 - Cihazlar sekmesinde cihazlar tablo halinde listelenir.
 - Cihaz satırındaki `İşlemler` butonu `CihazIslemleri` sayfasına gider.
-- Cihaz bilgisi güncelleme ve cihaz stok hareketi işleme bu sayfada yapılır.
+- Cihaz bilgisi güncelleme ve cihaz durum hareketi işleme bu sayfada yapılır.
 - Sarf Malzemeler sekmesinde sarf malzemeler tablo halinde listelenir.
 - Sarf malzeme satırındaki `İşlemler` butonu `SarfMalzemeIslemleri` sayfasına gider.
 - Sarf malzeme bilgisi güncelleme ve sarf malzeme stok hareketi işleme bu sayfada yapılır.
+- Sarf malzeme stok hareketi işlendiğinde aynı sayfada `Stok Hareketi Geçmişi` tablosunda görüntülenir.
 
 Kategori ve lokasyon yönetimi mevcut tek sayfa akışını korur.
 
@@ -422,6 +432,13 @@ Ek cihaz yönetimi notları:
 
 - Yeni cihaz oluştururken AssetTag girilmez; sistem otomatik `BT-...` numarası üretir.
 - Cihazlar sekmesinde aktif/pasif, kategori ve lokasyon filtreleriyle liste daraltılabilir.
-- Cihaz işlem sayfasında stok hareketi işlendiğinde aynı sayfada hareket geçmişi görülebilir.
-- Manuel stok çıkışı ve benzeri envanter dışına çıkarma işlemlerinden sonra cihaz pasif ve toplam varlık dışı hale gelir.
+- Cihaz işlem sayfasında durum hareketi işlendiğinde aynı sayfada cihaz durum geçmişi görülebilir.
+- Cihaz işlem sayfasında `AktifMi` ve `ToplamVarligaDahilMi` elle değiştirilemez; sistem cihaz durumu ve elden çıkarma tipine göre hesaplar.
+- Cihaz işlem sayfasında `Durum`, çıkış tarihi ve elden çıkarma bilgileri salt okunurdur; durum değiştirmek için `Cihaz Durum Hareketi` formu kullanılır.
+- Bakımdan dönen cihazı tekrar kullanılabilir yapmak için `Cihaz Durum Hareketi` formunda `BakimdanDondu` nedeni seçilir.
+- Zimmet senaryoları için `Zimmetlendi` nedeni cihazı `Zimmetli`, `ZimmetIadeAlindi` nedeni cihazı `Incelemede` durumuna alır.
+- Sarf malzeme stok hareketi formunda cihaz durumuna özel nedenler gösterilmez.
+- `EnvantereGiris` cihaz durum hareketi formunda gösterilmez; yeni cihaz oluşturma akışına aittir.
+- Manuel stok çıkışı, kaybolma, çalınma, kullanım dışı bırakma ve elden çıkarılmış hurda/ıskarta işlemlerinden sonra cihaz pasif ve toplam varlık dışı hale gelir.
 - Boş AssetTag değerlerini dolduran `AssetTagBosCihazlariDoldur` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.
+- Cihaz kapsam alanlarını düzelten `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.

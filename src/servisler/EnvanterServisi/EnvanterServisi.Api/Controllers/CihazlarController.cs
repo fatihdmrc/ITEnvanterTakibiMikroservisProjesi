@@ -47,8 +47,8 @@ public sealed class CihazlarController(IEnvanterServisi envanterServisi) : Contr
         return sonuc.BasariliMi ? Ok(sonuc.Veri) : BadRequest(new { hata = sonuc.Hata });
     }
 
-    [HttpPost("{id:guid}/stok-hareketleri")]
-    public async Task<ActionResult<CihazCevap>> StokHareketiIsle(Guid id, [FromBody] CihazStokHareketiIstek istek, CancellationToken cancellationToken)
+    [HttpPost("{id:guid}/durum-hareketleri")]
+    public async Task<ActionResult<CihazCevap>> DurumHareketiIsle(Guid id, [FromBody] CihazDurumHareketiIstek istek, CancellationToken cancellationToken)
     {
         var kullaniciId = KullaniciIdGetir();
         if (!kullaniciId.HasValue)
@@ -56,7 +56,7 @@ public sealed class CihazlarController(IEnvanterServisi envanterServisi) : Contr
             return Unauthorized(new { hata = "Token içinde KullaniciId bilgisi bulunamadı." });
         }
 
-        var sonuc = await envanterServisi.CihazStokHareketiIsleAsync(id, istek, kullaniciId.Value, cancellationToken);
+        var sonuc = await envanterServisi.CihazDurumHareketiIsleAsync(id, istek, kullaniciId.Value, cancellationToken);
         return sonuc.BasariliMi ? Ok(sonuc.Veri) : BadRequest(new { hata = sonuc.Hata });
     }
 

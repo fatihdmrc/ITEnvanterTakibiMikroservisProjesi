@@ -20,8 +20,8 @@ public sealed class EnvanterPanelModel
 public sealed class CihazIslemleriSayfaModel
 {
     public CihazGuncelleFormModel Form { get; set; } = new();
-    public CihazStokHareketiFormModel StokHareketi { get; set; } = new();
-    public IReadOnlyCollection<StokHareketiModel> StokHareketleri { get; set; } = [];
+    public CihazDurumHareketiFormModel DurumHareketi { get; set; } = new();
+    public IReadOnlyCollection<StokHareketiModel> DurumHareketleri { get; set; } = [];
     public IReadOnlyCollection<KategoriModel> Kategoriler { get; set; } = [];
     public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
     public string? BasariMesaji { get; set; }
@@ -32,6 +32,7 @@ public sealed class SarfMalzemeIslemleriSayfaModel
 {
     public SarfMalzemeGuncelleFormModel Form { get; set; } = new();
     public SarfMalzemeStokHareketiFormModel StokHareketi { get; set; } = new();
+    public IReadOnlyCollection<StokHareketiModel> StokHareketleri { get; set; } = [];
     public IReadOnlyCollection<KategoriModel> Kategoriler { get; set; } = [];
     public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
     public string? BasariMesaji { get; set; }
@@ -132,7 +133,7 @@ public sealed class SarfMalzemeGuncelleFormModel : SarfMalzemeOlusturFormModel
     public bool AktifMi { get; set; } = true;
 }
 
-public sealed class CihazStokHareketiFormModel
+public sealed class CihazDurumHareketiFormModel
 {
     public Guid Id { get; set; }
     public StokHareketNedeniModel Neden { get; set; } = StokHareketNedeniModel.ManuelStokCikisi;
@@ -252,7 +253,12 @@ public enum StokHareketNedeniModel
     Calinma = 5,
     Kaybolma = 6,
     HurdaIskarta = 7,
-    KullanimOmruBitti = 8
+    KullanimOmruBitti = 8,
+    BakimdanDondu = 9,
+    IncelemeyeAlindi = 10,
+    HasarliTeslimAlindi = 11,
+    Zimmetlendi = 12,
+    ZimmetIadeAlindi = 13
 }
 
 public enum EldenCikarmaTipiModel

@@ -222,13 +222,13 @@ public sealed class EnvanterController(
             return await CihazIslemleriFormHatasi(form, token, sonuc.Hata ?? "Cihaz güncellenemedi.");
         }
 
-        TempData["BasariMesaji"] = form.AktifMi ? "Cihaz güncellendi." : "Cihaz pasifleştirildi.";
+        TempData["BasariMesaji"] = "Cihaz güncellendi.";
         return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CihazStokHareketi(CihazStokHareketiFormModel form)
+    public async Task<IActionResult> CihazDurumHareketi(CihazDurumHareketiFormModel form)
     {
         var token = TokenAl();
         if (token is null)
@@ -238,18 +238,18 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Cihaz stok hareketi bilgileri eksik veya hatalı.";
+            TempData["HataMesaji"] = "Cihaz durum hareketi bilgileri eksik veya hatalı.";
             return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
         }
 
-        var sonuc = await envanterApiClient.CihazStokHareketiIsleAsync(form, token);
+        var sonuc = await envanterApiClient.CihazDurumHareketiIsleAsync(form, token);
         if (!sonuc.BasariliMi)
         {
             TempData["HataMesaji"] = sonuc.Hata;
             return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
         }
 
-        TempData["BasariMesaji"] = "Cihaz stok hareketi işlendi.";
+        TempData["BasariMesaji"] = "Cihaz durum hareketi işlendi.";
         return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
     }
 
@@ -372,7 +372,7 @@ public sealed class EnvanterController(
 
         var kategoriler = await KategorileriGetir(token, VarlikTuruModel.SeriNumarali, cihazSonucu.Veri.KategoriId);
         var lokasyonlar = await LokasyonlariGetir(token, cihazSonucu.Veri.LokasyonId);
-        var stokHareketleriSonucu = await envanterApiClient.StokHareketleriniListeleAsync(cihazSonucu.Veri.Id, null, token);
+        var durumHareketleriSonucu = await envanterApiClient.StokHareketleriniListeleAsync(cihazSonucu.Veri.Id, null, token);
 
         return new CihazIslemleriSayfaModel
         {
@@ -395,13 +395,13 @@ public sealed class EnvanterController(
                 AktifMi = cihazSonucu.Veri.AktifMi,
                 ToplamVarligaDahilMi = cihazSonucu.Veri.ToplamVarligaDahilMi
             },
-            StokHareketi = new CihazStokHareketiFormModel { Id = cihazSonucu.Veri.Id },
-            StokHareketleri = stokHareketleriSonucu.BasariliMi ? stokHareketleriSonucu.Veri : [],
+            DurumHareketi = new CihazDurumHareketiFormModel { Id = cihazSonucu.Veri.Id },
+            DurumHareketleri = durumHareketleriSonucu.BasariliMi ? durumHareketleriSonucu.Veri : [],
             Kategoriler = kategoriler,
             Lokasyonlar = lokasyonlar,
-            HataMesaji = stokHareketleriSonucu.BasariliMi
+            HataMesaji = durumHareketleriSonucu.BasariliMi
                 ? null
-                : $"Stok hareketi geÃ§miÅŸi alÄ±namadÄ±: {stokHareketleriSonucu.Hata}"
+                : $"Cihaz durum geçmişi alınamadı: {durumHareketleriSonucu.Hata}"
         };
     }
 
@@ -416,6 +416,7 @@ public sealed class EnvanterController(
 
         var kategoriler = await KategorileriGetir(token, VarlikTuruModel.SarfMalzeme, sarfSonucu.Veri.KategoriId);
         var lokasyonlar = await LokasyonlariGetir(token, sarfSonucu.Veri.LokasyonId);
+        var stokHareketleriSonucu = await envanterApiClient.StokHareketleriniListeleAsync(null, sarfSonucu.Veri.Id, token);
 
         return new SarfMalzemeIslemleriSayfaModel
         {
@@ -431,8 +432,12 @@ public sealed class EnvanterController(
                 AktifMi = sarfSonucu.Veri.AktifMi
             },
             StokHareketi = new SarfMalzemeStokHareketiFormModel { Id = sarfSonucu.Veri.Id },
+            StokHareketleri = stokHareketleriSonucu.BasariliMi ? stokHareketleriSonucu.Veri : [],
             Kategoriler = kategoriler,
-            Lokasyonlar = lokasyonlar
+            Lokasyonlar = lokasyonlar,
+            HataMesaji = stokHareketleriSonucu.BasariliMi
+                ? null
+                : $"Sarf malzeme stok hareketi geçmişi alınamadı: {stokHareketleriSonucu.Hata}"
         };
     }
 

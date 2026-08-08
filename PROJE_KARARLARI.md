@@ -213,6 +213,8 @@ Stok azalması yalnızca aşağıdaki durumlarda oluşacaktır:
 - Kaybolma
 - Hurda veya ıskartaya ayrılma
 
+Not: Bu liste ilk tasarımda stok etkisi olan nedenleri anlatır. Güncel uygulamada cihaz tarafında bu nedenler “cihaz durum hareketi” olarak işlenir; sarf malzeme tarafında ise gerçek adet değişimi üreten “stok hareketi” olarak kalır.
+
 Manuel stok çıkışı aşağıdaki durumlarda kullanılabilir:
 
 - Fiziksel sayım düzeltmeleri
@@ -521,12 +523,13 @@ JWT token içinde bulunması beklenen claim'ler:
 
 ## 16. Alan Açıklamaları
 
-- `Cihaz.AktifMi`, cihaz kaydının sistemde aktif olarak kullanılıp kullanılmadığını ifade eder. Fiziksel cihaz durumunu değil, kaydın yönetimsel aktiflik durumunu belirtir. Kayıt silmek yerine pasifleştirme yapmak için kullanılır.
+- `Cihaz.AktifMi`, cihaz kaydının sistemde yönetilebilir ve aktif yaşam döngüsünde olup olmadığını ifade eder. Kullanıcı tarafından elle değiştirilmez; cihaz durumu ve elden çıkarma tipine göre EnvanterServisi tarafından hesaplanır.
+- `Cihaz.ToplamVarligaDahilMi`, cihazın toplam varlık sayımına girip girmediğini ifade eder. Kullanıcı tercihi değildir; `Kayip`, `Calindi`, `KullanimDisi` veya elden çıkarılmış `HurdaIskarta` durumlarında sistem tarafından `false` yapılır.
 - `SarfMalzeme.Birim`, sarf malzemenin hangi ölçü birimiyle takip edildiğini ifade eder. Örnek değerler: `Adet`, `Paket`, `Kutu`, `Metre`.
 - `OlusturulmaTarihi`, kaydın sisteme ilk eklendiği tarihi ifade eder.
 - `GuncellenmeTarihi`, kaydın son değiştirildiği tarihi ifade eder.
 - `Lokasyon.UstLokasyonId`, hiyerarşik lokasyon yapısını kurmak için kullanılır. Örneğin `Genel Müdürlük > 2. Kat > Bilgi İşlem Odası` gibi bir yapıda alt lokasyonun bağlı olduğu üst lokasyonu gösterir.
-- `StokHareketi`, cihaz veya sarf malzeme üzerinde gerçekleşen stok etkili işlemlerin kayıt altına alınmasını ifade eder. Manuel stok çıkışı, arıza, çalınma, kaybolma, hurda/ıskarta ve sayım düzeltmesi gibi işlemler bu kayıt üzerinden izlenir.
+- `StokHareketi`, sarf malzemelerde miktar bazlı giriş, çıkış ve düzeltme işlemlerini kayıt altına alır. Cihaz tarafında aynı tablo geçmiş kaydı için kullanılmaya devam eder, ancak kullanıcıya “Cihaz Durum Hareketi” olarak gösterilir.
 - Audit log kapsamında hem eventler hem de CRUD işlemleri kaydedilecektir.
 
 ## 17. Kalan Sorular
@@ -548,7 +551,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 
 ### Servisler Arası İletişim Soruları
 
-- ZimmetServisi, cihaz durumunu değiştirmek için EnvanterServisi'ne HTTP isteği mi atacak?
+- ZimmetServisi'nin cihaz durum hareketini ilk sürümde HTTP ile mi, CAP/RabbitMQ eventiyle mi tetikleyeceği kesinleştirilecek mi?
 - EnvanterServisi cevap vermezse zimmet oluşturma işlemi iptal mi edilecek?
 - Event publish edilemezse işlem başarısız mı sayılacak, yoksa tekrar deneme mekanizması mı olacak?
 - CorrelationId tüm servisler arasında taşınacak mı?
@@ -581,6 +584,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Faz 5 ve sonrası için ZimmetServisi, ApiGateway, CAP/RabbitMQ, audit log, Redis ve SignalR daha sonra ele alınacaktır.
 - Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
 - `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
+- Cihazlarda `AktifMi` manuel pasifleştirme checkbox'ı olarak kullanılmayacaktır. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden sistem tarafından hesaplanacaktır.
 - Personelin işten ayrılması normal pasifleştirmeden ayrı bir iş kuralıdır. Bu işlem personelin durumunu `IstenAyrildi` yapar, personeli pasifleştirir ve bağlı kullanıcı hesabını da pasifleştirir.
 - MVC client tarafında personel yönetimi tek sayfada satır içi düzenleme şeklinde büyütülmeyecektir. Personel listesi tabloda gösterilecek, düzenleme ve işten ayrılma onayı ayrı sayfalarda yapılacaktır.
 - EnvanterServisi cihaz durum enum değerleri güncel modelle uyumlu tutulacaktır. Eski veritabanı değerleri migration ile yeni değerlere dönüştürülecektir.
@@ -589,16 +593,32 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 
 - MVC client tarafında cihaz ve sarf malzeme yönetimi tek sayfada satır içi düzenleme şeklinde büyütülmeyecektir.
 - Cihazlar ve sarf malzemeler ana envanter ekranında tablo halinde listelenecektir.
-- Cihazla ilgili bilgi güncelleme ve stok hareketi işlemleri `CihazIslemleri` sayfasında yapılacaktır.
-- Sarf malzemeyle ilgili bilgi güncelleme ve stok hareketi işlemleri `SarfMalzemeIslemleri` sayfasında yapılacaktır.
+- Cihazla ilgili bilgi güncelleme ve cihaz durum hareketi işlemleri `CihazIslemleri` sayfasında yapılacaktır.
+- Sarf malzemeyle ilgili bilgi güncelleme, stok hareketi işleme ve stok hareketi geçmişi görüntüleme işlemleri `SarfMalzemeIslemleri` sayfasında yapılacaktır.
 - Bu ayrım, kayıt sayısı arttığında ana envanter ekranının taranabilir kalması ve kritik stok hareketlerinin ayrı bir işlem ekranında yürütülmesi için tercih edilmiştir.
 
-## 20. Cihaz AssetTag ve Stok Çıkışı Kararı - 2026-08-03
+## 20. Cihaz AssetTag ve Durum Hareketi Kararı - 2026-08-03
 
 - `AssetTag` kurum içi kalıcı demirbaş numarasıdır ve yeni cihaz oluşturulurken sistem tarafından otomatik üretilecektir.
 - Varsayılan format `BT-000001` şeklindedir.
 - MVC client üzerinde yeni cihaz oluştururken kullanıcıdan `AssetTag` istenmeyecektir.
 - Cihaz düzenleme sayfasında `AssetTag` salt okunur bilgi olarak gösterilecektir.
 - Cihaz listesi aktiflik, kategori ve lokasyon filtreleriyle süzülebilecektir.
-- Stok hareketi kayıtları veritabanında cihaz veya sarf malzeme bazında tutulacaktır ve cihaz işlem sayfasında cihaz geçmişi gösterilecektir.
-- Manuel stok çıkışı, kullanım ömrü bitişi, çalınma, kaybolma ve elden çıkarılmış hurda/ıskarta durumlarında cihaz pasif ve toplam varlık dışı yapılacaktır.
+- Cihazlarda kullanıcıya `Cihaz Durum Hareketi` kavramı gösterilecektir. Cihaz durum hareketi için tek yazma endpointi `POST /api/cihazlar/{id}/durum-hareketleri` olacaktır.
+- Durum hareketi kayıtları mevcut `StokHareketleri` tablosunda cihaz bazında tutulacaktır ve cihaz işlem sayfasında cihaz geçmişi olarak gösterilecektir.
+- Manuel stok çıkışı, kullanım ömrü bitişi, çalınma, kaybolma, kullanım dışı bırakma ve elden çıkarılmış hurda/ıskarta durumlarında cihaz pasif ve toplam varlık dışı yapılacaktır.
+- Sarf malzemelerde `Stok Hareketi` kavramı korunacaktır; çünkü burada giriş, çıkış ve düzeltme gerçek miktar hareketidir.
+
+## 21. Cihaz Kapsam Alanları Kararı - 2026-08-08
+
+- Cihazlarda `AktifMi` ve `ToplamVarligaDahilMi` alanları tek kaynak olarak EnvanterServisi servis katmanında hesaplanacaktır.
+- `Kullanilabilir`, `Zimmetli`, `Incelemede`, `Bakimda`, `HasarliTeslimAlindi` ve kurumda duran `HurdaIskarta` cihazlar aktif ve toplam varlığa dahil sayılacaktır.
+- `Kayip`, `Calindi`, `KullanimDisi` ve elden çıkarılmış `HurdaIskarta` cihazlar pasif ve toplam varlık dışı sayılacaktır.
+- Cihaz bilgi güncelleme ekranında bu alanlar salt okunur gösterilecek, kullanıcı tarafından değiştirilmeyecektir.
+- Mevcut cihaz verileri `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı ile bu kurala hizalanacaktır.
+- Cihazın `Durum` alanı da bilgi güncelleme formundan değiştirilmeyecektir. Bütün cihaz durum değişiklikleri `Cihaz Durum Hareketi` üzerinden yapılacak ve geçmişe kaydedilecektir.
+- Bakımdan dönen cihaz için `BakimdanDondu` hareketi kullanılacak ve cihaz tekrar `Kullanilabilir` durumuna alınacaktır.
+- Zimmet oluşturma akışı cihazı değiştirmek için `Zimmetlendi` durum hareketini kullanacak ve cihaz `Zimmetli` durumuna alınacaktır.
+- Zimmet iade alındığında `ZimmetIadeAlindi` durum hareketi kullanılacak ve cihaz fiziki kontrol için `Incelemede` durumuna alınacaktır.
+- ZimmetServisi cihaz durumunu doğrudan veritabanında değiştirmeyecektir; cihaz yaşam döngüsünün ve kapsam alanlarının tek sahibi EnvanterServisi olacaktır.
+- `EnvantereGiris`, cihaz durum hareketi nedeni olarak kullanılmayacaktır; yeni cihaz oluşturma akışına aittir.

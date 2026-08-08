@@ -1,6 +1,12 @@
 @model SarfMalzemeIslemleriSayfaModel
 @{
     ViewData["Title"] = "Sarf Malzeme İşlemleri";
+    var sarfStokHareketNedenleri = Enum.GetValues<StokHareketNedeniModel>()
+        .Where(neden => neden is not StokHareketNedeniModel.BakimdanDondu
+            and not StokHareketNedeniModel.IncelemeyeAlindi
+            and not StokHareketNedeniModel.HasarliTeslimAlindi
+            and not StokHareketNedeniModel.Zimmetlendi
+            and not StokHareketNedeniModel.ZimmetIadeAlindi);
 }
 
 <div class="py-3">
@@ -98,7 +104,7 @@
                 <div class="mb-3">
                     <label class="form-label">Neden</label>
                     <select name="Neden" class="form-select">
-                        @foreach (var neden in Enum.GetValues<StokHareketNedeniModel>())
+                        @foreach (var neden in sarfStokHareketNedenleri)
                         {
                             <option value="@neden" selected="@(neden == Model.StokHareketi.Neden ? "selected" : null)">@neden</option>
                         }
@@ -114,6 +120,43 @@
                 </div>
                 <button class="btn btn-primary w-100" type="submit">Stok Hareketi İşle</button>
             </form>
+        </div>
+    </div>
+
+    <div class="border rounded-2 p-3 mt-4">
+        <h2 class="h6 mb-3">Stok Hareketi Geçmişi</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Hareket Tipi</th>
+                        <th>Neden</th>
+                        <th>Miktar</th>
+                        <th>Açıklama</th>
+                        <th>İşlemi Yapan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.StokHareketleri.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-muted">Stok hareketi bulunamadı.</td>
+                        </tr>
+                    }
+                    @foreach (var hareket in Model.StokHareketleri)
+                    {
+                        <tr>
+                            <td>@hareket.OlusturulmaTarihi.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@hareket.HareketTipi</td>
+                            <td>@hareket.Neden</td>
+                            <td>@(hareket.Miktar?.ToString() ?? "-")</td>
+                            <td>@(hareket.Aciklama ?? "-")</td>
+                            <td>@hareket.OlusturanKullaniciId</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

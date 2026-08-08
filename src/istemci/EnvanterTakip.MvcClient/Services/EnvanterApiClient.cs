@@ -104,18 +104,11 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
             form.Model,
             form.KategoriId,
             form.LokasyonId,
-            form.Durum,
-            form.EnvantereGirisTarihi,
-            form.EnvanterdenCikisTarihi,
-            form.EldenCikarmaTipi,
-            form.EldenCikarmaAciklamasi,
-            form.SatilanKisiVeyaKurum,
-            form.AktifMi,
-            form.ToplamVarligaDahilMi
+            form.EnvantereGirisTarihi
         }, token);
 
-    public Task<ApiIslemSonucu<CihazModel>> CihazStokHareketiIsleAsync(CihazStokHareketiFormModel form, string? token)
-        => PostAsync<CihazModel>($"/api/cihazlar/{form.Id}/stok-hareketleri", new
+    public Task<ApiIslemSonucu<CihazModel>> CihazDurumHareketiIsleAsync(CihazDurumHareketiFormModel form, string? token)
+        => PostAsync<CihazModel>($"/api/cihazlar/{form.Id}/durum-hareketleri", new
         {
             form.Neden,
             form.Aciklama,

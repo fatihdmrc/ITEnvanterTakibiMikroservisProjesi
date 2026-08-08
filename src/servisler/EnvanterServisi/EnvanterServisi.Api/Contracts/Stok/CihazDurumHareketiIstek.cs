@@ -2,7 +2,7 @@ using EnvanterServisi.Api.Domain.Enums;
 
 namespace EnvanterServisi.Api.Contracts.Stok;
 
-public sealed record CihazStokHareketiIstek(
+public sealed record CihazDurumHareketiIstek(
     StokHareketNedeni Neden,
     string? Aciklama,
     EldenCikarmaTipi EldenCikarmaTipi,

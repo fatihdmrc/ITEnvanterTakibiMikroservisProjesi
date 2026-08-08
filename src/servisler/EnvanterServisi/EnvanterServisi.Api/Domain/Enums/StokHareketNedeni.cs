@@ -9,5 +9,10 @@ public enum StokHareketNedeni
     Calinma = 5,
     Kaybolma = 6,
     HurdaIskarta = 7,
-    KullanimOmruBitti = 8
+    KullanimOmruBitti = 8,
+    BakimdanDondu = 9,
+    IncelemeyeAlindi = 10,
+    HasarliTeslimAlindi = 11,
+    Zimmetlendi = 12,
+    ZimmetIadeAlindi = 13
 }
