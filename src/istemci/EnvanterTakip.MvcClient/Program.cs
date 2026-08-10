@@ -28,6 +28,13 @@ builder.Services.AddHttpClient<EnvanterApiClient>(client =>
 
     client.BaseAddress = new Uri(servisAdresi);
 });
+builder.Services.AddHttpClient<ZimmetApiClient>(client =>
+{
+    var servisAdresi = builder.Configuration["ServisAdresleri:ZimmetServisi"]
+        ?? throw new InvalidOperationException("Zimmet servisi adresi tanımlı değil.");
+
+    client.BaseAddress = new Uri(servisAdresi);
+});
 
 var app = builder.Build();
 

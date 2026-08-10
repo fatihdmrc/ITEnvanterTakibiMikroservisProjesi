@@ -48,10 +48,10 @@ Oluşturma başarılı oldu.
 0 Hata
 ```
 
-## 5. PostgreSQL'i Docker ile Başlat
+## 5. PostgreSQL ve RabbitMQ'yu Docker ile Başlat
 
 ```powershell
-docker compose up -d postgres
+docker compose up -d postgres rabbitmq
 ```
 
 Çalışıyor mu kontrol etmek için:
@@ -68,6 +68,16 @@ Port: 5432
 Database: it_envanter_takip
 User: itenvanter
 Password: itenvanter123
+```
+
+RabbitMQ bilgileri:
+
+```text
+AMQP Port: 5672
+Management UI: http://localhost:15672
+User: guest
+Password: guest
+Exchange: inventory.events
 ```
 
 PostgreSQL'i durdurmak için:
@@ -126,6 +136,18 @@ StokHareketleri
 KritikStokKurallari
 ```
 
+Zimmet tablolarını görmek için:
+
+```text
+Databases > it_envanter_takip > Schemas > zimmet > Tables
+```
+
+Bu schema altında şu tablo bulunur:
+
+```text
+Zimmetler
+```
+
 ## 7. Migration Uygula
 
 PostgreSQL çalıştıktan sonra KimlikVePersonelServisi migration'ını uygula:
@@ -140,7 +162,15 @@ EnvanterServisi migration'ını uygulamak için:
 dotnet ef database update --project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --startup-project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --context EnvanterDbContext
 ```
 
+ZimmetServisi migration'ını uygulamak için:
+
+```powershell
+dotnet ef database update --project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --startup-project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --context ZimmetDbContext
+```
+
 Not: EnvanterServisi açılışında `Database.MigrateAsync()` çalıştığı için bekleyen migration'lar servis başlatıldığında da uygulanır. `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı mevcut cihazların `AktifMi`, `ToplamVarligaDahilMi` ve çıkış tarihi alanlarını yeni yaşam döngüsü kuralına göre düzeltir.
+
+Not: ZimmetServisi açılışında da `Database.MigrateAsync()` çalışır. Bekleyen `IlkZimmetSemasi` migration'ı servis başlatıldığında otomatik uygulanır.
 
 Not:
 
@@ -306,7 +336,39 @@ GET /api/sarf-malzemeler
 GET /api/stok/ozet
 ```
 
-### Terminal 3 - MVC Client
+### Terminal 3 - ZimmetServisi
+
+```powershell
+cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
+dotnet run --project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --launch-profile http
+```
+
+Kontrol adresi:
+
+```text
+http://localhost:5002/saglik
+```
+
+Swagger adresi:
+
+```text
+http://localhost:5002/swagger
+```
+
+ZimmetServisi endpointleri JWT ile korunur. Zimmet oluşturma, iade alma ve iade kontrolü için `admin` veya `it.personel` token'ı gerekir. `personel` rolündeki kullanıcı yalnızca kendi zimmetlerini `GET /api/zimmetler/benim` endpointiyle görebilir.
+
+Temel endpointler:
+
+```text
+GET /api/zimmetler
+GET /api/zimmetler/benim
+GET /api/zimmetler/{id}
+POST /api/zimmetler
+POST /api/zimmetler/{id}/iade-alindi
+POST /api/zimmetler/{id}/iade-kontrolu
+```
+
+### Terminal 4 - MVC Client
 
 ```powershell
 cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
@@ -327,15 +389,17 @@ MVC client üzerinden şu işlemler denenebilir:
 - Personelleri listelemek ve yeni personel oluşturmak
 - Personeli işten ayrıldı olarak işaretlemek
 - Kullanıcıları listelemek ve yeni kullanıcı oluşturmak
+- Envanter ekranından cihaz ve sarf malzeme işlemlerini yönetmek
+- Zimmetler ekranından zimmet oluşturmak, iade almak ve iade kontrolünü tamamlamak
 
-Not: MVC client şu an doğrudan `http://localhost:5000` adresindeki KimlikVePersonelServisi'ne bağlanır. ApiGateway eklendiğinde bu adres `appsettings.json` içinden değiştirilecektir.
+Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001` ve `http://localhost:5002` adreslerindeki servislere bağlanır. ApiGateway eklendiğinde bu adresler `appsettings.json` içinden gateway adresine çevrilecektir.
 
 Yetki notu:
 
 - Giriş yapılmadan departman, personel ve kullanıcı endpointleri `401 Unauthorized` döner.
 - `Admin` rolü departman, personel ve kullanıcı yönetimi yapabilir.
 - `ITPersoneli` rolü departman ve personel yönetimi yapabilir.
-- `PersonelKullanicisi` bu yönetim endpointlerini kullanamaz; ileride yalnızca kendi zimmet süreçlerini görebilecektir.
+- `PersonelKullanicisi` yönetim endpointlerini kullanamaz; Zimmetler ekranında yalnızca kendi zimmet süreçlerini görebilir.
 
 ## 9. Şu Anki Durum
 
@@ -344,8 +408,10 @@ Yetki notu:
 - Solution iskeleti
 - KimlikVePersonelServisi API projesi
 - EnvanterServisi API projesi
+- ZimmetServisi API projesi
 - ASP.NET Core MVC client projesi
 - PostgreSQL Docker Compose 
+- RabbitMQ Docker Compose
 - KimlikVePersonelServisi EF Core migration yapısı
 - KimlikVePersonelServisi PostgreSQL bağlantısı
 - ASP.NET Core Identity ile kullanıcı, rol ve şifre yönetimi
@@ -359,11 +425,15 @@ Yetki notu:
 - EnvanterServisi EF Core migration yapısı
 - EnvanterServisi kategori, lokasyon, cihaz ve sarf malzeme CRUD endpointleri
 - EnvanterServisi kullanılabilir stok ve kritik stok özeti endpointi
+- ZimmetServisi EF Core migration yapısı
+- ZimmetServisi zimmet oluşturma, iade alma, iade kontrolü ve kendi zimmetlerini listeleme endpointleri
+- MVC client Zimmetler ekranı
+- DotNetCore.CAP + RabbitMQ event yayınlama altyapısı
+- CAP Outbox şemaları: `cap_kimlik`, `cap_envanter`, `cap_zimmet`
 
 Henüz eklenmeyenler:
 
 - ApiGateway
-- CAP + RabbitMQ
 - MongoDB audit log
 - Redis cache
 - SignalR bildirimleri
@@ -408,6 +478,10 @@ MVC client üzerinden şu işlemler güncel olarak denenebilir:
 - Cihazları listelemek, oluşturmak, güncellemek ve cihaz durum hareketi işlemek
 - Sarf malzeme stok hareketi işlemek
 - Basit stok özetini ve kritik stok listesini görmek
+- Zimmet oluşturmak
+- Zimmet iadesi almak
+- İade kontrol sonucunu kaydetmek
+- Personel kullanıcısı ile kendi zimmetlerini görmek
 
 Notlar:
 
@@ -442,3 +516,26 @@ Ek cihaz yönetimi notları:
 - Manuel stok çıkışı, kaybolma, çalınma, kullanım dışı bırakma ve elden çıkarılmış hurda/ıskarta işlemlerinden sonra cihaz pasif ve toplam varlık dışı hale gelir.
 - Boş AssetTag değerlerini dolduran `AssetTagBosCihazlariDoldur` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.
 - Cihaz kapsam alanlarını düzelten `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.
+
+## 13. Güncel ZimmetServisi Notları - 2026-08-08
+
+ZimmetServisi Faz 5 kapsamında ayrı servis olarak eklenmiştir:
+
+- Servis adresi `http://localhost:5002` olarak sabitlenmiştir.
+- Zimmet verileri PostgreSQL içinde `zimmet` şemasında tutulur.
+- Zimmet oluşturma sırasında aktif personel ve kullanılabilir cihaz kontrolü diğer servisler üzerinden yapılır.
+- Zimmet oluşturulunca cihaz EnvanterServisi üzerinden `Zimmetli` yapılır.
+- İade alınınca cihaz `Incelemede` olur.
+- İade kontrolünde sonuç `Saglam`, `Bakimda`, `HurdaIskarta` veya `HasarliTeslimAlindi` olarak kaydedilir ve cihaz durumu buna göre güncellenir.
+- Zimmet ve iade fotoğrafları bu fazda yoktur.
+- CAP/RabbitMQ Faz 6'da eklenmiştir. ZimmetServisi'nin senkron HTTP doğrulama ve cihaz durum hareketi çağrıları korunur; başarılı işlemler ayrıca CAP Outbox üzerinden RabbitMQ eventleri üretir.
+
+## 14. Faz 6 CAP/RabbitMQ Notları - 2026-08-10
+
+Faz 6 ile event yayınlama altyapısı eklenmiştir:
+
+- KimlikVePersonelServisi: `personel.isten-ayrildi`
+- EnvanterServisi: `cihaz.durumu-degisti`, `stok.kritik-seviyeye-dusuldu`
+- ZimmetServisi: `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi`, `cihaz.hasarli-teslim-alindi`
+
+CAP, outbox tablolarını servis başlatıldığında kendi şemaları altında oluşturur. DenetimKaydiServisi ve BildirimServisi henüz eklenmediği için eventlerin kalıcı tüketimi sonraki fazlardadır.

@@ -1,21 +1,26 @@
 using EnvanterServisi.Api.Contracts.Cihazlar;
+using EnvanterServisi.Api.Contracts.Events;
 using EnvanterServisi.Api.Contracts.Kategoriler;
 using EnvanterServisi.Api.Contracts.Lokasyonlar;
 using EnvanterServisi.Api.Contracts.SarfMalzemeler;
 using EnvanterServisi.Api.Contracts.Stok;
+using EnvanterServisi.Api.Data;
 using EnvanterServisi.Api.Domain.Entities;
 using EnvanterServisi.Api.Domain.Enums;
 using EnvanterServisi.Api.Repositories;
+using DotNetCore.CAP;
 
 namespace EnvanterServisi.Api.Services;
 
 public sealed class EnvanterYonetimServisi(
+    EnvanterDbContext dbContext,
     IKategoriRepository kategoriRepository,
     ILokasyonRepository lokasyonRepository,
     ICihazRepository cihazRepository,
     ISarfMalzemeRepository sarfMalzemeRepository,
     IKritikStokKuraliRepository kritikStokKuraliRepository,
-    IStokHareketiRepository stokHareketiRepository) : IEnvanterServisi
+    IStokHareketiRepository stokHareketiRepository,
+    ICapPublisher capPublisher) : IEnvanterServisi
 {
     // Servis katmanı, HTTP detayından bağımsız olarak envanter iş kurallarını uygular.
     public async Task<IReadOnlyCollection<KategoriCevap>> KategorileriListeleAsync(CancellationToken cancellationToken = default)
@@ -272,11 +277,14 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<CihazCevap>.Basarisiz("Cihaz bulunamadı.");
         }
 
+        var oncekiDurum = cihaz.Durum;
         var durumSonucu = CihazDurumunuHareketeGoreGuncelle(cihaz, istek);
         if (!durumSonucu.BasariliMi)
         {
             return Sonuc<CihazCevap>.Basarisiz(durumSonucu.Hata!);
         }
+
+        using var transaction = dbContext.Database.BeginTransaction(capPublisher, autoCommit: false);
 
         stokHareketiRepository.Ekle(new StokHareketi
         {
@@ -288,6 +296,25 @@ public sealed class EnvanterYonetimServisi(
         });
 
         await cihazRepository.KaydetAsync(cancellationToken);
+        await capPublisher.PublishAsync(
+            EventAdlari.CihazDurumuDegisti,
+            new CihazDurumuDegistiEvent(
+                Guid.NewGuid(),
+                cihaz.Id,
+                cihaz.AssetTag,
+                cihaz.SeriNumarasi,
+                oncekiDurum.ToString(),
+                cihaz.Durum.ToString(),
+                cihaz.AktifMi,
+                cihaz.ToplamVarligaDahilMi,
+                istek.Neden.ToString(),
+                olusturanKullaniciId,
+                DateTime.UtcNow),
+            cancellationToken: cancellationToken);
+
+        await CihazKritikStokEventleriniYayinlaAsync(cihaz, cancellationToken);
+
+        transaction.Commit();
         return Sonuc<CihazCevap>.Basarili(CihazCevabaDonustur(cihaz));
     }
 
@@ -408,6 +435,8 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<SarfMalzemeCevap>.Basarisiz("Eldeki miktardan fazla stok çıkışı yapılamaz.");
         }
 
+        using var transaction = dbContext.Database.BeginTransaction(capPublisher, autoCommit: false);
+
         sarfMalzeme.EldekiMiktar = istek.HareketTipi switch
         {
             StokHareketTipi.Giris => sarfMalzeme.EldekiMiktar + istek.Miktar,
@@ -427,6 +456,9 @@ public sealed class EnvanterYonetimServisi(
         });
 
         await sarfMalzemeRepository.KaydetAsync(cancellationToken);
+        await SarfMalzemeKritikStokEventiYayinlaAsync(sarfMalzeme, cancellationToken);
+
+        transaction.Commit();
         return Sonuc<SarfMalzemeCevap>.Basarili(SarfMalzemeCevabaDonustur(sarfMalzeme));
     }
 
@@ -520,6 +552,70 @@ public sealed class EnvanterYonetimServisi(
         }
 
         return new StokOzetCevap(toplamVarlik, kullanilabilirCihazStoku, sarfToplam, kritikStoklar);
+    }
+
+    private async Task CihazKritikStokEventleriniYayinlaAsync(Cihaz cihaz, CancellationToken cancellationToken)
+    {
+        var kurallar = (await kritikStokKuraliRepository.ListeleAsync(cancellationToken))
+            .Where(kural =>
+                kural.AktifMi
+                && kural.KategoriId == cihaz.KategoriId
+                && kural.LokasyonId == cihaz.LokasyonId
+                && (string.IsNullOrWhiteSpace(kural.CihazModeli)
+                    || string.Equals(kural.CihazModeli, cihaz.Model, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        foreach (var kural in kurallar)
+        {
+            var mevcut = await cihazRepository.KullanilabilirStokSayisiAsync(
+                kural.KategoriId,
+                kural.LokasyonId,
+                kural.CihazModeli,
+                cancellationToken);
+
+            if (mevcut >= kural.KritikStokSeviyesi)
+            {
+                continue;
+            }
+
+            await capPublisher.PublishAsync(
+                EventAdlari.KritikStokSeviyesineDusuldu,
+                new KritikStokSeviyesineDusulduEvent(
+                    Guid.NewGuid(),
+                    "SeriNumarali",
+                    kural.KategoriId,
+                    kural.LokasyonId,
+                    kural.CihazModeli,
+                    null,
+                    null,
+                    mevcut,
+                    kural.KritikStokSeviyesi,
+                    DateTime.UtcNow),
+                cancellationToken: cancellationToken);
+        }
+    }
+
+    private Task SarfMalzemeKritikStokEventiYayinlaAsync(SarfMalzeme sarfMalzeme, CancellationToken cancellationToken)
+    {
+        if (!sarfMalzeme.AktifMi || sarfMalzeme.EldekiMiktar >= sarfMalzeme.KritikStokSeviyesi)
+        {
+            return Task.CompletedTask;
+        }
+
+        return capPublisher.PublishAsync(
+            EventAdlari.KritikStokSeviyesineDusuldu,
+            new KritikStokSeviyesineDusulduEvent(
+                Guid.NewGuid(),
+                "SarfMalzeme",
+                sarfMalzeme.KategoriId,
+                sarfMalzeme.LokasyonId,
+                null,
+                sarfMalzeme.Id,
+                sarfMalzeme.Ad,
+                sarfMalzeme.EldekiMiktar,
+                sarfMalzeme.KritikStokSeviyesi,
+                DateTime.UtcNow),
+            cancellationToken: cancellationToken);
     }
 
     private async Task<Sonuc<bool>> CihazKimlikBilgisiniDogrulaAsync(string? seriNumarasi, string? assetTag, Guid? haricCihazId, CancellationToken cancellationToken)

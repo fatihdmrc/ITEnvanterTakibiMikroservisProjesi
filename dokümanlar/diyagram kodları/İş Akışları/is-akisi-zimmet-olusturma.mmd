@@ -8,11 +8,9 @@ flowchart TB
     CihazUygunMu{"Cihaz Kullanilabilir mi ve aktif zimmeti yok mu?"}
     CihazHata["İşlem durdurulur: cihaz uygun değil"]
     TeslimEden["Teslim eden kullanıcı kaydedilir"]
-    Fotograf["Varsa zimmet fotoğrafı eklenir"]
     ZimmetKaydi["Zimmet kaydı oluşturulur"]
     DurumGuncelle["Cihaz durumu Zimmetli yapılır"]
-    Event["ZimmetOlusturuldu eventi yayınlanır"]
-    Audit["DenetimKaydiServisi audit log yazar"]
+    Event["Event yayını Faz 6'da eklenecek"]
     End([Bitiş])
 
     Start --> Secim
@@ -23,9 +21,7 @@ flowchart TB
     CihazKontrol --> CihazUygunMu
     CihazUygunMu -- "Hayır" --> CihazHata
     CihazUygunMu -- "Evet" --> TeslimEden
-    TeslimEden --> Fotograf
-    Fotograf --> ZimmetKaydi
+    TeslimEden --> ZimmetKaydi
     ZimmetKaydi --> DurumGuncelle
     DurumGuncelle --> Event
-    Event --> Audit
-    Audit --> End
+    Event --> End

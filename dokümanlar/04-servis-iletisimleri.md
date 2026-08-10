@@ -10,6 +10,8 @@ Sistem YARP tabanlı Api Gateway ile çalışacaktır. Client uygulama istekleri
 
 Senkron HTTP çağrıları işlem anında doğrulama gerektiğinde kullanılır. CAP + RabbitMQ eventleri ise gerçekleşen olayların diğer servislere güvenilir şekilde duyurulması için kullanılır. Event publish işlemlerinde Outbox Pattern uygulanır.
 
+Faz 6 güncel uygulamasında ZimmetServisi, KimlikVePersonelServisi ve EnvanterServisi ile işlem anı doğrulama için doğrudan HTTP üzerinden konuşmaya devam eder. Başarılı domain işlemleri ayrıca DotNetCore.CAP Outbox üzerinden RabbitMQ'ya event olarak yayınlanır.
+
 ## 2. Servis Portları
 
 Önerilen portlar:
@@ -81,9 +83,18 @@ Amaç:
 
 - Zimmet oluşturulduğunda cihazı `Zimmetli` durumuna almak
 - İade sürecinde cihazı `Incelemede` durumuna almak
-- Fiziki kontrol sonucunda cihazı `Kullanilabilir`, `Bakimda` veya `HurdaIskarta` durumuna almak
+- Fiziki kontrol sonucunda cihazı `Kullanilabilir`, `Bakimda`, `HurdaIskarta` veya `HasarliTeslimAlindi` durumuna almak
+
+Faz 5 uygulama kararı:
+
+- ZimmetServisi cihaz tablosuna doğrudan yazmaz.
+- `POST /api/cihazlar/{id}/durum-hareketleri` endpointi kullanılır.
+- Zimmet oluştururken `Zimmetlendi`, iade alırken `ZimmetIadeAlindi` nedeni gönderilir.
+- İade kontrolünde sonuç `BakimdanDondu`, `Ariza`, `HurdaIskarta` veya `HasarliTeslimAlindi` hareketlerinden birine çevrilir.
 
 ## 4. CAP + RabbitMQ Eventleri
+
+Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Event consumer tarafı DenetimKaydiServisi ve BildirimServisi fazlarında eklenecektir.
 
 Event bus:
 
@@ -98,6 +109,7 @@ Outbox kararı:
 - Event üreten servislerde iş verisi ve event kaydı aynı transaction içinde yazılır.
 - CAP Outbox kaydı daha sonra RabbitMQ'ya yayınlar.
 - Böylece veritabanı kaydı başarılı olup event publish işleminin kaybolması riski azaltılır.
+- CAP outbox şemaları servis bazında ayrıdır: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
 
 RabbitMQ exchange:
 
@@ -105,50 +117,46 @@ RabbitMQ exchange:
 
 Eventler:
 
-| Event | Üreten Servis | Tüketen Servisler | Amaç |
-| --- | --- | --- | --- |
-| ZimmetOlusturuldu | ZimmetServisi | DenetimKaydiServisi | Zimmet oluşturma olayını audit için duyurmak |
-| ZimmetIadeEdildi | ZimmetServisi | DenetimKaydiServisi | Zimmet iade olayını audit için duyurmak |
-| StokAzaldi | EnvanterServisi | DenetimKaydiServisi | Stok azalma olayını audit için duyurmak |
-| KritikStokSeviyesineDusuldu | EnvanterServisi | DenetimKaydiServisi, BildirimServisi | Kritik stok bildirimi üretmek |
-| CihazDurumuDegisti | EnvanterServisi | DenetimKaydiServisi | Cihaz durum değişikliğini kaydetmek |
-| CihazKontroleAlindi | ZimmetServisi veya EnvanterServisi | DenetimKaydiServisi | İade sonrası fiziki kontrol sürecini duyurmak |
-| CihazHasarliTeslimAlindi | ZimmetServisi | DenetimKaydiServisi | Hasarlı iade bilgisini duyurmak |
-| CihazHurdayaAyrildi | EnvanterServisi | DenetimKaydiServisi | Hurda/ıskarta bilgisini duyurmak |
-| PersonelIstenAyrildi | KimlikVePersonelServisi | ZimmetServisi, DenetimKaydiServisi | Ayrılan personelin aktif zimmetlerinin görünür olması |
+| Event Adı | Routing Key | Üreten Servis | Tüketen Servisler | Amaç |
+| --- | --- | --- | --- | --- |
+| ZimmetOlusturuldu | `zimmet.olusturuldu` | ZimmetServisi | DenetimKaydiServisi | Zimmet oluşturma olayını audit için duyurmak |
+| ZimmetIadeAlindi | `zimmet.iade-alindi` | ZimmetServisi | DenetimKaydiServisi | Zimmetin fiziki kontrol sürecine alındığını duyurmak |
+| ZimmetIadeEdildi | `zimmet.iade-edildi` | ZimmetServisi | DenetimKaydiServisi | Zimmet iade olayını audit için duyurmak |
+| KritikStokSeviyesineDusuldu | `stok.kritik-seviyeye-dusuldu` | EnvanterServisi | DenetimKaydiServisi, BildirimServisi | Kritik stok bildirimi üretmek |
+| CihazDurumuDegisti | `cihaz.durumu-degisti` | EnvanterServisi | DenetimKaydiServisi | Cihaz durum değişikliğini kaydetmek |
+| CihazKontroleAlindi | `cihaz.kontrole-alindi` | ZimmetServisi | DenetimKaydiServisi | İade sonrası fiziki kontrol sürecini duyurmak |
+| CihazHasarliTeslimAlindi | `cihaz.hasarli-teslim-alindi` | ZimmetServisi | DenetimKaydiServisi | Hasarlı iade bilgisini duyurmak |
+| PersonelIstenAyrildi | `personel.isten-ayrildi` | KimlikVePersonelServisi | ZimmetServisi (gelecek), DenetimKaydiServisi | Ayrılan personelin aktif zimmetlerinin görünür olması |
 
 ## 5. Standart Event İçeriği
 
-Tüm eventlerde aşağıdaki alanlar bulunmalıdır:
+Faz 6 uygulamasında event adı CAP routing key üzerinden taşınır. Payload tarafında domain olayı için gerekli alanlar bulunur.
 
 | Alan | Açıklama |
 | --- | --- |
 | EventId | Event benzersiz kimliği |
-| EventAdi | Event adı |
-| OccurredAt | Event oluşma zamanı |
-| KaynakServis | Eventi üreten servis |
-| CorrelationId | İlgili işlem akışını takip etmek için kullanılan kimlik |
-| KullaniciId | İşlemi başlatan kullanıcı |
-| PersonelId | İşlemi başlatan kullanıcının bağlı olduğu personel kaydı |
-| Rol | İşlemi başlatan kullanıcının sistem rolü |
-| Payload | Evente özel veri |
+| OlusmaZamaniUtc | Event oluşma zamanı |
+| DomainId alanları | PersonelId, CihazId, ZimmetId, SarfMalzemeId gibi evente özel referanslar |
+| KullaniciId alanları | İşlemi başlatan veya kontrolü yapan kullanıcı id bilgisi, event için gerekliyse |
+| Evente özel alanlar | Durum, neden, kritik stok seviyesi, iade notu gibi domain verileri |
 
 Kullanıcı bağlamı:
 
-- Gerekli eventlerde `KullaniciId`, `PersonelId`, `Rol` ve `CorrelationId` taşınır.
+- Gerekli eventlerde kullanıcı id bilgisi taşınır.
+- Rol ve CorrelationId alanları DenetimKaydiServisi fazında genişletilebilir.
 - Bu bilgiler audit log ve süreç izlenebilirliği için kullanılır.
 
 ## 6. Örnek Akış: Zimmet Oluşturma
 
-1. Kullanıcı ApiGateway'e zimmet oluşturma isteği gönderir.
-2. ApiGateway isteği ZimmetServisi'ne yönlendirir.
-3. ZimmetServisi, KimlikVePersonelServisi üzerinden personeli doğrular.
-4. ZimmetServisi, EnvanterServisi üzerinden cihazı doğrular.
-5. Cihaz uygunsa zimmet kaydı oluşturulur.
-6. ZimmetServisi, EnvanterServisi'ne cihaz durumunu `Zimmetli` yapmak için istek gönderir.
-7. ZimmetServisi aynı transaction içinde Outbox kaydını oluşturur.
-8. CAP, `ZimmetOlusturuldu` eventini RabbitMQ'ya yayınlar.
-9. DenetimKaydiServisi eventi MongoDB'ye kaydeder.
+1. Kullanıcı MVC client veya Swagger üzerinden ZimmetServisi'ne zimmet oluşturma isteği gönderir.
+2. ZimmetServisi, KimlikVePersonelServisi üzerinden personeli doğrular.
+3. ZimmetServisi, EnvanterServisi üzerinden cihazı doğrular.
+4. ZimmetServisi ilgili cihaz için açık zimmet olup olmadığını kendi veritabanından kontrol eder.
+5. Cihaz ve personel uygunsa EnvanterServisi'ne `Zimmetlendi` cihaz durum hareketi gönderilir.
+6. EnvanterServisi cihazı `Zimmetli` durumuna alır.
+7. ZimmetServisi zimmet kaydını `Aktif` durumuyla oluşturur.
+8. ZimmetServisi aynı transaction içinde `zimmet.olusturuldu` Outbox kaydını oluşturur.
+9. CAP, Outbox kaydını RabbitMQ `inventory.events` exchange'ine yayınlar.
 
 ## 7. Örnek Akış: Personel İşten Ayrılma
 
@@ -158,6 +166,5 @@ Kullanıcı bağlamı:
 4. Aynı servis ilgili kullanıcı hesabını pasifleştirir.
 5. KimlikVePersonelServisi aynı transaction içinde Outbox kaydını oluşturur.
 6. CAP, `PersonelIstenAyrildi` eventini RabbitMQ'ya yayınlar.
-7. ZimmetServisi personelin aktif zimmetlerini kontrol eder.
-8. Aktif zimmet varsa iade bekliyor durumu üretilir.
-9. DenetimKaydiServisi olayı MongoDB'ye kaydeder.
+7. ZimmetServisi consumer davranışı sonraki fazlarda ele alınacaktır.
+8. DenetimKaydiServisi Faz 7'de olayı MongoDB'ye kaydeder.

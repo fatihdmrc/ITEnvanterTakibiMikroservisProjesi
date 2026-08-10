@@ -16,6 +16,8 @@ builder.Logging.AddConsole();
 
 var jwtAyarlari = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
+var envanterConnectionString = builder.Configuration.GetConnectionString("EnvanterDb")
+    ?? throw new InvalidOperationException("Envanter veritabanı bağlantısı bulunamadı.");
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -81,8 +83,30 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddDbContext<EnvanterDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("EnvanterDb");
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(envanterConnectionString);
+});
+
+builder.Services.AddCap(options =>
+{
+    options.UsePostgreSql(postgreSql =>
+    {
+        postgreSql.ConnectionString = envanterConnectionString;
+        postgreSql.Schema = "cap_envanter";
+    });
+
+    options.UseRabbitMQ(rabbitMq =>
+    {
+        rabbitMq.HostName = builder.Configuration["RabbitMQ:HostName"] ?? "localhost";
+        rabbitMq.UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
+        rabbitMq.Password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+        rabbitMq.VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
+        rabbitMq.Port = builder.Configuration.GetValue<int?>("RabbitMQ:Port") ?? 5672;
+        rabbitMq.ExchangeName = builder.Configuration["RabbitMQ:ExchangeName"] ?? "inventory.events";
+    });
+
+    options.DefaultGroupName = "envanter-servisi";
+    options.FailedRetryCount = 5;
+    options.FailedRetryInterval = 60;
 });
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));

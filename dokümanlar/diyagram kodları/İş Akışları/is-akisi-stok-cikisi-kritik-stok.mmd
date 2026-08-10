@@ -7,7 +7,7 @@ flowchart TB
     Sarf["Sarf malzeme"]
     CihazDurum["Cihaz durumu güncellenir"]
     SarfMiktar["EldekiMiktar azaltılır"]
-    StokEvent["StokAzaldi eventi yayınlanır"]
+    StokEvent["cihaz.durumu-degisti / stok hareketi kaydı oluşur"]
     StokHesapla["Kullanılabilir stok hesaplanır"]
     KritikMi{"Kritik stok seviyesinin altında mı?"}
     KritikEvent["KritikStokSeviyesineDusuldu eventi yayınlanır"]
@@ -32,4 +32,3 @@ flowchart TB
     KritikEvent --> Bildirim
     Audit --> End
     Bildirim --> End
-

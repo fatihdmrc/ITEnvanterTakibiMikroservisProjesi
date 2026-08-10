@@ -23,13 +23,11 @@ flowchart LR
             UC_PersonelKontrol(("Personelin aktifliğini kontrol et"))
             UC_CihazKontrol(("Cihazın zimmetlenebilirliğini kontrol et"))
             UC_TeslimEden(("Teslim eden kişiyi kaydet"))
-            UC_ZimmetFoto(("Zimmet fotoğrafı ekle"))
             UC_IadeAl(("Zimmet iadesi al"))
             UC_Inceleme(("Cihazı incelemeye al"))
             UC_FizikiKontrol(("Fiziki kontrol yap"))
             UC_KontrolYapan(("Kontrol yapan kullanıcıyı kaydet"))
             UC_HasarNot(("Hasarlı teslim notu ekle"))
-            UC_HasarFoto(("Hasar fotoğrafları ekle"))
             UC_IadeSonuc(("İade sonucuna göre cihaz durumunu belirle"))
         end
 
@@ -65,13 +63,11 @@ flowchart LR
     UC_ZimmetOlustur -. "zorunlu" .-> UC_PersonelKontrol
     UC_ZimmetOlustur -. "zorunlu" .-> UC_CihazKontrol
     UC_ZimmetOlustur -. "zorunlu" .-> UC_TeslimEden
-    UC_ZimmetOlustur -. "opsiyonel" .-> UC_ZimmetFoto
 
     UC_IadeAl -. "ilk adım" .-> UC_Inceleme
     UC_Inceleme -. "sonra" .-> UC_FizikiKontrol
     UC_FizikiKontrol -. "zorunlu" .-> UC_KontrolYapan
     UC_FizikiKontrol -. "hasar varsa" .-> UC_HasarNot
-    UC_HasarNot -. "destekler" .-> UC_HasarFoto
     UC_FizikiKontrol -. "sonuç" .-> UC_IadeSonuc
 
     UC_PersonelAyrilis -. "ön kontrol" .-> UC_AktifZimmet
@@ -84,6 +80,6 @@ flowchart LR
 
     class IT actor;
     class UC_Giris,UC_CihazKayit,UC_SarfKayit,UC_Durum,UC_StokHareket,UC_ManuelCikis,UC_KritikKontrol inventory;
-    class UC_ZimmetOlustur,UC_PersonelKontrol,UC_CihazKontrol,UC_TeslimEden,UC_ZimmetFoto,UC_IadeAl,UC_Inceleme,UC_FizikiKontrol,UC_KontrolYapan,UC_HasarNot,UC_HasarFoto,UC_IadeSonuc assignment;
+    class UC_ZimmetOlustur,UC_PersonelKontrol,UC_CihazKontrol,UC_TeslimEden,UC_IadeAl,UC_Inceleme,UC_FizikiKontrol,UC_KontrolYapan,UC_HasarNot,UC_IadeSonuc assignment;
     class UC_PersonelAyrilis,UC_AktifZimmet personel;
     class UC_Rapor,UC_Bildirim monitor;

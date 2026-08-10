@@ -47,11 +47,8 @@ flowchart TB
         direction TB
         ZS_DB[(zimmet_db)]
         ZIMMET["Zimmet"]
-        FOTO["ZimmetFotografi"]
 
         ZS_DB --> ZIMMET
-        ZS_DB --> FOTO
-        ZIMMET -->|"1:N"| FOTO
     end
 
     subgraph DKS["DenetimKaydiServisi - MongoDB"]
@@ -92,7 +89,7 @@ flowchart TB
     class KULLANICI,PERSONEL,DEPARTMAN identity;
     class CIHAZ,SARF,KATEGORI,LOKASYON inventory;
     class KRITIK,STOK stock;
-    class ZIMMET,FOTO assignment;
+    class ZIMMET assignment;
     class AUDIT audit;
     class REF_ZIMMET,REF_STOK,REF_AUDIT ref;
     class KPS_DB,ES_DB,ZS_DB,MONGO db;

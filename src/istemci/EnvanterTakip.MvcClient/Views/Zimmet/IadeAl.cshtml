@@ -1,0 +1,52 @@
+@model ZimmetIadeAlSayfaModel
+@{
+    ViewData["Title"] = "Zimmet İadesi Al";
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Zimmet İadesi Al</h1>
+            <p class="text-muted mb-0">@Model.Zimmet.PersonelAdSoyad personelindeki cihazı fiziki kontrole al.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">Zimmetlere Dön</a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+    {
+        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="border rounded-2 p-3">
+                <h2 class="h6 mb-3">Zimmet Bilgisi</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Cihaz</dt>
+                    <dd class="col-sm-8">@Model.Zimmet.CihazAd</dd>
+                    <dt class="col-sm-4">Asset / Seri</dt>
+                    <dd class="col-sm-8">@($"{Model.Zimmet.CihazAssetTag ?? "-"} / {Model.Zimmet.CihazSeriNumarasi ?? "-"}")</dd>
+                    <dt class="col-sm-4">Personel</dt>
+                    <dd class="col-sm-8">@Model.Zimmet.PersonelAdSoyad</dd>
+                    <dt class="col-sm-4">Zimmet Tarihi</dt>
+                    <dd class="col-sm-8">@Model.Zimmet.ZimmetTarihi.ToString("dd.MM.yyyy")</dd>
+                </dl>
+            </section>
+        </div>
+        <div class="col-lg-5">
+            <form asp-action="IadeAlOnayla" method="post" class="border rounded-2 p-3">
+                <input type="hidden" name="Id" value="@Model.Form.Id" />
+                <h2 class="h6 mb-3">İade Onayı</h2>
+                <div class="mb-3">
+                    <label class="form-label">İade Tarihi</label>
+                    <input name="IadeTarihi" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">İade Notu</label>
+                    <textarea name="IadeNotu" class="form-control" rows="4">@Model.Form.IadeNotu</textarea>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">İadeyi Al ve İncelemeye Gönder</button>
+            </form>
+        </div>
+    </div>
+</div>

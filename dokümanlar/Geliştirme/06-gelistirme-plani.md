@@ -86,15 +86,17 @@ Bu hedefin seçilme nedeni:
 - Zimmet oluşturulduğunda cihaz durumu `Zimmetli` yapılır.
 - Zimmet iade süreci geliştirilir.
 - İade kontrolünde cihaz durumu `Incelemede`, `Kullanilabilir`, `Bakimda` veya `HurdaIskarta` olarak güncellenir.
-- Zimmet ve iade fotoğraf dosya yolu kayıtları eklenir.
+- Zimmet ve iade fotoğraf dosya yolu kayıtları bu fazdan çıkarılmıştır.
 
 ### Faz 6 - CAP + RabbitMQ + Outbox
 
-- RabbitMQ Docker Compose'a eklenir.
-- DotNetCore.CAP servislerde yapılandırılır.
-- PostgreSQL kullanan servislerde CAP Outbox tabloları kullanılır.
-- Zimmet, iade, stok ve personel ayrılış eventleri yayınlanır.
-- Eventlerde gerekli kullanıcı bağlamı taşınır.
+- RabbitMQ Docker Compose'a eklenmiştir.
+- DotNetCore.CAP KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi üzerinde yapılandırılmıştır.
+- PostgreSQL kullanan event üretici servislerde CAP Outbox tabloları kullanılır.
+- CAP outbox şemaları servis bazında ayrılmıştır: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
+- Zimmet, iade, cihaz durum değişikliği, kritik stok ve personel ayrılış eventleri yayınlanır.
+- Event üretimi iş verisiyle aynı EF transaction kapsamına alınmıştır.
+- Event consumer tarafı Faz 7 DenetimKaydiServisi ve Faz 9 SignalR Bildirimleri kapsamında ele alınacaktır.
 
 ### Faz 7 - DenetimKaydiServisi
 
@@ -164,7 +166,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 ### Uygulama kararı
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
-- Faz 5 ve sonrası şu an geliştirme kapsamı dışında bırakılmıştır. Sıradaki fazlar sırasıyla ZimmetServisi, CAP/RabbitMQ, audit log, cache, bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
+- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 ve sonrası sırasıyla audit log, cache, bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
 
 ## 6. Güncel Faz 4 Client Kararı - 2026-08-03
 
@@ -181,7 +183,7 @@ Envanter client tarafında cihaz ve sarf malzeme yönetimi, kayıt sayısı artt
 - Cihaz işlem sayfasında ilgili cihazın durum geçmişi görüntülenir.
 - Cihaz durum hareketi gerçekten envanter dışına çıkarma anlamı taşıyorsa cihaz otomatik pasif ve toplam varlık dışı yapılır.
 
-Bu karar Faz 4 sınırı içindedir. Faz 5 ve sonrası hâlâ geliştirme kapsamı dışında tutulmaktadır.
+Bu karar Faz 4 sınırı içinde tamamlanmıştır. Faz 5 ZimmetServisi ayrı servis olarak ele alınacaktır.
 
 ## 7. Cihaz Durum Hareketi ve Kapsam Kararı - 2026-08-08
 
@@ -200,3 +202,32 @@ Faz 3 ve Faz 4 kapsamında cihaz yaşam döngüsü yönetimi netleştirilmiştir
 - Zimmet akışları için `Zimmetlendi` hareketi cihazı `Zimmetli`, `ZimmetIadeAlindi` hareketi cihazı `Incelemede` durumuna alır.
 - Bu iki hareket Faz 5 ZimmetServisi için hazırlık niteliğindedir; cihaz durumunun nihai sahibi EnvanterServisi olarak kalır.
 - `EnvantereGiris` cihaz durum hareketi seçeneği değildir; yeni cihaz oluşturma akışının parçasıdır.
+
+## 8. Faz 5 ZimmetServisi Durumu - 2026-08-08
+
+Faz 5 kapsamında `ZimmetServisi.Api` ayrı API projesi olarak eklenmiştir.
+
+- Zimmet verileri PostgreSQL içinde `zimmet` şemasında tutulur.
+- `zimmet.Zimmetler` tablosu için `IlkZimmetSemasi` migration'ı oluşturulmuştur.
+- Bir cihaz için aynı anda yalnızca bir açık zimmet bulunabilir. Açık zimmet durumları `Aktif` ve `IadeSurecinde` olarak kabul edilir.
+- Zimmet oluşturma sırasında personel uygunluğu KimlikVePersonelServisi üzerinden, cihaz uygunluğu EnvanterServisi üzerinden HTTP ile doğrulanır.
+- Zimmet oluşturulunca ZimmetServisi, EnvanterServisi cihaz durum hareketi endpointine `Zimmetlendi` nedeni gönderir ve cihaz `Zimmetli` olur.
+- Zimmet iade alınınca `ZimmetIadeAlindi` nedeni kullanılır ve cihaz fiziki kontrol için `Incelemede` olur.
+- İade kontrolü `Saglam`, `Bakimda`, `HurdaIskarta` veya `HasarliTeslimAlindi` sonuçlarından biriyle tamamlanır.
+- MVC client üzerinde `Zimmetler` bölümü eklenmiştir. Admin/IT tüm zimmetleri yönetebilir, personel kullanıcısı kendi zimmetlerini görebilir.
+- Zimmet ve iade fotoğrafları bu fazda uygulanmamıştır; fotoğraf tablosu, endpointi ve UI alanı yoktur.
+- CAP/RabbitMQ ve Outbox Faz 6'da eklenmiştir; Faz 5'in senkron HTTP doğrulama ve cihaz durumu güncelleme akışı korunmuştur.
+
+## 9. Faz 6 CAP/RabbitMQ + Outbox Durumu - 2026-08-10
+
+Faz 6 kapsamında event üreten servislerde DotNetCore.CAP ve RabbitMQ entegrasyonu uygulanmıştır.
+
+- Docker Compose'a RabbitMQ management container'ı eklenmiştir.
+- Üç API projesine `DotNetCore.CAP.PostgreSql` ve `DotNetCore.CAP.RabbitMQ` paketleri eklenmiştir.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi kendi PostgreSQL bağlantıları üzerinden CAP outbox kullanır.
+- CAP şemaları servis bazında ayrıdır: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
+- `inventory.events` RabbitMQ exchange'i ortak event exchange'i olarak kullanılır.
+- KimlikVePersonelServisi `personel.isten-ayrildi` eventini üretir.
+- EnvanterServisi `cihaz.durumu-degisti` ve `stok.kritik-seviyeye-dusuldu` eventlerini üretir.
+- ZimmetServisi `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade durumunda `cihaz.hasarli-teslim-alindi` eventlerini üretir.
+- Event tüketicileri bu fazda eklenmemiştir; DenetimKaydiServisi Faz 7'de, bildirim tüketimi Faz 9'da uygulanacaktır.

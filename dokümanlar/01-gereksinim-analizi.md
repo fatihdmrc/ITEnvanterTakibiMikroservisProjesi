@@ -93,7 +93,7 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 - Aktif zimmet kaydı olan cihaz tekrar zimmetlenememelidir.
 - Departman ortak kullanımına verilen cihazlar departman sorumlusu adına zimmetlenmelidir.
 - Zimmet oluştururken teslim eden kişi zorunlu olmalıdır.
-- Zimmet oluşturma işleminde cihaz fotoğrafı eklenebilmelidir.
+- Zimmet ve iade fotoğrafları Faz 5 kapsamında yer almayacaktır.
 - Zimmet geçmişi silinmemelidir.
 
 ### Zimmet İade Yönetimi
@@ -105,13 +105,13 @@ Sistem aşağıdaki ana yetenekleri kapsar:
   - `Kullanilabilir`: Sağlam ve kullanıma hazır
   - `Bakimda`: Arızalı veya bakımda
   - `HurdaIskarta`: Hurda veya ıskartaya ayrılmış
+  - `HasarliTeslimAlindi`: Hasarlı teslim alınmış
 - Hasarlı teslim alınan cihaz için iade notu tutulmalıdır.
 - Zimmet iade sürecinde fiziki kontrolü yapan kullanıcı kaydedilmelidir.
-- İade sürecinde birden fazla fotoğraf eklenebilmelidir.
 - Zimmet iadesi incelemede iken cihaz tekrar zimmetlenememelidir.
 - Hasarlı teslim alınan cihaz için ayrı bir bakım süreci izlenmemelidir.
 - Cihaz bakımdan geldikten sonra fiziki test ile cihaz durumu manuel olarak güncellenebilmelidir.
-- Hasar ve zimmet fotoğrafları server üzerinde dosya olarak saklanmalıdır.
+- Hasar ve zimmet fotoğrafları için tablo, endpoint veya UI alanı oluşturulmayacaktır.
 
 ### Stok Yönetimi
 

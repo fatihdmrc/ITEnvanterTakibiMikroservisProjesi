@@ -20,10 +20,8 @@ Akış:
 6. Cihazın aktif zimmet kaydı olup olmadığı kontrol edilir.
 7. Aktif zimmet yoksa zimmet kaydı oluşturulur.
 8. Teslim eden kullanıcı bilgisi zorunlu olarak kaydedilir.
-9. Varsa cihaz fotoğrafı zimmet kaydına eklenir.
-10. Cihaz durumu `Zimmetli` yapılır.
-11. `ZimmetOlusturuldu` eventi yayınlanır.
-12. Audit log kaydı oluşur.
+9. Cihaz durumu EnvanterServisi cihaz durum hareketi üzerinden `Zimmetli` yapılır.
+10. ZimmetServisi aynı transaction içinde CAP Outbox kaydı oluşturur ve `zimmet.olusturuldu` eventini yayınlar.
 
 Başarısızlık durumları:
 
@@ -50,22 +48,21 @@ Akış:
 2. İade işlemi başlatılır.
 3. Zimmet kaydı iade sürecine alınır.
 4. Cihaz durumu `Incelemede` yapılır.
-5. `CihazKontroleAlindi` eventi yayınlanır.
-6. Fiziki kontrol yapılır ve kontrolü yapan kullanıcı kaydedilir.
-7. Cihaz sağlamsa cihaz durumu `Kullanilabilir` yapılır.
-8. Cihaz arızalıysa cihaz durumu `Bakimda` yapılır.
-9. Cihaz ağır hasarlı veya kullanılamaz durumdaysa cihaz durumu `HurdaIskarta` yapılır.
-10. Hasarlı teslim alındıysa iade notu girilir.
-11. İade sürecinde birden fazla fotoğraf eklenebilir.
-12. Zimmet kaydı iade edildi olarak kapatılır.
-13. `ZimmetIadeEdildi` eventi yayınlanır.
-14. Audit log kaydı oluşur.
+5. Fiziki kontrol yapılır ve kontrolü yapan kullanıcı kaydedilir.
+6. Cihaz sağlamsa cihaz durumu `Kullanilabilir` yapılır.
+7. Cihaz arızalıysa cihaz durumu `Bakimda` yapılır.
+8. Cihaz ağır hasarlı veya kullanılamaz durumdaysa cihaz durumu `HurdaIskarta` yapılır.
+9. Hasarlı teslim alındıysa cihaz durumu `HasarliTeslimAlindi` yapılır ve iade notu girilir.
+10. Zimmet kaydı iade edildi olarak kapatılır.
+11. İade alma aşamasında `zimmet.iade-alindi` ve `cihaz.kontrole-alindi` eventleri yayınlanır.
+12. İade kontrolü tamamlandığında `zimmet.iade-edildi` eventi yayınlanır.
+13. Hasarlı teslim alınan cihazlarda ayrıca `cihaz.hasarli-teslim-alindi` eventi yayınlanır.
 
 İş kuralları:
 
 - `Incelemede` durumundaki cihaz tekrar zimmetlenemez.
 - Hasarlı teslim alınan cihazda not tutulmalıdır.
-- İade fotoğrafları zimmet geçmişiyle birlikte korunmalıdır.
+- Zimmet ve iade fotoğrafları Faz 5 kapsamından çıkarılmıştır.
 - Hasarlı teslim alınan cihaz için ayrı bir bakım süreci izlenmez.
 - Cihaz bakımdan geldikten sonra fiziki test ile durumu manuel olarak güncellenebilir.
 
@@ -116,11 +113,11 @@ Akış:
 3. Açıklama girilir.
 4. Seri numaralı cihaz için cihaz durumu uygun yeni duruma alınır.
 5. Sarf malzeme için `EldekiMiktar` azaltılır.
-6. `StokAzaldi` eventi yayınlanır.
+6. Cihaz için durum değiştiyse `cihaz.durumu-degisti` eventi yayınlanır.
 7. Kritik stok kontrolü yapılır.
-8. Kritik seviyeye düşüldüyse `KritikStokSeviyesineDusuldu` eventi yayınlanır.
-9. Audit log kaydı oluşur.
-10. SignalR bildirimi yalnızca kritik stok seviyesi altına düşüldüyse gönderilir.
+8. Kritik seviyeye düşüldüyse `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
+9. Audit log kaydı Faz 7 DenetimKaydiServisi ile oluşur.
+10. SignalR bildirimi Faz 9'da yalnızca kritik stok seviyesi altına düşüldüyse gönderilir.
 
 Stok çıkış nedenleri:
 
@@ -143,9 +140,9 @@ Akış:
 3. Seri numaralı cihazlarda kullanılabilir stok cihaz durumlarından hesaplanır.
 4. Sarf malzemelerinde kullanılabilir stok `EldekiMiktar` alanından okunur.
 5. Hesaplanan değer kritik stok seviyesinin altındaysa event üretilir.
-6. CAP Outbox kaydı oluşturulur ve `KritikStokSeviyesineDusuldu` eventi RabbitMQ'ya yayınlanır.
-7. DenetimKaydiServisi event kaydını MongoDB'ye yazar.
-8. BildirimServisi SignalR ile kritik stok bildirimi üretir.
+6. CAP Outbox kaydı oluşturulur ve `stok.kritik-seviyeye-dusuldu` eventi RabbitMQ'ya yayınlanır.
+7. DenetimKaydiServisi Faz 7'de event kaydını MongoDB'ye yazacaktır.
+8. BildirimServisi Faz 9'da SignalR ile kritik stok bildirimi üretecektir.
 
 ## 6. Hurda / Iskarta / Elden Çıkarma Akışı
 
@@ -162,8 +159,8 @@ Akış:
 5. `EnvanterdenCikisTarihi` girilir.
 6. Satış varsa `SatilanKisiVeyaKurum` bilgisi girilir.
 7. Cihaz durumu `HurdaIskarta` yapılır.
-8. `CihazHurdayaAyrildi` eventi yayınlanır.
-9. Audit log kaydı oluşur.
+8. `cihaz.durumu-degisti` eventi yayınlanır.
+9. Audit log kaydı Faz 7 DenetimKaydiServisi ile oluşur.
 
 ## 7. Görsele Dönüştürme Notları
 

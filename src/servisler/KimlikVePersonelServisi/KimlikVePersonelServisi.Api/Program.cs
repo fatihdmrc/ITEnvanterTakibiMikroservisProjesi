@@ -20,6 +20,8 @@ builder.Logging.AddConsole();
 
 var jwtAyarlari = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
+var kimlikPersonelConnectionString = builder.Configuration.GetConnectionString("KimlikPersonelDb")
+    ?? throw new InvalidOperationException("Kimlik/personel veritabanı bağlantısı bulunamadı.");
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -98,8 +100,30 @@ builder.Services.AddDataProtection()
 // Kimlik ve personel verileri PostgreSQL üzerinde kimlik_personel şemasında tutulur.
 builder.Services.AddDbContext<KimlikPersonelDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("KimlikPersonelDb");
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(kimlikPersonelConnectionString);
+});
+
+builder.Services.AddCap(options =>
+{
+    options.UsePostgreSql(postgreSql =>
+    {
+        postgreSql.ConnectionString = kimlikPersonelConnectionString;
+        postgreSql.Schema = "cap_kimlik";
+    });
+
+    options.UseRabbitMQ(rabbitMq =>
+    {
+        rabbitMq.HostName = builder.Configuration["RabbitMQ:HostName"] ?? "localhost";
+        rabbitMq.UserName = builder.Configuration["RabbitMQ:UserName"] ?? "guest";
+        rabbitMq.Password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+        rabbitMq.VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
+        rabbitMq.Port = builder.Configuration.GetValue<int?>("RabbitMQ:Port") ?? 5672;
+        rabbitMq.ExchangeName = builder.Configuration["RabbitMQ:ExchangeName"] ?? "inventory.events";
+    });
+
+    options.DefaultGroupName = "kimlik-personel-servisi";
+    options.FailedRetryCount = 5;
+    options.FailedRetryInterval = 60;
 });
 
 // Identity kullanıcı, rol, şifre hash ve hesap kilitleme altyapısını yönetir; dış API çağrılarında yine JWT kullanılır.

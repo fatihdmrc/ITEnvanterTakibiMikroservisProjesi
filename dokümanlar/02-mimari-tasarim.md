@@ -86,7 +86,6 @@ Sorumlulukları:
 - Zimmet iade süreci
 - Zimmet geçmişi
 - İade fiziki kontrol süreci
-- Zimmet fotoğrafları
 
 Veritabanı:
 
@@ -103,6 +102,7 @@ Senkron iletişim:
 - Bir cihaz aynı anda yalnızca bir personele zimmetlenebilir.
 - Zimmet iadesi önce `Incelemede` durumuna alınır.
 - İncelemedeki cihaz tekrar zimmetlenemez.
+- Zimmet ve iade fotoğrafları Faz 5 kapsamında uygulanmaz.
 
 ### DenetimKaydiServisi
 
@@ -152,7 +152,13 @@ Senkron HTTP çağrıları, işlem sırasında hemen doğrulama gereken durumlar
 
 ### Asenkron CAP + RabbitMQ İletişimi
 
-DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır.
+DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır; consumer servisler Faz 7 ve Faz 9 kapsamındadır.
+
+CAP Outbox şemaları:
+
+- `cap_kimlik`
+- `cap_envanter`
+- `cap_zimmet`
 
 Örnekler:
 

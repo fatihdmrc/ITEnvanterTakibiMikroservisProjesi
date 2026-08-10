@@ -101,7 +101,8 @@ Staj defteri konu başlığı:
 - Bir personele birden fazla cihaz zimmetlenmesine izin verir.
 - Bir cihaz aynı anda yalnızca bir personele zimmetlenebilir.
 - Departmanda ortak kullanılan cihazlar departman sorumlusu adına zimmetlenir.
-- Zimmet oluşturma ve iade olaylarını DotNetCore.CAP üzerinden RabbitMQ'ya yayınlar.
+- KimlikVePersonelServisi ve EnvanterServisi ile işlem anı doğrulama için senkron HTTP üzerinden konuşur.
+- Zimmet oluşturma ve iade olaylarını Faz 6 itibarıyla DotNetCore.CAP Outbox üzerinden RabbitMQ'ya yayınlar.
 
 ### DenetimKaydiServisi
 
@@ -251,8 +252,9 @@ Planlanan cihaz durumları:
 - Aktif zimmet kaydı olan cihaz tekrar zimmetlenemez.
 - Departman ortak kullanımına verilen cihazlar departman sorumlusu adına zimmetlenir.
 - Zimmet geçmişi silinmeyecektir.
-- Zimmet oluşturulduğunda `ZimmetOlusturuldu` eventi üretilir.
-- Zimmet iade süreci tamamlandığında `ZimmetIadeEdildi` eventi üretilir.
+- Faz 5'te zimmet oluşturulduğunda cihaz durumu EnvanterServisi üzerinden `Zimmetlendi` hareketiyle güncellenir.
+- Faz 5'te zimmet iadesi alındığında cihaz durumu EnvanterServisi üzerinden `ZimmetIadeAlindi` hareketiyle `Incelemede` yapılır.
+- `ZimmetOlusturuldu`, `ZimmetIadeAlindi`, `CihazKontroleAlindi`, `ZimmetIadeEdildi` ve gerektiğinde `CihazHasarliTeslimAlindi` eventleri Faz 6 CAP/RabbitMQ aşamasında üretilir.
 
 ## 9. Zimmet İade Süreci
 
@@ -268,15 +270,13 @@ Zimmet iadesi doğrudan "depoya döndü" olarak tamamlanmayacaktır. İade alın
    - Sağlamsa: `Kullanilabilir`
    - Arızalıysa: `Bakimda`
    - Çok ağır hasarlı veya kullanılamaz durumdaysa: `HurdaIskarta`
-6. Cihaz arızalı veya hasarlı teslim alındıysa zimmet iadesine "Hasarlı Teslim Alındı" notu eklenir.
-7. Hasarlı teslim alma durumunda nota fotoğraf eklenebilmelidir.
-8. Zimmet oluşturma işleminde cihaz fotoğrafı eklenebilecektir.
-9. Zimmet iade işleminde birden fazla cihaz/hasar fotoğrafı eklenebilecektir.
-10. Zimmet belgesi, dijital imza veya imzalı belge dosyası ilk kapsamda yer almayacaktır.
-11. Zimmet iade sürecinde fiziki kontrolü yapan kullanıcı kaydedilecektir.
-12. Hasarlı teslim alınan cihaz için ayrı bir bakım süreci izlenmeyecektir.
-13. Cihaz bakımdan geldikten sonra fiziki test yapılır ve cihaz durumu manuel olarak güncellenebilir.
-14. Hasar ve zimmet fotoğrafları server üzerinde dosya olarak tutulacaktır.
+   - Hasarlı teslim alındıysa: `HasarliTeslimAlindi`
+6. Cihaz arızalı veya hasarlı teslim alındıysa zimmet iadesine not eklenebilir.
+7. Zimmet belgesi, dijital imza veya imzalı belge dosyası ilk kapsamda yer almayacaktır.
+8. Zimmet iade sürecinde fiziki kontrolü yapan kullanıcı kaydedilecektir.
+9. Hasarlı teslim alınan cihaz için ayrı bir bakım süreci izlenmeyecektir.
+10. Cihaz bakımdan geldikten sonra fiziki test yapılır ve cihaz durumu cihaz durum hareketiyle güncellenebilir.
+11. Zimmet ve iade fotoğrafları Faz 5 kapsamından çıkarılmıştır.
 
 ## 10. Lokasyon ve Departman Kararları
 
@@ -376,7 +376,12 @@ Zimmet iadesi doğrudan "depoya döndü" olarak tamamlanmayacaktır. İade alın
 - Zimmet
   - Id
   - CihazId
+  - CihazAd
+  - CihazAssetTag
+  - CihazSeriNumarasi
   - PersonelId
+  - PersonelAdSoyad
+  - PersonelEmail
   - ZimmetTarihi
   - ZimmetleyenKullaniciId
   - IadeTarihi
@@ -388,19 +393,10 @@ Zimmet iadesi doğrudan "depoya döndü" olarak tamamlanmayacaktır. İade alın
   - OlusturulmaTarihi
   - GuncellenmeTarihi
 
-- ZimmetFotografi
-  - Id
-  - ZimmetId
-  - FotografTipi
-  - DosyaYolu
-  - Aciklama
-  - YukleyenKullaniciId
-  - YuklenmeTarihi
+Fotoğraf kararı:
 
-Fotoğraf saklama kararı:
-
-- Hasar ve zimmet fotoğrafları server üzerinde dosya olarak saklanacaktır.
-- Veritabanında dosyanın kendisi değil, `DosyaYolu` bilgisi tutulacaktır.
+- Zimmet ve iade fotoğrafları Faz 5 kapsamından çıkarılmıştır.
+- Bu nedenle fotoğraf tablosu, endpointi ve MVC UI alanı oluşturulmayacaktır.
 
 ### KimlikVePersonelServisi Ana Verileri
 
@@ -439,6 +435,7 @@ Event bus yaklaşımı:
 - Event bus için DotNetCore.CAP kullanılacaktır.
 - Mesaj taşıyıcı olarak RabbitMQ kullanılacaktır.
 - PostgreSQL kullanan servislerde CAP Outbox tabloları aynı veritabanı içinde tutulacaktır.
+- CAP Outbox şemaları servis bazında ayrılmıştır: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
 - İş verisi kaydı ile event kaydı aynı transaction kapsamında yazılacaktır.
 - CAP, Outbox kaydını daha sonra RabbitMQ'ya güvenilir şekilde yayınlayacaktır.
 
@@ -449,19 +446,18 @@ RabbitMQ exchange:
 Planlanan eventler:
 
 - `ZimmetOlusturuldu`
+- `ZimmetIadeAlindi`
 - `ZimmetIadeEdildi`
-- `StokAzaldi`
 - `KritikStokSeviyesineDusuldu`
 - `CihazDurumuDegisti`
 - `CihazKontroleAlindi`
 - `CihazHasarliTeslimAlindi`
-- `CihazHurdayaAyrildi`
 - `PersonelIstenAyrildi`
 
 Bildirim üretme kararı:
 
 - Sistem yalnızca kritik stok seviyesinin altına düşüldüğünde SignalR bildirimi üretecektir.
-- Zimmet oluşturma, zimmet iade, personel işten ayrılma, cihaz durum değişikliği ve stok azalması eventleri audit/entegrasyon amacıyla üretilebilir; ancak bu eventler SignalR bildirimi üretmeyecektir.
+- Zimmet oluşturma, zimmet iade, personel işten ayrılma ve cihaz durum değişikliği eventleri audit/entegrasyon amacıyla üretilebilir; ancak bu eventler SignalR bildirimi üretmeyecektir.
 
 Tüm eventlerde asgari olarak şu bilgiler bulunmalıdır:
 
@@ -551,11 +547,9 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 
 ### Servisler Arası İletişim Soruları
 
-- ZimmetServisi'nin cihaz durum hareketini ilk sürümde HTTP ile mi, CAP/RabbitMQ eventiyle mi tetikleyeceği kesinleştirilecek mi?
-- EnvanterServisi cevap vermezse zimmet oluşturma işlemi iptal mi edilecek?
 - Event publish edilemezse işlem başarısız mı sayılacak, yoksa tekrar deneme mekanizması mı olacak?
 - CorrelationId tüm servisler arasında taşınacak mı?
-- Servisler arası HTTP çağrılarında kullanıcı JWT token'ı aynen iletilecek mi?
+- Faz 6 kararı: ZimmetServisi'nin HTTP ile yaptığı cihaz durum hareketi çağrıları korunacak; başarılı zimmet işlemleri ayrıca CAP Outbox eventi üretecektir. Cihaz yaşam döngüsünün yazma sahibi EnvanterServisi olarak kalır.
 
 ### Audit ve Bildirim Soruları
 
@@ -564,11 +558,6 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Kritik stok bildirimlerini hangi roller görecek?
 - Kritik stok bildirimleri MongoDB veya PostgreSQL'de kalıcı olarak saklanacak mı?
 - Kritik stok bildirimi her stok hareketinde tekrar üretilecek mi, yoksa eşik ilk aşıldığında bir kez mi üretilecek?
-
-### Dosya/Fotoğraf Soruları
-
-- Fotoğraf için dosya boyutu ve uzantı sınırı olacak mı?
-- Fotoğraf silme veya değiştirme işlemi desteklenecek mi?
 
 ### Kapsam ve Teslim Soruları
 
@@ -580,8 +569,8 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 
 ## 18. Güncel Uygulama Kararları - 2026-08-02
 
-- Proje geliştirmesi şimdilik Faz 4 sınırında tutulacaktır.
-- Faz 5 ve sonrası için ZimmetServisi, CAP/RabbitMQ, audit log, Redis, SignalR ve ApiGateway daha sonra ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
+- Faz 5 ZimmetServisi uygulaması başlatılmış ve ayrı API projesi olarak eklenmiştir.
+- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 ve sonrası için audit log, Redis, SignalR ve ApiGateway ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
 - Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
 - `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
 - Cihazlarda `AktifMi` manuel pasifleştirme checkbox'ı olarak kullanılmayacaktır. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden sistem tarafından hesaplanacaktır.
@@ -622,3 +611,30 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Zimmet iade alındığında `ZimmetIadeAlindi` durum hareketi kullanılacak ve cihaz fiziki kontrol için `Incelemede` durumuna alınacaktır.
 - ZimmetServisi cihaz durumunu doğrudan veritabanında değiştirmeyecektir; cihaz yaşam döngüsünün ve kapsam alanlarının tek sahibi EnvanterServisi olacaktır.
 - `EnvantereGiris`, cihaz durum hareketi nedeni olarak kullanılmayacaktır; yeni cihaz oluşturma akışına aittir.
+
+## 22. Faz 5 ZimmetServisi Kararı - 2026-08-08
+
+- ZimmetServisi ayrı API projesi olarak `http://localhost:5002` adresinde çalışır.
+- Zimmet verileri PostgreSQL içinde `zimmet` şemasında tutulur.
+- `Aktif` ve `IadeSurecinde` durumları açık zimmet kabul edilir; aynı cihaz için aynı anda yalnızca bir açık zimmet olabilir.
+- Zimmet oluşturulacak personel `AktifMi = true` ve `Durum = Aktif` olmalıdır.
+- Zimmet oluşturulacak cihaz `AktifMi = true` ve `Durum = Kullanilabilir` olmalıdır.
+- Faz 5'te servisler arası iletişim senkron HTTP'dir.
+- ZimmetServisi, gelen kullanıcı JWT token'ını KimlikVePersonelServisi ve EnvanterServisi çağrılarına forward eder.
+- ZimmetServisi cihaz durumunu doğrudan değiştirmez; EnvanterServisi cihaz durum hareketi endpointini kullanır.
+- MVC client üzerinde `Zimmetler` ekranı bulunur. Admin/IT zimmet oluşturur, iade alır ve iade kontrolünü tamamlar. Personel kullanıcısı kendi zimmetlerini görür.
+- Personel kullanıcısının kendi zimmetlerini başka servis okuması olmadan görebilmesi için zimmet kaydında atama anındaki personel ve cihaz görüntü bilgileri de saklanır.
+- Zimmet ve iade fotoğrafları uygulanmayacaktır; fotoğraf tablosu, endpointi ve UI alanı yoktur.
+- CAP/RabbitMQ ve Outbox Faz 6'da eklenmiştir.
+
+## 23. Faz 6 CAP/RabbitMQ + Outbox Kararı - 2026-08-10
+
+- RabbitMQ `docker-compose.yml` içine `rabbitmq:3-management` container'ı olarak eklenmiştir.
+- Ortak RabbitMQ exchange adı `inventory.events` olarak belirlenmiştir.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi DotNetCore.CAP ile event üretir.
+- CAP PostgreSQL outbox şemaları servis bazında ayrıdır: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
+- Personel işten ayrıldığında `personel.isten-ayrildi` eventi yayınlanır.
+- Cihaz durum hareketlerinde `cihaz.durumu-degisti` eventi yayınlanır.
+- Kritik stok eşiğinin altına düşen cihaz veya sarf malzeme için `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
+- Zimmet oluşturma ve iade akışlarında `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade için `cihaz.hasarli-teslim-alindi` eventleri yayınlanır.
+- DenetimKaydiServisi ve BildirimServisi henüz eklenmediği için bu faz event producer + outbox altyapısını tamamlar; event consumer uygulamaları sonraki fazlardadır.

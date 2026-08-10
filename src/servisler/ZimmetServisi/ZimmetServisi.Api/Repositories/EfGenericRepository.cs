@@ -1,0 +1,40 @@
+using ZimmetServisi.Api.Data;
+using ZimmetServisi.Api.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace ZimmetServisi.Api.Repositories;
+
+public class EfGenericRepository<TEntity>(ZimmetDbContext dbContext) : IGenericRepository<TEntity>
+    where TEntity : TemelEntity
+{
+    protected ZimmetDbContext DbContext { get; } = dbContext;
+    protected DbSet<TEntity> DbSet => DbContext.Set<TEntity>();
+
+    public virtual async Task<IReadOnlyCollection<TEntity>> ListeleAsync(CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .OrderBy(entity => entity.OlusturulmaTarihi)
+            .ToListAsync(cancellationToken);
+    }
+
+    public virtual async Task<TEntity?> GetirAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await DbSet.FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken);
+    }
+
+    public virtual async Task<bool> VarMiAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await DbSet.AnyAsync(entity => entity.Id == id, cancellationToken);
+    }
+
+    public virtual void Ekle(TEntity entity)
+    {
+        DbSet.Add(entity);
+    }
+
+    public virtual async Task KaydetAsync(CancellationToken cancellationToken = default)
+    {
+        await DbContext.SaveChangesAsync(cancellationToken);
+    }
+}

@@ -18,7 +18,6 @@ flowchart LR
             UC_Gecmis(("Kendi zimmet geçmişini görüntüle"))
             UC_IadeDurum(("Kendi iade süreci durumunu takip et"))
             UC_Detay(("Zimmet detayını görüntüle"))
-            UC_Foto(("Zimmet ve iade fotoğraflarını görüntüle"))
         end
     end
 
@@ -31,7 +30,6 @@ flowchart LR
     UC_Aktif -. "detay" .-> UC_Detay
     UC_Gecmis -. "detay" .-> UC_Detay
     UC_IadeDurum -. "detay" .-> UC_Detay
-    UC_Detay -. "varsa" .-> UC_Foto
 
     classDef actor fill:#f8fafc,stroke:#334155,stroke-width:1.6px,color:#0f172a;
     classDef account fill:#eef2ff,stroke:#4f46e5,stroke-width:1.3px,color:#111827;
@@ -39,4 +37,4 @@ flowchart LR
 
     class Personel actor;
     class UC_Giris,UC_Profil account;
-    class UC_Aktif,UC_Gecmis,UC_IadeDurum,UC_Detay,UC_Foto self;
+    class UC_Aktif,UC_Gecmis,UC_IadeDurum,UC_Detay self;

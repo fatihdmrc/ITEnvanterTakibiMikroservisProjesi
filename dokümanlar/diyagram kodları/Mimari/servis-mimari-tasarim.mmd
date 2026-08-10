@@ -51,9 +51,9 @@ flowchart LR
     ZimmetServisi -- "HTTP: cihaz uygun mu?" --> EnvanterServisi
     ZimmetServisi -- "HTTP: cihaz durumu güncelle" --> EnvanterServisi
 
-    KimlikVePersonelServisi -- "PersonelIstenAyrildi" --> OutboxKimlik
-    EnvanterServisi -- "StokAzaldi<br/>KritikStokSeviyesineDusuldu<br/>CihazDurumuDegisti" --> OutboxEnvanter
-    ZimmetServisi -- "ZimmetOlusturuldu<br/>ZimmetIadeEdildi<br/>CihazKontroleAlindi" --> OutboxZimmet
+    KimlikVePersonelServisi -- "personel.isten-ayrildi" --> OutboxKimlik
+    EnvanterServisi -- "cihaz.durumu-degisti<br/>stok.kritik-seviyeye-dusuldu" --> OutboxEnvanter
+    ZimmetServisi -- "zimmet.olusturuldu<br/>zimmet.iade-alindi<br/>cihaz.kontrole-alindi<br/>zimmet.iade-edildi" --> OutboxZimmet
 
     OutboxKimlik --> Cap
     OutboxEnvanter --> Cap
@@ -61,8 +61,8 @@ flowchart LR
     Cap --> RabbitMQ
 
     RabbitMQ -- "Tüm eventler" --> DenetimKaydiServisi
-    RabbitMQ -- "KritikStokSeviyesineDusuldu" --> BildirimServisi
-    RabbitMQ -- "PersonelIstenAyrildi" --> ZimmetServisi
+    RabbitMQ -- "stok.kritik-seviyeye-dusuldu" --> BildirimServisi
+    RabbitMQ -. "personel.isten-ayrildi<br/>gelecek consumer" .-> ZimmetServisi
 
     BildirimServisi --> SignalR
     SignalR -- "Sadece kritik stok bildirimi" --> Kullanici

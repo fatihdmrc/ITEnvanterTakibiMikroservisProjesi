@@ -194,6 +194,7 @@ API client tarafındaki önemli parçalar:
 - `ApiListeSonucu<T>`: Listeleme işlemlerinde veri ile hata durumunu ayrı ayrı taşır.
 - `KimlikPersonelApiClient`: KimlikVePersonelServisi'ne yapılan HTTP isteklerini kapsar.
 - `EnvanterApiClient`: EnvanterServisi'ne yapılan HTTP isteklerini kapsar.
+- `ZimmetApiClient`: ZimmetServisi'ne yapılan HTTP isteklerini kapsar.
 
 Listeleme çağrıları başarısız olduğunda client artık boş listeyi sessizce göstermek yerine Türkçe hata mesajı üretir. Bu sayede servis kapalı, oturum süresi dolmuş, yetki yetersiz veya beklenmeyen cevap gibi durumlar kullanıcı tarafından ayırt edilebilir.
 
@@ -273,3 +274,65 @@ Cihazın `Durum`, `EnvanterdenCikisTarihi`, `EldenCikarmaTipi`, `EldenCikarmaAci
 Sarf malzemelerde stok hareketi kavramı aynen korunur. Çünkü sarf malzemelerde giriş, çıkış ve düzeltme gerçek miktar değişimi üretir.
 Sarf malzeme stok hareketi formu ve servis doğrulaması cihaz durumuna özel nedenleri kabul etmez.
 Sarf malzeme stok hareketi geçmişi de aynı `GET /api/stok/hareketler?sarfMalzemeId=...` endpointinden alınır ve `SarfMalzemeIslemleri` sayfasında `Stok Hareketi Geçmişi` olarak gösterilir.
+
+## ZimmetServisi Kod Yapısı
+
+`ZimmetServisi.Api`, Faz 5 kapsamında ayrı Web API projesi olarak eklenmiştir.
+
+Temel klasörler:
+
+- `Domain/Entities`: `Zimmet` entity'sini tutar.
+- `Domain/Enums`: `ZimmetDurumu` ve `IadeKontrolDurumu` enumlarını tutar.
+- `Contracts/Zimmetler`: API request/response modellerini tutar.
+- `Data`: `ZimmetDbContext` ve migration dosyalarını tutar.
+- `Repositories`: Zimmet sorguları ve ortak repository işlemlerini tutar.
+- `Services`: Zimmet iş kurallarını tutar.
+- `Services/Harici`: KimlikVePersonelServisi ve EnvanterServisi HTTP clientlarını tutar.
+- `Controllers`: `SaglikController` ve `ZimmetlerController` endpointlerini tutar.
+
+ZimmetServisi verileri PostgreSQL içinde `zimmet` şemasında saklanır. `Zimmetler` tablosunda `Aktif` ve `IadeSurecinde` durumları açık zimmet kabul edilir; bu nedenle aynı cihaz için bu durumlarda yalnızca bir kayıt bulunabilir.
+
+Servisler arası iletişim Faz 5'te HTTP ile yapılır:
+
+- Personel uygunluğu `GET /api/personeller/{id}` ile doğrulanır.
+- Cihaz uygunluğu `GET /api/cihazlar/{id}` ile doğrulanır.
+- Cihaz durumu `POST /api/cihazlar/{id}/durum-hareketleri` ile güncellenir.
+
+ZimmetServisi cihaz durumunu doğrudan veritabanında değiştirmez. Cihaz yaşam döngüsünün tek sahibi EnvanterServisi olarak kalır.
+
+## Zimmet MVC Client Akışı
+
+MVC client tarafında zimmet yönetimi için şu parçalar eklenmiştir:
+
+- `ZimmetApiClient`: ZimmetServisi endpointlerini çağırır.
+- `ZimmetModelleri`: Zimmet listeleme, oluşturma, iade alma ve iade kontrolü formlarını tutar.
+- `ZimmetController`: Zimmetler ekranını ve form işlemlerini yönetir.
+- `Views/Zimmet/Index.cshtml`: Zimmet listesini ve zimmet oluşturma formunu gösterir.
+- `Views/Zimmet/IadeAl.cshtml`: Aktif zimmetin iade alınması için onay/form ekranıdır.
+- `Views/Zimmet/IadeKontrolu.cshtml`: İade sürecindeki zimmetin fiziki kontrol sonucunu kaydeder.
+
+Admin ve ITPersoneli rolleri tüm zimmetleri yönetebilir. PersonelKullanicisi rolü yalnızca kendi zimmetlerini görebilir. Zimmet ve iade fotoğrafı için tablo, endpoint veya UI alanı bulunmaz.
+
+## Faz 6 CAP/RabbitMQ Kod Yapısı
+
+Faz 6 ile event üretici servislerde DotNetCore.CAP yapılandırılmıştır.
+
+- `KimlikVePersonelServisi.Api/Contracts/Events`: `personel.isten-ayrildi` event modeli ve event adı sabitlerini tutar.
+- `EnvanterServisi.Api/Contracts/Events`: `cihaz.durumu-degisti` ve `stok.kritik-seviyeye-dusuldu` event modellerini tutar.
+- `ZimmetServisi.Api/Contracts/Events`: zimmet oluşturma, iade alma, kontrol ve hasarlı teslim alma event modellerini tutar.
+- Her API projesindeki `Program.cs`, PostgreSQL outbox ve RabbitMQ transport ayarlarını içerir.
+
+CAP outbox şemaları servis bazında ayrıdır:
+
+- KimlikVePersonelServisi: `cap_kimlik`
+- EnvanterServisi: `cap_envanter`
+- ZimmetServisi: `cap_zimmet`
+
+Event yayınlayan iş akışları:
+
+- Personel işten ayrıldığında KimlikVePersonelServisi `personel.isten-ayrildi` eventini üretir.
+- Cihaz durum hareketi işlendiğinde EnvanterServisi `cihaz.durumu-degisti` eventini üretir.
+- Cihaz veya sarf malzeme kritik stok eşiğinin altına düştüğünde EnvanterServisi `stok.kritik-seviyeye-dusuldu` eventini üretir.
+- Zimmet oluşturma ve iade akışlarında ZimmetServisi ilgili zimmet ve cihaz kontrol eventlerini üretir.
+
+DenetimKaydiServisi ve BildirimServisi henüz eklenmediği için bu fazda event consumer sınıfı bulunmaz.

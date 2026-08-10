@@ -1,22 +1,27 @@
 using KimlikVePersonelServisi.Api.Contracts.Departmanlar;
+using KimlikVePersonelServisi.Api.Contracts.Events;
 using KimlikVePersonelServisi.Api.Contracts.Kimlik;
 using KimlikVePersonelServisi.Api.Contracts.Kullanicilar;
 using KimlikVePersonelServisi.Api.Contracts.Personeller;
+using KimlikVePersonelServisi.Api.Data;
 using KimlikVePersonelServisi.Api.Domain.Entities;
 using KimlikVePersonelServisi.Api.Domain.Enums;
 using KimlikVePersonelServisi.Api.Repositories;
+using DotNetCore.CAP;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace KimlikVePersonelServisi.Api.Services;
 
 public sealed class KimlikPersonelServisi(
+    KimlikPersonelDbContext dbContext,
     IDepartmanRepository departmanRepository,
     IPersonelRepository personelRepository,
     UserManager<UygulamaKullanici> userManager,
     RoleManager<IdentityRole<Guid>> roleManager,
     SignInManager<UygulamaKullanici> signInManager,
-    ITokenServisi tokenServisi) : IKimlikPersonelServisi
+    ITokenServisi tokenServisi,
+    ICapPublisher capPublisher) : IKimlikPersonelServisi
 {
     // Servis sınıfı HTTP'den bağımsız iş kurallarını taşır; endpointler yalnızca bu servisi çağırır.
     public async Task<IReadOnlyCollection<DepartmanCevap>> DepartmanlariListeleAsync(CancellationToken cancellationToken = default)
@@ -153,6 +158,9 @@ public sealed class KimlikPersonelServisi(
             return Sonuc<PersonelCevap>.Basarisiz("Personel bulunamadı.");
         }
 
+        var istenAyrildiEventiYayinlanacakMi = personel.Durum != PersonelDurumu.IstenAyrildi
+            && istek.Durum == PersonelDurumu.IstenAyrildi;
+
         if (!await departmanRepository.VarMiAsync(istek.DepartmanId, cancellationToken))
         {
             return Sonuc<PersonelCevap>.Basarisiz("Departman bulunamadı.");
@@ -173,6 +181,8 @@ public sealed class KimlikPersonelServisi(
         personel.Durum = istek.Durum;
         personel.AktifMi = istek.AktifMi;
 
+        using var transaction = dbContext.Database.BeginTransaction(capPublisher, autoCommit: false);
+
         if (istek.Durum == PersonelDurumu.IstenAyrildi)
         {
             personel.AktifMi = false;
@@ -181,6 +191,12 @@ public sealed class KimlikPersonelServisi(
         }
 
         await personelRepository.KaydetAsync(cancellationToken);
+        if (istenAyrildiEventiYayinlanacakMi)
+        {
+            await PersonelIstenAyrildiEventiYayinlaAsync(personel, cancellationToken);
+        }
+
+        transaction.Commit();
         return Sonuc<PersonelCevap>.Basarili(PersonelCevabaDonustur(personel));
     }
 
@@ -192,6 +208,9 @@ public sealed class KimlikPersonelServisi(
             return Sonuc<PersonelCevap>.Basarisiz("Personel bulunamadı.");
         }
 
+        var istenAyrildiEventiYayinlanacakMi = personel.Durum != PersonelDurumu.IstenAyrildi;
+        using var transaction = dbContext.Database.BeginTransaction(capPublisher, autoCommit: false);
+
         personel.Durum = PersonelDurumu.IstenAyrildi;
         personel.AktifMi = false;
         personel.IstenAyrilisTarihi = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -200,6 +219,12 @@ public sealed class KimlikPersonelServisi(
         await PersonelHesaplariniPasiflestirAsync(personel.Id, cancellationToken);
 
         await personelRepository.KaydetAsync(cancellationToken);
+        if (istenAyrildiEventiYayinlanacakMi)
+        {
+            await PersonelIstenAyrildiEventiYayinlaAsync(personel, cancellationToken);
+        }
+
+        transaction.Commit();
         return Sonuc<PersonelCevap>.Basarili(PersonelCevabaDonustur(personel));
     }
 
@@ -346,6 +371,20 @@ public sealed class KimlikPersonelServisi(
             Enum.Parse<KullaniciRolu>(rol),
             kullanici.PersonelId,
             kullanici.AktifMi);
+    }
+
+    private Task PersonelIstenAyrildiEventiYayinlaAsync(Personel personel, CancellationToken cancellationToken)
+    {
+        var eventPayload = new PersonelIstenAyrildiEvent(
+            Guid.NewGuid(),
+            personel.Id,
+            $"{personel.Ad} {personel.Soyad}".Trim(),
+            personel.Email,
+            personel.DepartmanId,
+            personel.IstenAyrilisTarihi ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            DateTime.UtcNow);
+
+        return capPublisher.PublishAsync(EventAdlari.PersonelIstenAyrildi, eventPayload, cancellationToken: cancellationToken);
     }
 
     private static string IdentityHatalariniBirlestir(IdentityResult sonuc)

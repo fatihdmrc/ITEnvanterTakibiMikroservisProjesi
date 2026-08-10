@@ -1,0 +1,4 @@
+@ZimmetServisi.Api_HostAddress = http://localhost:5002
+
+GET {{ZimmetServisi.Api_HostAddress}}/saglik
+Accept: application/json

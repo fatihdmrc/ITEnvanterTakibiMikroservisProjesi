@@ -690,3 +690,56 @@ Doğrulama:
 
 - `rg "Faz 6|Faz 10|ApiGateway"` ile faz numaraları ve ApiGateway referansları kontrol edildi.
 
+### Faz 5 ZimmetServisi eklendi
+
+Ne yapıldı:
+
+- `ZimmetServisi.Api` ayrı Web API projesi olarak solution'a eklendi.
+- Zimmet verileri için `zimmet` şeması ve `Zimmetler` tablosu oluşturuldu.
+- `IlkZimmetSemasi` migration'ı oluşturuldu ve PostgreSQL veritabanına uygulandı.
+- Zimmet oluşturma, zimmetleri listeleme, kendi zimmetlerini listeleme, iade alma ve iade kontrolü endpointleri eklendi.
+- Zimmet oluşturma sırasında personel uygunluğu KimlikVePersonelServisi üzerinden, cihaz uygunluğu EnvanterServisi üzerinden doğrulanır hale getirildi.
+- Zimmet oluşturulduğunda EnvanterServisi cihaz durum hareketi endpointine `Zimmetlendi` gönderilir ve cihaz `Zimmetli` olur.
+- Zimmet iade alındığında `ZimmetIadeAlindi` gönderilir ve cihaz `Incelemede` olur.
+- İade kontrolünde `Saglam`, `Bakimda`, `HurdaIskarta` ve `HasarliTeslimAlindi` sonuçları cihaz durum hareketlerine bağlandı.
+- MVC client'a `ZimmetApiClient`, `ZimmetController` ve `Views/Zimmet` ekranları eklendi.
+- Admin/IT kullanıcıları zimmet oluşturabilir, iade alabilir ve iade kontrolünü tamamlayabilir hale geldi.
+- Personel kullanıcısı kendi zimmetlerini `Zimmetlerim` yaklaşımıyla görebilir hale geldi.
+- Zimmet ve iade fotoğraf özelliği bu fazdan çıkarıldı; fotoğraf tablosu, endpointi ve UI alanı eklenmedi.
+
+Neden yapıldı:
+
+- Faz 5'in ana hedefi zimmet domain'ini ayrı servis olarak kurmak ve cihaz yaşam döngüsünü EnvanterServisi üzerinden yönetmekti.
+- Cihaz durumunun tek sahibi EnvanterServisi olarak korunmalıdır; ZimmetServisi cihaz tablosuna doğrudan yazmamalıdır.
+- CAP/RabbitMQ Faz 6'ya bırakıldığı için Faz 5'te servisler arası iletişim senkron HTTP ile kuruldu.
+- Personel kullanıcısının kendi zimmetlerini görebilmesi için zimmet kaydında atama anındaki personel ve cihaz görüntü bilgileri de tutuldu.
+
+Doğrulama:
+
+- `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+- `dotnet ef database update --project src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj --startup-project src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj` komutu başarıyla tamamlandı.
+
+### Faz 6 CAP/RabbitMQ + Outbox eklendi
+
+Ne yapıldı:
+
+- `docker-compose.yml` içine RabbitMQ management container'ı eklendi.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi projelerine `DotNetCore.CAP.PostgreSql` ve `DotNetCore.CAP.RabbitMQ` paketleri eklendi.
+- Servislerde CAP PostgreSQL outbox ve RabbitMQ transport ayarları yapılandırıldı.
+- CAP outbox şemaları servis bazında ayrıldı: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
+- Personel işten ayrıldığında `personel.isten-ayrildi` eventi yayınlanır hale getirildi.
+- Cihaz durum hareketlerinde `cihaz.durumu-degisti` eventi yayınlanır hale getirildi.
+- Cihaz veya sarf malzeme kritik stok eşiğinin altına düştüğünde `stok.kritik-seviyeye-dusuldu` eventi yayınlanır hale getirildi.
+- Zimmet oluşturma, iade alma, iade kontrolü ve hasarlı teslim alma akışlarında ilgili zimmet/cihaz eventleri yayınlanır hale getirildi.
+
+Neden yapıldı:
+
+- Faz 6'nın amacı servislerde gerçekleşen önemli domain olaylarını RabbitMQ üzerinden güvenilir şekilde duyurmak ve event kaybı riskini CAP Outbox ile azaltmaktı.
+- Denetim ve bildirim servisleri henüz eklenmediği için bu fazda event üretici taraf tamamlandı; tüketici tarafı sonraki fazlara bırakıldı.
+- ZimmetServisi'nin Faz 5'teki senkron HTTP doğrulama ve EnvanterServisi cihaz durum hareketi çağrıları korunarak üzerine event yayını eklendi.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

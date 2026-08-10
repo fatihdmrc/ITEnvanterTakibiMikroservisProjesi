@@ -1,0 +1,71 @@
+@model ZimmetIadeKontrolSayfaModel
+@{
+    ViewData["Title"] = "İade Kontrolü";
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">İade Kontrolü</h1>
+            <p class="text-muted mb-0">@Model.Zimmet.CihazAd için fiziki kontrol sonucunu kaydet.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">Zimmetlere Dön</a>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+    {
+        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="border rounded-2 p-3">
+                <h2 class="h6 mb-3">İade Sürecindeki Zimmet</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Cihaz</dt>
+                    <dd class="col-sm-8">@Model.Zimmet.CihazAd</dd>
+                    <dt class="col-sm-4">Asset / Seri</dt>
+                    <dd class="col-sm-8">@($"{Model.Zimmet.CihazAssetTag ?? "-"} / {Model.Zimmet.CihazSeriNumarasi ?? "-"}")</dd>
+                    <dt class="col-sm-4">Personel</dt>
+                    <dd class="col-sm-8">@Model.Zimmet.PersonelAdSoyad</dd>
+                    <dt class="col-sm-4">İade Tarihi</dt>
+                    <dd class="col-sm-8">@(Model.Zimmet.IadeTarihi?.ToString("dd.MM.yyyy") ?? "-")</dd>
+                    <dt class="col-sm-4">İade Notu</dt>
+                    <dd class="col-sm-8">@(Model.Zimmet.IadeNotu ?? "-")</dd>
+                </dl>
+            </section>
+        </div>
+        <div class="col-lg-5">
+            <form asp-action="IadeKontroluTamamla" method="post" class="border rounded-2 p-3">
+                <input type="hidden" name="Id" value="@Model.Form.Id" />
+                <h2 class="h6 mb-3">Kontrol Sonucu</h2>
+                <div class="mb-3">
+                    <label class="form-label">Sonuç</label>
+                    <select name="IadeKontrolDurumu" class="form-select">
+                        @foreach (var durum in Enum.GetValues<ZimmetIadeKontrolDurumuModel>())
+                        {
+                            <option value="@durum" selected="@(durum == Model.Form.IadeKontrolDurumu ? "selected" : null)">@DurumEtiketi(durum)</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Kontrol Notu</label>
+                    <textarea name="IadeNotu" class="form-control" rows="4">@Model.Form.IadeNotu</textarea>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Kontrolü Tamamla</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string DurumEtiketi(ZimmetIadeKontrolDurumuModel durum)
+        => durum switch
+        {
+            ZimmetIadeKontrolDurumuModel.Saglam => "Sağlam, kullanılabilir",
+            ZimmetIadeKontrolDurumuModel.Bakimda => "Bakımda",
+            ZimmetIadeKontrolDurumuModel.HurdaIskarta => "Hurda / Iskarta",
+            ZimmetIadeKontrolDurumuModel.HasarliTeslimAlindi => "Hasarlı teslim alındı",
+            _ => durum.ToString()
+        };
+}

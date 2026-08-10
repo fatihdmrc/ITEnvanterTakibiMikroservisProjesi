@@ -177,7 +177,12 @@ Kurallar:
 | --- | --- |
 | Id | Zimmet benzersiz kimliği |
 | CihazId | Zimmetlenen cihaz |
+| CihazAd | Zimmet anındaki cihaz görüntü adı |
+| CihazAssetTag | Zimmet anındaki asset tag |
+| CihazSeriNumarasi | Zimmet anındaki seri numarası |
 | PersonelId | Zimmet alan personel |
+| PersonelAdSoyad | Zimmet anındaki personel adı soyadı |
+| PersonelEmail | Zimmet anındaki personel e-posta adresi |
 | ZimmetTarihi | Zimmet tarihi |
 | ZimmetleyenKullaniciId | Teslim eden kullanıcı |
 | IadeTarihi | İade tarihi |
@@ -194,23 +199,9 @@ Kurallar:
 - Bir cihaz aynı anda yalnızca bir aktif zimmete sahip olabilir.
 - Zimmet geçmişi silinmez.
 - İade sürecindeki cihaz tekrar zimmetlenemez.
-
-### ZimmetFotografi
-
-| Alan | Açıklama |
-| --- | --- |
-| Id | Fotoğraf benzersiz kimliği |
-| ZimmetId | İlgili zimmet |
-| FotografTipi | Zimmet oluşturma, iade, hasar vb. |
-| DosyaYolu | Server üzerinde saklanan fotoğrafın dosya yolu |
-| Aciklama | Fotoğraf açıklaması |
-| YukleyenKullaniciId | Fotoğrafı yükleyen kullanıcı |
-| YuklenmeTarihi | Yükleme tarihi |
-
-Kurallar:
-
-- Hasar ve zimmet fotoğrafları server üzerinde dosya olarak saklanır.
-- Veritabanında fotoğraf dosyasının kendisi değil, `DosyaYolu` bilgisi tutulur.
+- `Aktif` ve `IadeSurecinde` açık zimmet kabul edilir.
+- Zimmet kaydı personel ve cihazın atama anındaki görüntü bilgilerini de taşır; böylece personel kullanıcısı kendi zimmetlerini başka servislerden ek okuma yapmadan görebilir.
+- Faz 5'te zimmet ve iade fotoğrafları uygulanmamıştır.
 
 ## 5. MongoDB Audit Log Modeli
 
@@ -239,6 +230,9 @@ ER diyagramı hazırlanırken servis sınırları ayrı gruplar olarak çizilmel
 - KimlikVePersonelServisi tabloları
 - EnvanterServisi tabloları
 - ZimmetServisi tabloları
+- CAP Outbox tabloları: `cap_kimlik`, `cap_envanter`, `cap_zimmet`
 - MongoDB audit dokümanı
 
 Mikroservis mimarisinde her servis kendi veritabanına sahip olduğu için servisler arası ilişkiler fiziksel foreign key gibi değil, servisler arası referans id olarak gösterilmelidir.
+
+CAP Outbox tabloları domain tablosu değildir; event üretici servislerin güvenilir yayın altyapısıdır. İş verisi ve event kaydı aynı transaction içinde yazılır, CAP daha sonra RabbitMQ `inventory.events` exchange'ine yayınlar.

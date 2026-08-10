@@ -29,7 +29,7 @@ flowchart TB
     StokCikisi --> SC1["Cihaz veya sarf seç"]
     SC1 --> SC2["Çıkış nedeni gir"]
     SC2 --> SC3["Durum veya EldekiMiktar güncelle"]
-    SC3 --> SC4["StokAzaldi eventi"]
+    SC3 --> SC4["cihaz.durumu-degisti / stok hareketi"]
     SC4 --> SC5["Kritik stok kontrolü"]
 
     KritikStok --> KS1["Kullanılabilir stok hesapla"]
@@ -43,5 +43,5 @@ flowchart TB
     H3 -- "Evet" --> H4["ToplamVarligaDahilMi true"]
     H3 -- "Hayır" --> H5["ToplamVarligaDahilMi false"]
     H5 --> H6["EnvanterdenCikisTarihi gir"]
-    H4 --> H7["CihazHurdayaAyrildi eventi"]
+    H4 --> H7["cihaz.durumu-degisti eventi"]
     H6 --> H7

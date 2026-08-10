@@ -1,0 +1,168 @@
+@model ZimmetPanelModel
+@{
+    ViewData["Title"] = "Zimmetler";
+}
+
+<div class="py-3">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Zimmetler</h1>
+            <p class="text-muted mb-0">Cihaz zimmetlerini, iade sürecini ve fiziki kontrol sonucunu yönet.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="http://localhost:5002/swagger" target="_blank" rel="noopener">Swagger</a>
+            <a class="btn btn-outline-secondary" href="http://localhost:5002/saglik" target="_blank" rel="noopener">Servis Durumu</a>
+        </div>
+    </div>
+
+    @if (!Model.OturumVarMi)
+    {
+        <div class="alert alert-warning" role="alert">Zimmetleri görüntülemek için önce kontrol panelinden giriş yap.</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
+    {
+        <div class="alert alert-success" role="alert">@Model.BasariMesaji</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+    {
+        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+    }
+
+    @if (Model.ListelemeHatalari.Count > 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <div class="fw-semibold mb-1">Bazı zimmet bilgileri alınamadı.</div>
+            <ul class="mb-0">
+                @foreach (var hata in Model.ListelemeHatalari)
+                {
+                    <li>@hata</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="border rounded-2 p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Zimmet Listesi</h2>
+                    <span class="text-muted small">@Model.Zimmetler.Count kayıt</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Cihaz</th>
+                                <th>Asset / Seri</th>
+                                <th>Personel</th>
+                                <th>Zimmet Tarihi</th>
+                                <th>Durum</th>
+                                <th>İade</th>
+                                <th>Kontrol</th>
+                                @if (Model.YonetimYetkisiVarMi)
+                                {
+                                    <th class="text-end">İşlem</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Zimmetler.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="@(Model.YonetimYetkisiVarMi ? 8 : 7)" class="text-muted">Gösterilecek zimmet kaydı bulunamadı.</td>
+                                </tr>
+                            }
+                            @foreach (var zimmet in Model.Zimmetler)
+                            {
+                                <tr>
+                                    <td>@zimmet.CihazAd</td>
+                                    <td>
+                                        <div>@(zimmet.CihazAssetTag ?? "-")</div>
+                                        <div class="text-muted small">@(zimmet.CihazSeriNumarasi ?? "-")</div>
+                                    </td>
+                                    <td>
+                                        <div>@zimmet.PersonelAdSoyad</div>
+                                        <div class="text-muted small">@zimmet.PersonelEmail</div>
+                                    </td>
+                                    <td>@zimmet.ZimmetTarihi.ToString("dd.MM.yyyy")</td>
+                                    <td>@DurumEtiketi(zimmet.Durum)</td>
+                                    <td>@(zimmet.IadeTarihi?.ToString("dd.MM.yyyy") ?? "-")</td>
+                                    <td>@(zimmet.IadeKontrolDurumu?.ToString() ?? "-")</td>
+                                    @if (Model.YonetimYetkisiVarMi)
+                                    {
+                                        <td class="text-end">
+                                            @if (zimmet.Durum == ZimmetDurumuModel.Aktif)
+                                            {
+                                                <a asp-action="IadeAl" asp-route-id="@zimmet.Id" class="btn btn-sm btn-outline-primary">İade Al</a>
+                                            }
+                                            else if (zimmet.Durum == ZimmetDurumuModel.IadeSurecinde)
+                                            {
+                                                <a asp-action="IadeKontrolu" asp-route-id="@zimmet.Id" class="btn btn-sm btn-outline-primary">Kontrolü Tamamla</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">Tamamlandı</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            @if (Model.YonetimYetkisiVarMi)
+            {
+                <form asp-action="ZimmetOlustur" method="post" class="border rounded-2 p-3">
+                    <h2 class="h6 mb-3">Zimmet Oluştur</h2>
+                    <div class="mb-3">
+                        <label class="form-label">Personel</label>
+                        <select name="PersonelId" class="form-select" disabled="@(Model.AktifPersoneller.Count == 0)">
+                            @foreach (var personel in Model.AktifPersoneller)
+                            {
+                                <option value="@personel.Id">@personel.Ad @personel.Soyad - @personel.Email</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cihaz</label>
+                        <select name="CihazId" class="form-select" disabled="@(Model.KullanilabilirCihazlar.Count == 0)">
+                            @foreach (var cihaz in Model.KullanilabilirCihazlar)
+                            {
+                                <option value="@cihaz.Id">@cihaz.Ad @cihaz.Marka @cihaz.Model - @(cihaz.AssetTag ?? cihaz.SeriNumarasi ?? "-")</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Zimmet Tarihi</label>
+                        <input name="ZimmetTarihi" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <button class="btn btn-primary w-100" type="submit" disabled="@(Model.AktifPersoneller.Count == 0 || Model.KullanilabilirCihazlar.Count == 0)">Kaydet</button>
+                </form>
+            }
+            else if (Model.OturumVarMi)
+            {
+                <div class="border rounded-2 p-3">
+                    <h2 class="h6">Zimmetlerim</h2>
+                    <p class="text-muted mb-0">Bu ekranda sadece kendi zimmet kayıtların gösterilir.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string DurumEtiketi(ZimmetDurumuModel durum)
+        => durum switch
+        {
+            ZimmetDurumuModel.Aktif => "Aktif",
+            ZimmetDurumuModel.IadeSurecinde => "İade sürecinde",
+            ZimmetDurumuModel.IadeEdildi => "İade edildi",
+            _ => durum.ToString()
+        };
+}
