@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -90,7 +91,7 @@ builder.Services.AddCap(options =>
 {
     options.UsePostgreSql(postgreSql =>
     {
-        postgreSql.ConnectionString = envanterConnectionString;
+        postgreSql.DataSource = NpgsqlDataSource.Create(envanterConnectionString);
         postgreSql.Schema = "cap_envanter";
     });
 

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -107,7 +108,7 @@ builder.Services.AddCap(options =>
 {
     options.UsePostgreSql(postgreSql =>
     {
-        postgreSql.ConnectionString = kimlikPersonelConnectionString;
+        postgreSql.DataSource = NpgsqlDataSource.Create(kimlikPersonelConnectionString);
         postgreSql.Schema = "cap_kimlik";
     });
 
