@@ -118,10 +118,12 @@ Bu hedefin seçilme nedeni:
 
 ### Faz 9 - SignalR Bildirimleri
 
-- BildirimServisi oluşturulur.
+- Tamamlandı.
+- BildirimServisi `http://localhost:5004` adresinde ayrı API olarak oluşturuldu.
 - Sadece `KritikStokSeviyesineDusuldu` eventi dinlenir.
-- SignalR NotificationHub geliştirilir.
-- MVC client üzerinde kritik stok bildirim paneli hazırlanır.
+- SignalR `BildirimHub` ile Admin/IT kullanıcılarına canlı kritik stok bildirimi gönderilir.
+- MVC client üzerinde canlı kritik stok bildirim merkezi hazırlanır.
+- Bildirimler kalıcı saklanmaz; geçmiş/audit ihtiyacı Denetim ekranından karşılanır.
 
 ### Faz 10 - ApiGateway Entegrasyonu
 
@@ -169,7 +171,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 ### Uygulama kararı
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
-- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 Redis Cache tamamlanmıştır. Faz 9 ve sonrası sırasıyla bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
+- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 Redis Cache tamamlanmıştır. Faz 9 SignalR Bildirimleri tamamlanmıştır. Faz 10 ve sonrası sırasıyla ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
 
 ## 6. Güncel Faz 4 Client Kararı - 2026-08-03
 
@@ -256,3 +258,15 @@ Faz 8 ile Redis cache altyapısı eklenmiştir.
 - Cache anahtarları `envanter:kategoriler:v1` ve `envanter:lokasyonlar:v1` olarak belirlenmiştir.
 - Kategori veya lokasyon oluşturma/güncelleme başarılı olunca ilgili cache temizlenir.
 - Redis okunamaz, yazılamaz veya temizlenemezse ana API akışı PostgreSQL üzerinden devam eder ve uyarı logu yazılır.
+
+## 17. Faz 9 SignalR Bildirimleri Durumu - 2026-08-12
+
+Faz 9 ile canlı kritik stok bildirim altyapısı eklenmiştir.
+
+- `BildirimServisi.Api` solution içine ayrı servis olarak eklenmiştir.
+- Servis portu `5004`, SignalR hub endpointi `/hubs/bildirim` olarak belirlenmiştir.
+- BildirimServisi CAP/RabbitMQ üzerinden yalnızca `stok.kritik-seviyeye-dusuldu` eventini dinler.
+- CAP consumer grubu `bildirim-servisi` olarak ayarlanmıştır.
+- Hub JWT ile korunur ve yalnızca `Admin` ile `ITPersoneli` rolleri bağlanabilir.
+- MVC client içinde canlı bildirim merkezi ve yerel SignalR istemci dosyası eklenmiştir.
+- Bildirimler kalıcı olarak saklanmaz; sayfa yenilenirse canlı liste sıfırlanır.

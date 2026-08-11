@@ -43,7 +43,22 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="http://localhost:5003/swagger" target="_blank" rel="noopener">Denetim API</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="http://localhost:5004/swagger" target="_blank" rel="noopener">Bildirim API</a>
+                        </li>
                     </ul>
+                    <div id="bildirimMerkezi" class="bildirim-merkezi dropdown d-none">
+                        <button class="btn btn-outline-danger btn-sm dropdown-toggle position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Bildirimler
+                            <span id="bildirimSayaci" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end bildirim-menusu p-0">
+                            <div class="px-3 py-2 border-bottom fw-semibold">Kritik stok bildirimleri</div>
+                            <div id="bildirimListesi" class="bildirim-listesi">
+                                <div class="text-muted small px-3 py-3">Henüz canlı bildirim yok.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -63,7 +78,9 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/signalr/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/bildirimler.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

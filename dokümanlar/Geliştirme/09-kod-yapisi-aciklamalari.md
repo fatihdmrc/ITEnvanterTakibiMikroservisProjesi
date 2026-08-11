@@ -335,7 +335,7 @@ Event yayınlayan iş akışları:
 - Cihaz veya sarf malzeme kritik stok eşiğinin altına düştüğünde EnvanterServisi `stok.kritik-seviyeye-dusuldu` eventini üretir.
 - Zimmet oluşturma ve iade akışlarında ZimmetServisi ilgili zimmet ve cihaz kontrol eventlerini üretir.
 
-DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event consumer sınıfları bulunur. BildirimServisi henüz eklenmediği için bildirim consumer sınıfı Faz 9 kapsamındadır.
+DenetimKaydiServisi Faz 7'de audit amaçlı event consumer sınıflarıyla eklenmiştir. BildirimServisi Faz 9'da kritik stok eventini canlı SignalR bildirimine dönüştüren consumer sınıfıyla eklenmiştir.
 
 ## Faz 7 DenetimKaydiServisi Kod Yapısı - 2026-08-11
 
@@ -359,3 +359,16 @@ DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event consumer sın
 - `EnvanterYonetimServisi.KategorileriListeleAsync` ve `LokasyonlariListeleAsync` liste okumasında cache'i kullanır.
 - Kategori/lokasyon oluşturma veya güncelleme başarılı olduğunda `EnvanterYonetimServisi` ilgili cache anahtarını temizler.
 - Redis hataları ana iş akışını kırmaz; servis PostgreSQL üzerinden devam eder ve uyarı logu üretir.
+
+## Faz 9 SignalR Bildirimleri Kod Yapısı - 2026-08-12
+
+- `src/servisler/BildirimServisi/BildirimServisi.Api` yeni canlı bildirim servisidir.
+- `Hubs/BildirimHub.cs`, JWT ve rol bazlı yetkilendirme ile korunan SignalR hub sınıfıdır.
+- `Consumers/KritikStokBildirimConsumer.cs`, `stok.kritik-seviyeye-dusuldu` eventini tüketir ve hub üzerinden `KritikStokBildirimiAlindi` mesajı yayınlar.
+- `Contracts/Events`, EnvanterServisi'nin kritik stok event sözleşmesini tutar.
+- `Contracts/Bildirimler`, MVC client'a gönderilen canlı bildirim DTO'sunu tutar.
+- `Program.cs`, JWT, CORS, CAP/RabbitMQ, CAP MongoDB storage ve SignalR yapılandırmasını içerir.
+- MVC client içinde `BildirimController.BaglantiBilgisi`, oturumdaki Admin/IT kullanıcı için hub URL ve JWT token döndürür.
+- `_Layout.cshtml`, canlı bildirim düğmesi ve bildirim listesini içerir.
+- `wwwroot/lib/signalr/signalr.min.js`, yerel SignalR JSON/WebSocket istemcisidir.
+- `wwwroot/js/bildirimler.js`, hub bağlantısını kurar, otomatik yeniden bağlanır ve kritik stok bildirimlerini toast/liste olarak gösterir.

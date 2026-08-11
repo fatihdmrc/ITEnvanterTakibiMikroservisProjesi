@@ -137,6 +137,7 @@ Teknoloji:
 
 - SignalR bildirimi yalnızca kritik stok seviyesi altına düşüldüğünde üretilecektir.
 - Zimmet oluşturma, zimmet iade ve personel işten ayrılma eventleri audit/entegrasyon amacıyla kullanılabilir; bildirim üretmeyecektir.
+- Faz 9 itibarıyla yalnızca Admin ve ITPersoneli rolleri canlı bildirim hub'ına bağlanabilir.
 
 ## 3. Servisler Arası İletişim
 
@@ -152,7 +153,7 @@ Senkron HTTP çağrıları, işlem sırasında hemen doğrulama gereken durumlar
 
 ### Asenkron CAP + RabbitMQ İletişimi
 
-DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır. Faz 7 itibarıyla DenetimKaydiServisi audit consumer olarak eklenmiştir; bildirim consumer tarafı Faz 9 kapsamındadır.
+DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır. Faz 7 itibarıyla DenetimKaydiServisi audit consumer olarak eklenmiştir. Faz 9 itibarıyla BildirimServisi kritik stok consumer olarak eklenmiştir.
 
 ### Faz 7 Denetim Mimarisi
 
@@ -170,6 +171,15 @@ DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktı
 - İlk okuma PostgreSQL üzerinden yapılır, sonuç Redis'e yazılır; sonraki okumalarda Redis kullanılabilir.
 - Kategori veya lokasyon değiştiğinde ilgili cache anahtarı temizlenir.
 - Redis geçici olarak kullanılamazsa EnvanterServisi PostgreSQL üzerinden okumaya devam eder ve ana API sözleşmesi değişmez.
+
+### Faz 9 SignalR Bildirim Mimarisi
+
+- BildirimServisi `5004` portunda ayrı API olarak çalışır.
+- SignalR hub endpointi `/hubs/bildirim` olarak belirlenmiştir.
+- Hub JWT ile korunur ve yalnızca `Admin` ile `ITPersoneli` rollerine açıktır.
+- BildirimServisi CAP/RabbitMQ üzerinden `stok.kritik-seviyeye-dusuldu` eventini tüketir.
+- Event alındığında bağlı MVC client kullanıcılarına `KritikStokBildirimiAlindi` mesajı gönderilir.
+- Bildirimler kalıcı saklanmaz; audit/geçmiş kaydı DenetimKaydiServisi üzerinde kalır.
 
 CAP Outbox şemaları:
 

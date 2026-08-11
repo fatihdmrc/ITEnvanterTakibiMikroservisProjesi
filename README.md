@@ -6,7 +6,7 @@ Bu README, projeye ilk giriş ve hızlı çalıştırma rehberidir. Ayrıntılı
 
 ## Güncel Durum
 
-Faz 8'e kadar olan temel geliştirmeler uygulanmıştır:
+Faz 9'a kadar olan temel geliştirmeler uygulanmıştır:
 
 - Kimlik ve personel yönetimi
 - Envanter yönetimi
@@ -16,10 +16,10 @@ Faz 8'e kadar olan temel geliştirmeler uygulanmıştır:
 - DotNetCore.CAP + RabbitMQ + Outbox event yayınlama altyapısı
 - DenetimKaydiServisi, MongoDB audit/event log ve MVC Denetim ekranı
 - Redis ile EnvanterServisi kategori/lokasyon referans veri cache'i
+- BildirimServisi, SignalR canlı kritik stok bildirimleri ve MVC bildirim merkezi
 
 Sıradaki fazlar:
 
-- Faz 9: SignalR Bildirimleri
 - Faz 10: ApiGateway Entegrasyonu
 - Faz 11: Demo ve Dokümantasyon
 
@@ -34,6 +34,7 @@ Sıradaki fazlar:
 | ORM | Entity Framework Core |
 | Kimlik | ASP.NET Core Identity, JWT |
 | Event altyapısı | DotNetCore.CAP, RabbitMQ, Outbox Pattern |
+| Canlı bildirim | SignalR |
 | Cache | Redis |
 | Container | Docker Compose |
 | API dokümantasyonu | Swagger / OpenAPI |
@@ -46,6 +47,7 @@ Sıradaki fazlar:
 | EnvanterServisi | `5001` | Cihaz, sarf malzeme, kategori, lokasyon ve stok işlemleri |
 | ZimmetServisi | `5002` | Zimmet oluşturma, iade alma ve iade kontrolü |
 | DenetimKaydiServisi | `5003` | Event ve CRUD audit kayıtları |
+| BildirimServisi | `5004` | Kritik stok SignalR bildirimleri |
 | MVC Client | `5010` | Yönetim arayüzü |
 | PostgreSQL | `5432` | Operasyonel veri depolama |
 | RabbitMQ | `5672` | Event taşıyıcı |
@@ -117,6 +119,12 @@ DenetimKaydiServisi:
 dotnet run --project "src\servisler\DenetimKaydiServisi\DenetimKaydiServisi.Api\DenetimKaydiServisi.Api.csproj" --launch-profile http
 ```
 
+BildirimServisi:
+
+```powershell
+dotnet run --project "src\servisler\BildirimServisi\BildirimServisi.Api\BildirimServisi.Api.csproj" --launch-profile http
+```
+
 MVC Client:
 
 ```powershell
@@ -131,6 +139,7 @@ dotnet run --project "src\istemci\EnvanterTakip.MvcClient\EnvanterTakip.MvcClien
 | Envanter API Swagger | http://localhost:5001/swagger |
 | Zimmet API Swagger | http://localhost:5002/swagger |
 | Denetim API Swagger | http://localhost:5003/swagger |
+| Bildirim API Swagger | http://localhost:5004/swagger |
 | MVC Client | http://localhost:5010 |
 | RabbitMQ Yönetim Paneli | http://localhost:15672 |
 
@@ -178,6 +187,7 @@ Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründ
 - DenetimKaydiServisi RabbitMQ eventlerini ve başarılı CRUD/mutasyon işlemlerini MongoDB'ye kaydeder.
 - MVC Denetim ekranında Admin/IT kullanıcıları audit kayıtlarını filtreleyip detay payload'ını görebilir.
 - EnvanterServisi kategori ve lokasyon listelerini Redis ile cache'ler; kayıt değişikliklerinde ilgili cache temizlenir.
+- BildirimServisi kritik stok eventini tüketir ve Admin/IT kullanıcılarına MVC üzerinde canlı SignalR bildirimi gösterir.
 
 ## Dokümantasyon
 

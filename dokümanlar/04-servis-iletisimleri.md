@@ -94,7 +94,7 @@ Faz 5 uygulama kararı:
 
 ## 4. CAP + RabbitMQ Eventleri
 
-Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Faz 7 itibarıyla DenetimKaydiServisi event consumer olarak eklenmiştir. BildirimServisi consumer tarafı Faz 9 kapsamındadır.
+Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Faz 7 itibarıyla DenetimKaydiServisi event consumer olarak eklenmiştir. Faz 9 itibarıyla BildirimServisi kritik stok event consumer olarak eklenmiştir.
 
 Event bus:
 
@@ -202,3 +202,32 @@ Davranış:
 - PostgreSQL'den alınan liste Redis'e 30 dakikalık süreyle yazılır.
 - Kategori veya lokasyon oluşturma/güncelleme başarılı olursa ilgili cache anahtarı temizlenir.
 - Redis kapalıysa API sözleşmesi değişmez; ana okuma akışı PostgreSQL üzerinden devam eder.
+
+## 10. Faz 9 SignalR Bildirim İletişimi
+
+BildirimServisi, client-server canlı bildirim kanalıdır. Servisler arası veri sahipliği veya iş kuralı taşımaz.
+
+CAP tüketimi:
+
+```text
+Event: stok.kritik-seviyeye-dusuldu
+Consumer group: bildirim-servisi
+Kaynak: EnvanterServisi
+Hedef: BildirimServisi
+```
+
+SignalR hub:
+
+```text
+GET/WS http://localhost:5004/hubs/bildirim
+Client metodu: KritikStokBildirimiAlindi
+```
+
+Davranış:
+
+- MVC client, oturumdaki JWT token ile BildirimServisi hub'ına bağlanır.
+- Hub yalnızca `Admin` ve `ITPersoneli` rollerini kabul eder.
+- `PersonelKullanicisi` rolü canlı bildirim bağlantısı kuramaz.
+- BildirimServisi yalnızca kritik stok eventini canlı bildirime dönüştürür.
+- Zimmet, cihaz durumu, audit veya personel eventleri SignalR bildirimi üretmez.
+- Bildirimler kalıcı saklanmaz; geçmiş için DenetimKaydiServisi kayıtları kullanılır.

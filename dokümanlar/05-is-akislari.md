@@ -117,7 +117,7 @@ Akış:
 7. Kritik stok kontrolü yapılır.
 8. Kritik seviyeye düşüldüyse `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
 9. Audit log kaydı Faz 7 DenetimKaydiServisi ile oluşur.
-10. SignalR bildirimi Faz 9'da yalnızca kritik stok seviyesi altına düşüldüyse gönderilir.
+10. BildirimServisi, kritik stok eventi için Admin/IT kullanıcılarına SignalR bildirimi gönderir.
 
 Stok çıkış nedenleri:
 
@@ -141,8 +141,10 @@ Akış:
 4. Sarf malzemelerinde kullanılabilir stok `EldekiMiktar` alanından okunur.
 5. Hesaplanan değer kritik stok seviyesinin altındaysa event üretilir.
 6. CAP Outbox kaydı oluşturulur ve `stok.kritik-seviyeye-dusuldu` eventi RabbitMQ'ya yayınlanır.
-7. DenetimKaydiServisi Faz 7'de event kaydını MongoDB'ye yazacaktır.
-8. BildirimServisi Faz 9'da SignalR ile kritik stok bildirimi üretecektir.
+7. DenetimKaydiServisi event kaydını MongoDB'ye yazar.
+8. BildirimServisi aynı eventi tüketir.
+9. BildirimServisi, bağlı Admin/IT kullanıcılarına `KritikStokBildirimiAlindi` SignalR mesajını gönderir.
+10. MVC client canlı bildirim merkezinde uyarıyı gösterir.
 
 ## 6. Hurda / Iskarta / Elden Çıkarma Akışı
 

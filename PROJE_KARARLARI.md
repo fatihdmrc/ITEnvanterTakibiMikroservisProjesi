@@ -574,7 +574,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 ## 18. Güncel Uygulama Kararları - 2026-08-02
 
 - Faz 5 ZimmetServisi uygulaması başlatılmış ve ayrı API projesi olarak eklenmiştir.
-- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 DenetimKaydiServisi uygulanmıştır. Faz 8 Redis Cache uygulanmıştır. Faz 9 ve sonrası için SignalR, ApiGateway ve Demo/Dokümantasyon ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
+- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 DenetimKaydiServisi uygulanmıştır. Faz 8 Redis Cache uygulanmıştır. Faz 9 SignalR Bildirimleri uygulanmıştır. Faz 10 ve sonrası için ApiGateway ve Demo/Dokümantasyon ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
 - Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
 - `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
 - Cihazlarda `AktifMi` manuel pasifleştirme checkbox'ı olarak kullanılmayacaktır. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden sistem tarafından hesaplanacaktır.
@@ -641,7 +641,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Cihaz durum hareketlerinde `cihaz.durumu-degisti` eventi yayınlanır.
 - Kritik stok eşiğinin altına düşen cihaz veya sarf malzeme için `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
 - Zimmet oluşturma ve iade akışlarında `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade için `cihaz.hasarli-teslim-alindi` eventleri yayınlanır.
-- DenetimKaydiServisi Faz 7'de event consumer olarak eklenmiştir; BildirimServisi event consumer uygulaması Faz 9 kapsamındadır.
+- DenetimKaydiServisi Faz 7'de event consumer olarak eklenmiştir; BildirimServisi event consumer uygulaması Faz 9'da eklenmiştir.
 
 ## Faz 7 DenetimKaydiServisi Kararı - 2026-08-11
 
@@ -664,3 +664,15 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Kategori/lokasyon oluşturma veya güncelleme başarılı olunca ilgili cache temizlenir.
 - Redis performans katmanıdır; veri doğruluğunun tek kaynağı PostgreSQL olarak kalır.
 - Redis okunamaz, yazılamaz veya temizlenemezse ana API işlemi başarısız sayılmaz, kaynak servis uyarı logu yazar.
+
+## Faz 9 SignalR Bildirimleri Kararı - 2026-08-12
+
+- BildirimServisi ayrı API olarak `http://localhost:5004` adresinde çalışır.
+- SignalR hub endpointi `/hubs/bildirim` olarak belirlenmiştir.
+- BildirimServisi CAP/RabbitMQ üzerinden yalnızca `stok.kritik-seviyeye-dusuldu` eventini tüketir.
+- CAP consumer grubu `bildirim-servisi` olarak belirlenmiştir.
+- SignalR bildirimleri yalnızca `Admin` ve `ITPersoneli` rollerine açıktır.
+- `PersonelKullanicisi` rolü canlı kritik stok bildirim merkezine bağlanamaz.
+- Bildirimler kalıcı olarak saklanmaz; geçmiş ve denetim ihtiyacı DenetimKaydiServisi üzerinden karşılanır.
+- MVC client BildirimServisi'ne Faz 9'da doğrudan `http://localhost:5004` üzerinden bağlanır; ApiGateway entegrasyonu Faz 10 kapsamındadır.
+- Zimmet, cihaz durumu, audit veya personel eventleri SignalR bildirimi üretmez.

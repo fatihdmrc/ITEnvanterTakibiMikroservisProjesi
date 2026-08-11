@@ -792,3 +792,27 @@ Doğrulama:
 - `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+### Faz 9 SignalR Bildirimleri eklendi
+
+Ne yapıldı:
+
+- `BildirimServisi.Api` ayrı Web API projesi olarak solution'a eklendi.
+- BildirimServisi `http://localhost:5004` portunda çalışacak şekilde ayarlandı.
+- SignalR hub endpointi `/hubs/bildirim` olarak eklendi.
+- Hub JWT ile korundu ve yalnızca `Admin` ile `ITPersoneli` rollerine açıldı.
+- CAP/RabbitMQ consumer grubu `bildirim-servisi` olarak yapılandırıldı.
+- `stok.kritik-seviyeye-dusuldu` eventi tüketilip `KritikStokBildirimiAlindi` SignalR mesajına dönüştürüldü.
+- MVC client'a bildirim bağlantı bilgisi endpointi, canlı bildirim merkezi, yerel SignalR istemci dosyası ve bildirim JavaScript'i eklendi.
+- Bildirimlerin kalıcı saklanmaması kararı korundu; geçmiş/audit için Denetim ekranı kullanılmaya devam eder.
+
+Neden yapıldı:
+
+- Kritik stok seviyesi altına düşme operasyonel ve anlık aksiyon gerektiren bir durumdur.
+- DenetimKaydiServisi geçmiş/audit ihtiyacını karşılarken BildirimServisi yalnızca canlı kullanıcı uyarısı sorumluluğunu üstlenir.
+- Zimmet, personel ve cihaz durumu eventlerinin bildirim üretmemesi kullanıcı gürültüsünü azaltır.
+
+Doğrulama:
+
+- `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

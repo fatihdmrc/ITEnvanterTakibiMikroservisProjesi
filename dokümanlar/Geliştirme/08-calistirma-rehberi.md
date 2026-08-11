@@ -400,7 +400,23 @@ GET  /api/denetim-kayitlari/{id}
 POST /api/denetim-kayitlari/crud
 ```
 
-### Terminal 5 - MVC Client
+### Terminal 5 - BildirimServisi
+
+```powershell
+cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
+dotnet run --project "src\servisler\BildirimServisi\BildirimServisi.Api\BildirimServisi.Api.csproj" --launch-profile http
+```
+
+Kontrol adresi:
+
+```text
+http://localhost:5004/swagger
+http://localhost:5004/saglik
+```
+
+BildirimServisi, `stok.kritik-seviyeye-dusuldu` eventini CAP/RabbitMQ üzerinden tüketir ve `/hubs/bildirim` SignalR hub'ı üzerinden Admin/IT kullanıcılarına canlı bildirim gönderir.
+
+### Terminal 6 - MVC Client
 
 ```powershell
 cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
@@ -424,8 +440,9 @@ MVC client üzerinden şu işlemler denenebilir:
 - Envanter ekranından cihaz ve sarf malzeme işlemlerini yönetmek
 - Zimmetler ekranından zimmet oluşturmak, iade almak ve iade kontrolünü tamamlamak
 - Denetim ekranından event ve CRUD audit kayıtlarını filtrelemek ve detay payload'ını görüntülemek
+- Admin/IT kullanıcısı ile kritik stok canlı bildirimlerini görmek
 
-Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001`, `http://localhost:5002` ve `http://localhost:5003` adreslerindeki servislere bağlanır. ApiGateway eklendiğinde bu adresler `appsettings.json` içinden gateway adresine çevrilecektir.
+Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001`, `http://localhost:5002`, `http://localhost:5003` ve `http://localhost:5004` adreslerindeki servislere bağlanır. ApiGateway eklendiğinde bu adresler `appsettings.json` içinden gateway adresine çevrilecektir.
 
 Yetki notu:
 
@@ -443,6 +460,7 @@ Yetki notu:
 - EnvanterServisi API projesi
 - ZimmetServisi API projesi
 - DenetimKaydiServisi API projesi
+- BildirimServisi API projesi
 - ASP.NET Core MVC client projesi
 - PostgreSQL Docker Compose 
 - RabbitMQ Docker Compose
@@ -465,15 +483,16 @@ Yetki notu:
 - ZimmetServisi zimmet oluşturma, iade alma, iade kontrolü ve kendi zimmetlerini listeleme endpointleri
 - MVC client Zimmetler ekranı
 - MVC client Denetim ekranı
+- MVC client canlı bildirim merkezi
 - DotNetCore.CAP + RabbitMQ event yayınlama altyapısı
 - CAP Outbox şemaları: `cap_kimlik`, `cap_envanter`, `cap_zimmet`
 - MongoDB audit log koleksiyonu: `DenetimKayitlari`
 - Redis referans veri cache anahtarları: `envanter:kategoriler:v1`, `envanter:lokasyonlar:v1`
+- BildirimServisi SignalR hub endpointi: `/hubs/bildirim`
 
 Henüz eklenmeyenler:
 
 - ApiGateway
-- SignalR bildirimleri
 Swagger ve EF Core paketleri proje dosyalarına eklenmiştir.
 
 ## 10. Sık Karşılaşılan Hata: Dosya Kilitli
@@ -575,7 +594,7 @@ Faz 6 ile event yayınlama altyapısı eklenmiştir:
 - EnvanterServisi: `cihaz.durumu-degisti`, `stok.kritik-seviyeye-dusuldu`
 - ZimmetServisi: `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi`, `cihaz.hasarli-teslim-alindi`
 
-CAP, outbox tablolarını servis başlatıldığında kendi şemaları altında oluşturur. DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event tüketimi MongoDB'ye yapılır. Bildirim tüketimi Faz 9 kapsamındadır.
+CAP, outbox tablolarını servis başlatıldığında kendi şemaları altında oluşturur. DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event tüketimi MongoDB'ye yapılır. BildirimServisi Faz 9'da kritik stok eventlerini tüketir ve SignalR bildirimi üretir.
 
 ## 15. Faz 7 DenetimKaydiServisi Notları - 2026-08-11
 
@@ -598,3 +617,16 @@ Faz 8 ile Redis cache altyapısı EnvanterServisi referans verileri için eklenm
 - Kategoriler `envanter:kategoriler:v1`, lokasyonlar `envanter:lokasyonlar:v1` anahtarıyla cache'lenir.
 - Kategori veya lokasyon oluşturma/güncelleme başarılı olunca ilgili cache temizlenir.
 - Redis geçici olarak kapalıysa EnvanterServisi kategori/lokasyon okumasını PostgreSQL üzerinden sürdürür ve uyarı logu yazar.
+
+## 17. Faz 9 SignalR Bildirimleri Notları - 2026-08-12
+
+Faz 9 ile BildirimServisi ve MVC canlı bildirim merkezi eklenmiştir:
+
+- BildirimServisi `http://localhost:5004` adresinde çalışır.
+- Bildirim API Swagger adresi `http://localhost:5004/swagger` şeklindedir.
+- SignalR hub endpointi `http://localhost:5004/hubs/bildirim` şeklindedir.
+- Servis yalnızca `stok.kritik-seviyeye-dusuldu` eventini CAP/RabbitMQ üzerinden tüketir.
+- Admin ve ITPersoneli rolleri canlı bildirim merkezine bağlanabilir.
+- PersonelKullanicisi rolü canlı bildirim bağlantısı kuramaz.
+- MVC client içinde yerel SignalR istemci dosyası kullanılır; CDN bağımlılığı yoktur.
+- Bildirimler kalıcı saklanmaz; sayfa yenilenirse canlı liste sıfırlanır.
