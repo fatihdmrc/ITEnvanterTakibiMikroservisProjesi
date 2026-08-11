@@ -570,7 +570,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 ## 18. Güncel Uygulama Kararları - 2026-08-02
 
 - Faz 5 ZimmetServisi uygulaması başlatılmış ve ayrı API projesi olarak eklenmiştir.
-- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 ve sonrası için audit log, Redis, SignalR ve ApiGateway ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
+- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 DenetimKaydiServisi uygulanmıştır. Faz 8 ve sonrası için Redis, SignalR ve ApiGateway ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
 - Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
 - `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
 - Cihazlarda `AktifMi` manuel pasifleştirme checkbox'ı olarak kullanılmayacaktır. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden sistem tarafından hesaplanacaktır.
@@ -637,4 +637,14 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Cihaz durum hareketlerinde `cihaz.durumu-degisti` eventi yayınlanır.
 - Kritik stok eşiğinin altına düşen cihaz veya sarf malzeme için `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
 - Zimmet oluşturma ve iade akışlarında `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade için `cihaz.hasarli-teslim-alindi` eventleri yayınlanır.
-- DenetimKaydiServisi ve BildirimServisi henüz eklenmediği için bu faz event producer + outbox altyapısını tamamlar; event consumer uygulamaları sonraki fazlardadır.
+- DenetimKaydiServisi Faz 7'de event consumer olarak eklenmiştir; BildirimServisi event consumer uygulaması Faz 9 kapsamındadır.
+
+## Faz 7 DenetimKaydiServisi Kararı - 2026-08-11
+
+- DenetimKaydiServisi ayrı API olarak `http://localhost:5003` adresinde çalışır.
+- MongoDB yalnızca audit/event log depolama için kullanılır; container adı `it-envanter-mongodb`, portu `27017` olarak belirlenmiştir.
+- CAP/RabbitMQ üzerinden gelen audit kapsamındaki domain eventleri DenetimKaydiServisi tarafından tüketilir ve MongoDB `DenetimKayitlari` koleksiyonuna yazılır.
+- Event kayıtlarında `EventId` benzersizdir; aynı event tekrar teslim edilirse duplicate audit kaydı oluşturulmaz.
+- CRUD audit, kaynak servislerde global action filter üzerinden uygulanır.
+- CRUD audit çağrısı best-effort HTTP çağrısıdır. DenetimKaydiServisi kapalıysa ana iş akışı başarısız sayılmaz, kaynak servis uyarı logu yazar.
+- MVC client içine Denetim ekranı eklenmiştir. Admin ve ITPersoneli audit kayıtlarını filtreleyebilir, detay ekranında payload JSON içeriğini görebilir.

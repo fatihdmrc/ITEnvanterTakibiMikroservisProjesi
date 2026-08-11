@@ -6,7 +6,7 @@ Bu README, projeye ilk giriş ve hızlı çalıştırma rehberidir. Ayrıntılı
 
 ## Güncel Durum
 
-Faz 6'ya kadar olan temel geliştirmeler uygulanmıştır:
+Faz 7'ye kadar olan temel geliştirmeler uygulanmıştır:
 
 - Kimlik ve personel yönetimi
 - Envanter yönetimi
@@ -14,10 +14,10 @@ Faz 6'ya kadar olan temel geliştirmeler uygulanmıştır:
 - Cihaz ve sarf malzeme işlem ekranları
 - ZimmetServisi ve zimmet yönetimi
 - DotNetCore.CAP + RabbitMQ + Outbox event yayınlama altyapısı
+- DenetimKaydiServisi, MongoDB audit/event log ve MVC Denetim ekranı
 
 Sıradaki fazlar:
 
-- Faz 7: DenetimKaydiServisi
 - Faz 8: Redis Cache
 - Faz 9: SignalR Bildirimleri
 - Faz 10: ApiGateway Entegrasyonu
@@ -30,6 +30,7 @@ Sıradaki fazlar:
 | Backend | .NET 8, ASP.NET Core Web API |
 | Client | ASP.NET Core MVC |
 | Veritabanı | PostgreSQL |
+| Audit log | MongoDB |
 | ORM | Entity Framework Core |
 | Kimlik | ASP.NET Core Identity, JWT |
 | Event altyapısı | DotNetCore.CAP, RabbitMQ, Outbox Pattern |
@@ -43,10 +44,12 @@ Sıradaki fazlar:
 | KimlikVePersonelServisi | `5000` | Kullanıcı, rol, departman ve personel yönetimi |
 | EnvanterServisi | `5001` | Cihaz, sarf malzeme, kategori, lokasyon ve stok işlemleri |
 | ZimmetServisi | `5002` | Zimmet oluşturma, iade alma ve iade kontrolü |
+| DenetimKaydiServisi | `5003` | Event ve CRUD audit kayıtları |
 | MVC Client | `5010` | Yönetim arayüzü |
 | PostgreSQL | `5432` | Operasyonel veri depolama |
 | RabbitMQ | `5672` | Event taşıyıcı |
 | RabbitMQ Management UI | `15672` | RabbitMQ yönetim paneli |
+| MongoDB | `27017` | Denetim kaydı depolama |
 
 Servisler arası anlık doğrulamalar HTTP ile yapılır. Başarılı domain işlemleri DotNetCore.CAP Outbox üzerinden RabbitMQ'ya event olarak yayınlanır.
 
@@ -68,7 +71,7 @@ cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi"
 ### 2. PostgreSQL ve RabbitMQ'yu Başlat
 
 ```powershell
-docker compose up -d postgres rabbitmq
+docker compose up -d postgres rabbitmq mongodb
 ```
 
 Durumu görüntülemek için:
@@ -106,6 +109,12 @@ ZimmetServisi:
 dotnet run --project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --launch-profile http
 ```
 
+DenetimKaydiServisi:
+
+```powershell
+dotnet run --project "src\servisler\DenetimKaydiServisi\DenetimKaydiServisi.Api\DenetimKaydiServisi.Api.csproj" --launch-profile http
+```
+
 MVC Client:
 
 ```powershell
@@ -119,6 +128,7 @@ dotnet run --project "src\istemci\EnvanterTakip.MvcClient\EnvanterTakip.MvcClien
 | Kimlik API Swagger | http://localhost:5000/swagger |
 | Envanter API Swagger | http://localhost:5001/swagger |
 | Zimmet API Swagger | http://localhost:5002/swagger |
+| Denetim API Swagger | http://localhost:5003/swagger |
 | MVC Client | http://localhost:5010 |
 | RabbitMQ Yönetim Paneli | http://localhost:15672 |
 
@@ -163,6 +173,8 @@ Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründ
 - Zimmet iade alındığında cihaz fiziki kontrol için `Incelemede` durumuna geçer.
 - İade kontrolü sonucuna göre cihaz `Kullanilabilir`, `Bakimda`, `HurdaIskarta` veya `HasarliTeslimAlindi` durumuna alınır.
 - Kritik stok ve domain olayları CAP Outbox üzerinden RabbitMQ'ya yayınlanır.
+- DenetimKaydiServisi RabbitMQ eventlerini ve başarılı CRUD/mutasyon işlemlerini MongoDB'ye kaydeder.
+- MVC Denetim ekranında Admin/IT kullanıcıları audit kayıtlarını filtreleyip detay payload'ını görebilir.
 
 ## Dokümantasyon
 

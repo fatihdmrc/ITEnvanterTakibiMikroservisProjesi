@@ -152,7 +152,15 @@ Senkron HTTP çağrıları, işlem sırasında hemen doğrulama gereken durumlar
 
 ### Asenkron CAP + RabbitMQ İletişimi
 
-DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır; consumer servisler Faz 7 ve Faz 9 kapsamındadır.
+DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır. Faz 7 itibarıyla DenetimKaydiServisi audit consumer olarak eklenmiştir; bildirim consumer tarafı Faz 9 kapsamındadır.
+
+### Faz 7 Denetim Mimarisi
+
+- DenetimKaydiServisi `5003` portunda ayrı API olarak çalışır.
+- MongoDB audit/event log depolama için kullanılır.
+- CAP/RabbitMQ eventleri DenetimKaydiServisi consumer sınıfları tarafından tüketilir.
+- CRUD audit kayıtları kaynak servislerden DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderilir.
+- MVC client Denetim ekranı DenetimKaydiServisi API'sini doğrudan çağırır; ApiGateway Faz 10'a kadar devrede değildir.
 
 CAP Outbox şemaları:
 

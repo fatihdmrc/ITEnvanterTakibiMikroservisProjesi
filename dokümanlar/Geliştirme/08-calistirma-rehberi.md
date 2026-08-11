@@ -51,7 +51,7 @@ Oluşturma başarılı oldu.
 ## 5. PostgreSQL ve RabbitMQ'yu Docker ile Başlat
 
 ```powershell
-docker compose up -d postgres rabbitmq
+docker compose up -d postgres rabbitmq mongodb
 ```
 
 Çalışıyor mu kontrol etmek için:
@@ -368,7 +368,31 @@ POST /api/zimmetler/{id}/iade-alindi
 POST /api/zimmetler/{id}/iade-kontrolu
 ```
 
-### Terminal 4 - MVC Client
+### Terminal 4 - DenetimKaydiServisi
+
+```powershell
+cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
+dotnet run --project "src\servisler\DenetimKaydiServisi\DenetimKaydiServisi.Api\DenetimKaydiServisi.Api.csproj" --launch-profile http
+```
+
+Kontrol adresi:
+
+```text
+http://localhost:5003/swagger
+http://localhost:5003/saglik
+```
+
+DenetimKaydiServisi endpointleri JWT ile korunur. Denetim kayıtlarını listeleme ve detay görüntüleme için `admin` veya `it.personel` token'ı gerekir.
+
+Temel endpointler:
+
+```text
+GET  /api/denetim-kayitlari
+GET  /api/denetim-kayitlari/{id}
+POST /api/denetim-kayitlari/crud
+```
+
+### Terminal 5 - MVC Client
 
 ```powershell
 cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
@@ -391,8 +415,9 @@ MVC client üzerinden şu işlemler denenebilir:
 - Kullanıcıları listelemek ve yeni kullanıcı oluşturmak
 - Envanter ekranından cihaz ve sarf malzeme işlemlerini yönetmek
 - Zimmetler ekranından zimmet oluşturmak, iade almak ve iade kontrolünü tamamlamak
+- Denetim ekranından event ve CRUD audit kayıtlarını filtrelemek ve detay payload'ını görüntülemek
 
-Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001` ve `http://localhost:5002` adreslerindeki servislere bağlanır. ApiGateway eklendiğinde bu adresler `appsettings.json` içinden gateway adresine çevrilecektir.
+Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001`, `http://localhost:5002` ve `http://localhost:5003` adreslerindeki servislere bağlanır. ApiGateway eklendiğinde bu adresler `appsettings.json` içinden gateway adresine çevrilecektir.
 
 Yetki notu:
 
@@ -409,9 +434,11 @@ Yetki notu:
 - KimlikVePersonelServisi API projesi
 - EnvanterServisi API projesi
 - ZimmetServisi API projesi
+- DenetimKaydiServisi API projesi
 - ASP.NET Core MVC client projesi
 - PostgreSQL Docker Compose 
 - RabbitMQ Docker Compose
+- MongoDB Docker Compose
 - KimlikVePersonelServisi EF Core migration yapısı
 - KimlikVePersonelServisi PostgreSQL bağlantısı
 - ASP.NET Core Identity ile kullanıcı, rol ve şifre yönetimi
@@ -428,13 +455,14 @@ Yetki notu:
 - ZimmetServisi EF Core migration yapısı
 - ZimmetServisi zimmet oluşturma, iade alma, iade kontrolü ve kendi zimmetlerini listeleme endpointleri
 - MVC client Zimmetler ekranı
+- MVC client Denetim ekranı
 - DotNetCore.CAP + RabbitMQ event yayınlama altyapısı
 - CAP Outbox şemaları: `cap_kimlik`, `cap_envanter`, `cap_zimmet`
+- MongoDB audit log koleksiyonu: `DenetimKayitlari`
 
 Henüz eklenmeyenler:
 
 - ApiGateway
-- MongoDB audit log
 - Redis cache
 - SignalR bildirimleri
 Swagger ve EF Core paketleri proje dosyalarına eklenmiştir.
@@ -538,4 +566,15 @@ Faz 6 ile event yayınlama altyapısı eklenmiştir:
 - EnvanterServisi: `cihaz.durumu-degisti`, `stok.kritik-seviyeye-dusuldu`
 - ZimmetServisi: `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi`, `cihaz.hasarli-teslim-alindi`
 
-CAP, outbox tablolarını servis başlatıldığında kendi şemaları altında oluşturur. DenetimKaydiServisi ve BildirimServisi henüz eklenmediği için eventlerin kalıcı tüketimi sonraki fazlardadır.
+CAP, outbox tablolarını servis başlatıldığında kendi şemaları altında oluşturur. DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event tüketimi MongoDB'ye yapılır. Bildirim tüketimi Faz 9 kapsamındadır.
+
+## 15. Faz 7 DenetimKaydiServisi Notları - 2026-08-11
+
+Faz 7 ile DenetimKaydiServisi ve MongoDB eklenmiştir:
+
+- MongoDB container adı `it-envanter-mongodb`, portu `27017` olarak ayarlanmıştır.
+- DenetimKaydiServisi `http://localhost:5003` adresinde çalışır.
+- Denetim API Swagger adresi `http://localhost:5003/swagger` şeklindedir.
+- Servis CAP/RabbitMQ üzerinden domain eventlerini tüketir ve MongoDB'ye yazar.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı CRUD/mutasyon işlemlerini best-effort HTTP çağrısıyla DenetimKaydiServisi'ne gönderir.
+- DenetimServisi kapalıysa ana iş akışları başarısız sayılmaz; kaynak servis uyarı logu üretir.

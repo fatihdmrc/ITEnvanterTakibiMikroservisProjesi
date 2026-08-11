@@ -205,23 +205,33 @@ Kurallar:
 
 ## 5. MongoDB Audit Log Modeli
 
-### AuditKaydi
+### DenetimKaydi
 
 | Alan | Açıklama |
 | --- | --- |
 | Id | MongoDB doküman kimliği |
-| EventId | Event benzersiz kimliği |
-| EventAdi | Event adı |
-| IslemTipi | Event veya CRUD ayrımı |
-| KaynakServis | Eventi üreten servis |
-| CorrelationId | Servisler arası takip kimliği |
+| EventId | Event benzersiz kimliği; event kayıtlarında unique index ile korunur |
+| KayitTuru | `Event` veya `Crud` |
+| KaynakServis | Kaydı üreten veya gönderen servis |
+| EventAdi | CAP/RabbitMQ event adı |
+| IslemTuru | CRUD veya mutasyon işlemi adı |
+| VarlikTuru | Cihaz, Personel, Zimmet gibi varlık adı |
+| VarlikId | İlgili varlık kimliği |
+| VarlikAdi | Ekranda okunabilir varlık adı |
 | KullaniciId | İşlemi yapan kullanıcı |
-| OccurredAt | Event oluşma zamanı |
-| Payload | JSON event içeriği |
+| Rol | İşlemi yapan kullanıcının rolü |
+| HttpMetodu | CRUD kayıtlarında HTTP metodu |
+| Endpoint | CRUD kayıtlarında çağrılan endpoint |
+| OlusmaZamaniUtc | Event veya işlemin oluşma zamanı |
+| AlinmaZamaniUtc | DenetimKaydiServisi'nin kaydı aldığı zaman |
+| Aciklama | Kısa açıklama |
+| Payload | JSON event veya CRUD içeriği |
 
 Kurallar:
 
 - Audit log kapsamında hem DotNetCore.CAP üzerinden gelen RabbitMQ eventleri hem de CRUD işlemleri kaydedilir.
+- Faz 7 itibarıyla kayıtlar MongoDB `it_envanter_denetim` veritabanındaki `DenetimKayitlari` koleksiyonunda tutulur.
+- CRUD audit kayıtları kaynak servislerden DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderilir.
 
 ## 6. ER Diyagramı İçin Notlar
 

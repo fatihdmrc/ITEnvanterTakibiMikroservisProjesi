@@ -35,6 +35,13 @@ builder.Services.AddHttpClient<ZimmetApiClient>(client =>
 
     client.BaseAddress = new Uri(servisAdresi);
 });
+builder.Services.AddHttpClient<DenetimApiClient>(client =>
+{
+    var servisAdresi = builder.Configuration["ServisAdresleri:DenetimKaydiServisi"]
+        ?? throw new InvalidOperationException("Denetim kaydi servisi adresi tanimli degil.");
+
+    client.BaseAddress = new Uri(servisAdresi);
+});
 
 var app = builder.Build();
 

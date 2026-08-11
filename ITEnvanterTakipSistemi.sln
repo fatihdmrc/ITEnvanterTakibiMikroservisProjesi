@@ -19,6 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZimmetServisi", "ZimmetServ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZimmetServisi.Api", "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj", "{73D3FB83-FCF1-477C-B8A5-CC4346244C0C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DenetimKaydiServisi", "DenetimKaydiServisi", "{E3E5942B-3857-4BC0-BFE7-E5262FE3D991}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DenetimKaydiServisi.Api", "src\servisler\DenetimKaydiServisi\DenetimKaydiServisi.Api\DenetimKaydiServisi.Api.csproj", "{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +81,18 @@ Global
 		{73D3FB83-FCF1-477C-B8A5-CC4346244C0C}.Release|x64.Build.0 = Release|Any CPU
 		{73D3FB83-FCF1-477C-B8A5-CC4346244C0C}.Release|x86.ActiveCfg = Release|Any CPU
 		{73D3FB83-FCF1-477C-B8A5-CC4346244C0C}.Release|x86.Build.0 = Release|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Debug|x64.Build.0 = Debug|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Debug|x86.Build.0 = Debug|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Release|x64.ActiveCfg = Release|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Release|x64.Build.0 = Release|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Release|x86.ActiveCfg = Release|Any CPU
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -89,5 +105,7 @@ Global
 		{0B42410D-3F07-49E8-A26A-C0A45540D4C2} = {07DCCC8A-1062-FFDA-82D0-1EFE8B8A0A3F}
 		{18DCB48E-8C4C-4AF6-AEC6-1C809F016FE2} = {17389292-25F5-D738-1648-CD942B4DB510}
 		{73D3FB83-FCF1-477C-B8A5-CC4346244C0C} = {18DCB48E-8C4C-4AF6-AEC6-1C809F016FE2}
+		{E3E5942B-3857-4BC0-BFE7-E5262FE3D991} = {17389292-25F5-D738-1648-CD942B4DB510}
+		{7CCE2A3E-BCC0-441F-95FA-49D82DB0D474} = {E3E5942B-3857-4BC0-BFE7-E5262FE3D991}
 	EndGlobalSection
 EndGlobal

@@ -1,6 +1,6 @@
 @KimlikVePersonelServisi.Api_HostAddress = http://localhost:5140
 
-GET {{KimlikVePersonelServisi.Api_HostAddress}}/weatherforecast/
+GET {{KimlikVePersonelServisi.Api_HostAddress}}/saglik
 Accept: application/json
 
 ###

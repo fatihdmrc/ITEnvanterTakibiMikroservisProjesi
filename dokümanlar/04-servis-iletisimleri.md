@@ -94,7 +94,7 @@ Faz 5 uygulama kararı:
 
 ## 4. CAP + RabbitMQ Eventleri
 
-Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Event consumer tarafı DenetimKaydiServisi ve BildirimServisi fazlarında eklenecektir.
+Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Faz 7 itibarıyla DenetimKaydiServisi event consumer olarak eklenmiştir. BildirimServisi consumer tarafı Faz 9 kapsamındadır.
 
 Event bus:
 
@@ -168,3 +168,13 @@ Kullanıcı bağlamı:
 6. CAP, `PersonelIstenAyrildi` eventini RabbitMQ'ya yayınlar.
 7. ZimmetServisi consumer davranışı sonraki fazlarda ele alınacaktır.
 8. DenetimKaydiServisi Faz 7'de olayı MongoDB'ye kaydeder.
+
+## 8. Faz 7 CRUD Audit İletişimi
+
+KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı `POST`, `PUT`, `PATCH` ve `DELETE` mutasyonlarından sonra DenetimKaydiServisi'ne best-effort HTTP çağrısı yapar.
+
+```text
+POST http://localhost:5003/api/denetim-kayitlari/crud
+```
+
+Bu çağrı JWT token'ı forward eder. DenetimKaydiServisi geçici olarak kapalıysa ana işlem başarısız sayılmaz; kaynak servis yalnızca uyarı logu üretir.

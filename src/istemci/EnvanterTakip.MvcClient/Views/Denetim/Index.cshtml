@@ -1,0 +1,138 @@
+@model EnvanterTakip.MvcClient.Models.DenetimPanelModel
+@using EnvanterTakip.MvcClient.Models
+
+@{
+    ViewData["Title"] = "Denetim";
+    var toplamSayfa = Model.Liste.SayfaBoyutu <= 0
+        ? 1
+        : (int)Math.Ceiling(Model.Liste.ToplamKayit / (double)Model.Liste.SayfaBoyutu);
+    toplamSayfa = Math.Max(toplamSayfa, 1);
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Denetim Kayıtları</h1>
+        <p class="text-muted mb-0">Event ve CRUD audit kayıtları</p>
+    </div>
+    <span class="badge bg-secondary">@Model.Rol</span>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+{
+    <div class="alert alert-warning">@Model.HataMesaji</div>
+}
+
+@if (Model.OturumVarMi && Model.YonetimYetkisiVarMi)
+{
+    <form method="get" class="row g-2 align-items-end border rounded p-3 mb-3 bg-light">
+        <div class="col-12 col-md-2">
+            <label class="form-label" asp-for="Filtre.KayitTuru">Kayıt türü</label>
+            <select class="form-select" asp-for="Filtre.KayitTuru" asp-items="Html.GetEnumSelectList<DenetimKayitTuruModel>()">
+                <option value="">Tümü</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label" asp-for="Filtre.KaynakServis">Kaynak servis</label>
+            <input class="form-control" asp-for="Filtre.KaynakServis" placeholder="EnvanterServisi" />
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label" asp-for="Filtre.VarlikTuru">Varlık türü</label>
+            <input class="form-control" asp-for="Filtre.VarlikTuru" placeholder="Cihaz" />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label" asp-for="Filtre.VarlikId">Varlık id</label>
+            <input class="form-control" asp-for="Filtre.VarlikId" />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label" asp-for="Filtre.KullaniciId">Kullanıcı id</label>
+            <input class="form-control" asp-for="Filtre.KullaniciId" />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label" asp-for="Filtre.EventAdi">Event adı</label>
+            <input class="form-control" asp-for="Filtre.EventAdi" placeholder="cihaz.durumu-degisti" />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label" asp-for="Filtre.IslemTuru">İşlem türü</label>
+            <input class="form-control" asp-for="Filtre.IslemTuru" placeholder="Olustur" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" asp-for="Filtre.SayfaBoyutu">Sayfa boyutu</label>
+            <input class="form-control" asp-for="Filtre.SayfaBoyutu" type="number" min="1" max="100" />
+        </div>
+        <input type="hidden" asp-for="Filtre.Sayfa" value="1" />
+        <div class="col-6 col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">Filtrele</button>
+        </div>
+        <div class="col-12 col-md-2 d-grid">
+            <a class="btn btn-outline-secondary" asp-action="Index">Temizle</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Tarih</th>
+                    <th>Tür</th>
+                    <th>Servis</th>
+                    <th>İşlem/Event</th>
+                    <th>Varlık</th>
+                    <th>Kullanıcı</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var kayit in Model.Liste.Kayitlar)
+            {
+                <tr>
+                    <td>@kayit.OlusmaZamaniUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
+                    <td><span class="badge bg-info text-dark">@kayit.KayitTuru</span></td>
+                    <td>@kayit.KaynakServis</td>
+                    <td>@(kayit.EventAdi ?? kayit.IslemTuru)</td>
+                    <td>
+                        <div>@kayit.VarlikTuru</div>
+                        <small class="text-muted">@kayit.VarlikAdi</small>
+                    </td>
+                    <td>@kayit.KullaniciId</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" asp-action="Detay" asp-route-id="@kayit.Id">Detay</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Liste.Kayitlar.Count == 0)
+    {
+        <div class="alert alert-info">Filtreye uygun denetim kaydı bulunamadı.</div>
+    }
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+        <span class="text-muted">Toplam @Model.Liste.ToplamKayit kayıt, sayfa @Model.Liste.Sayfa / @toplamSayfa</span>
+        <div class="btn-group">
+            <a class="btn btn-outline-secondary @(Model.Liste.Sayfa <= 1 ? "disabled" : "")"
+               asp-action="Index"
+               asp-route-KayitTuru="@Model.Filtre.KayitTuru"
+               asp-route-EventAdi="@Model.Filtre.EventAdi"
+               asp-route-IslemTuru="@Model.Filtre.IslemTuru"
+               asp-route-KaynakServis="@Model.Filtre.KaynakServis"
+               asp-route-VarlikTuru="@Model.Filtre.VarlikTuru"
+               asp-route-VarlikId="@Model.Filtre.VarlikId"
+               asp-route-KullaniciId="@Model.Filtre.KullaniciId"
+               asp-route-Sayfa="@(Model.Liste.Sayfa - 1)"
+               asp-route-SayfaBoyutu="@Model.Liste.SayfaBoyutu">Önceki</a>
+            <a class="btn btn-outline-secondary @(Model.Liste.Sayfa >= toplamSayfa ? "disabled" : "")"
+               asp-action="Index"
+               asp-route-KayitTuru="@Model.Filtre.KayitTuru"
+               asp-route-EventAdi="@Model.Filtre.EventAdi"
+               asp-route-IslemTuru="@Model.Filtre.IslemTuru"
+               asp-route-KaynakServis="@Model.Filtre.KaynakServis"
+               asp-route-VarlikTuru="@Model.Filtre.VarlikTuru"
+               asp-route-VarlikId="@Model.Filtre.VarlikId"
+               asp-route-KullaniciId="@Model.Filtre.KullaniciId"
+               asp-route-Sayfa="@(Model.Liste.Sayfa + 1)"
+               asp-route-SayfaBoyutu="@Model.Liste.SayfaBoyutu">Sonraki</a>
+        </div>
+    </div>
+}

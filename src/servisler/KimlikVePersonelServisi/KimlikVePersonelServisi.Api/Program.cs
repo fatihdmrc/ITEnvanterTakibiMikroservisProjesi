@@ -1,10 +1,12 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using KimlikVePersonelServisi.Api.Filters;
 using KimlikVePersonelServisi.Api.Data;
 using KimlikVePersonelServisi.Api.Domain.Entities;
 using KimlikVePersonelServisi.Api.Options;
 using KimlikVePersonelServisi.Api.Repositories;
 using KimlikVePersonelServisi.Api.Services;
+using KimlikVePersonelServisi.Api.Services.Harici;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -24,7 +26,10 @@ builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
 var kimlikPersonelConnectionString = builder.Configuration.GetConnectionString("KimlikPersonelDb")
     ?? throw new InvalidOperationException("Kimlik/personel veritabanı bağlantısı bulunamadı.");
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<CrudDenetimActionFilter>();
+    })
     .AddJsonOptions(options =>
     {
         // Enum değerlerini 1/2/3 yerine Admin/ITPersoneli gibi okunabilir metinlerle döndürür.
@@ -127,6 +132,15 @@ builder.Services.AddCap(options =>
     options.FailedRetryInterval = 60;
 });
 
+builder.Services.AddHttpClient<DenetimApiClient>(client =>
+{
+    var servisAdresi = builder.Configuration["ServisAdresleri:DenetimKaydiServisi"]
+        ?? throw new InvalidOperationException("Denetim kaydi servisi adresi tanimli degil.");
+
+    client.BaseAddress = new Uri(servisAdresi);
+    client.Timeout = TimeSpan.FromSeconds(2);
+});
+
 // Identity kullanıcı, rol, şifre hash ve hesap kilitleme altyapısını yönetir; dış API çağrılarında yine JWT kullanılır.
 builder.Services
     .AddIdentityCore<UygulamaKullanici>(options =>
@@ -149,6 +163,7 @@ builder.Services.AddSingleton<ITokenServisi, JwtTokenServisi>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
 builder.Services.AddScoped<IDepartmanRepository, EfDepartmanRepository>();
 builder.Services.AddScoped<IPersonelRepository, EfPersonelRepository>();
+builder.Services.AddScoped<CrudDenetimActionFilter>();
 builder.Services.AddScoped<IKimlikPersonelServisi, KimlikPersonelServisi>();
 
 var app = builder.Build();

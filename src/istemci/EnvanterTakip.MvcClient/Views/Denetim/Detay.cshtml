@@ -1,0 +1,50 @@
+@model EnvanterTakip.MvcClient.Models.DenetimKaydiModel
+
+@{
+    ViewData["Title"] = "Denetim Kaydı";
+}
+
+<div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Denetim Kaydı</h1>
+        <p class="text-muted mb-0">@Model.Id</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index">Listeye dön</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-5">
+        <div class="border rounded p-3">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Tür</dt>
+                <dd class="col-sm-8">@Model.KayitTuru</dd>
+                <dt class="col-sm-4">Servis</dt>
+                <dd class="col-sm-8">@Model.KaynakServis</dd>
+                <dt class="col-sm-4">İşlem/Event</dt>
+                <dd class="col-sm-8">@(Model.EventAdi ?? Model.IslemTuru)</dd>
+                <dt class="col-sm-4">Varlık</dt>
+                <dd class="col-sm-8">@Model.VarlikTuru - @Model.VarlikAdi</dd>
+                <dt class="col-sm-4">Varlık id</dt>
+                <dd class="col-sm-8">@Model.VarlikId</dd>
+                <dt class="col-sm-4">Kullanıcı</dt>
+                <dd class="col-sm-8">@Model.KullaniciId</dd>
+                <dt class="col-sm-4">Rol</dt>
+                <dd class="col-sm-8">@Model.Rol</dd>
+                <dt class="col-sm-4">Endpoint</dt>
+                <dd class="col-sm-8">@Model.HttpMetodu @Model.Endpoint</dd>
+                <dt class="col-sm-4">Oluşma</dt>
+                <dd class="col-sm-8">@Model.OlusmaZamaniUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</dd>
+                <dt class="col-sm-4">Alınma</dt>
+                <dd class="col-sm-8">@Model.AlinmaZamaniUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-12 col-lg-7">
+        <div class="border rounded p-3">
+            <h2 class="h5">Açıklama</h2>
+            <p>@Model.Aciklama</p>
+            <h2 class="h5">Payload</h2>
+            <pre class="bg-dark text-light rounded p-3 overflow-auto" style="max-height: 560px;"><code>@(Model.Payload ?? "{}")</code></pre>
+        </div>
+    </div>
+</div>

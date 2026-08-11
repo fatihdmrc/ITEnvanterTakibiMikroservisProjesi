@@ -1,0 +1,6 @@
+@DenetimKaydiServisi.Api_HostAddress = http://localhost:5003
+
+GET {{DenetimKaydiServisi.Api_HostAddress}}/saglik
+Accept: application/json
+
+###

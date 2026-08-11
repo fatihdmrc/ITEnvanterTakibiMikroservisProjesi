@@ -311,6 +311,32 @@ Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+### Faz 7 DenetimKaydiServisi eklendi
+
+Ne yapıldı:
+
+- `docker-compose.yml` içine MongoDB container'ı eklendi.
+- `DenetimKaydiServisi.Api` yeni servis projesi olarak solution'a eklendi.
+- DenetimKaydiServisi `http://localhost:5003` portunda çalışacak şekilde ayarlandı.
+- Denetim kayıtları MongoDB `it_envanter_denetim` veritabanındaki `DenetimKayitlari` koleksiyonuna yazılır hale getirildi.
+- CAP/RabbitMQ consumer yapısı eklendi ve audit kapsamındaki domain eventleri MongoDB'ye kaydedilir hale getirildi.
+- Event kayıtlarında `EventId` benzersizliği için MongoDB indexi oluşturuldu.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı CRUD/mutasyon işlemlerini DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderecek şekilde genişletildi.
+- MVC client içine Denetim ekranı, filtreli listeleme ve payload detay sayfası eklendi.
+- README, geliştirme planı, çalıştırma rehberi, veri modeli, servis iletişimleri, iş akışları, mimari tasarım, kod yapısı ve proje kararları dokümanları güncellendi.
+
+Neden yapıldı:
+
+- Faz 6'da üretilen domain eventlerinin kalıcı audit kaydı olarak saklanması gerekiyordu.
+- CRUD audit kayıtlarının da aynı denetim yüzeyinde görüntülenebilmesi istendi.
+- Denetim kaydının ana iş akışlarını bozmaması için CRUD audit çağrıları best-effort tasarlandı.
+
+Doğrulama:
+
+- `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+- `docker compose config --services` çıktısında `postgres`, `rabbitmq` ve `mongodb` servisleri görüldü.
+
 ## 2026-07-30
 
 ### Faz 3 - Envanter temeli başlatıldı

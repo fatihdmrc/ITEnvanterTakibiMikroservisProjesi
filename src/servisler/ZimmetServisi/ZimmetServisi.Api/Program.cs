@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using ZimmetServisi.Api.Data;
+using ZimmetServisi.Api.Filters;
 using ZimmetServisi.Api.Options;
 using ZimmetServisi.Api.Repositories;
 using ZimmetServisi.Api.Services;
@@ -21,7 +22,10 @@ builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
 var zimmetConnectionString = builder.Configuration.GetConnectionString("ZimmetDb")
     ?? throw new InvalidOperationException("Zimmet veritabanı bağlantısı bulunamadı.");
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<CrudDenetimActionFilter>();
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -126,8 +130,18 @@ builder.Services.AddHttpClient<EnvanterApiClient>(client =>
     client.BaseAddress = new Uri(servisAdresi);
 });
 
+builder.Services.AddHttpClient<DenetimApiClient>(client =>
+{
+    var servisAdresi = builder.Configuration["ServisAdresleri:DenetimKaydiServisi"]
+        ?? throw new InvalidOperationException("Denetim kaydi servisi adresi tanimli degil.");
+
+    client.BaseAddress = new Uri(servisAdresi);
+    client.Timeout = TimeSpan.FromSeconds(2);
+});
+
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(EfGenericRepository<>));
 builder.Services.AddScoped<IZimmetRepository, EfZimmetRepository>();
+builder.Services.AddScoped<CrudDenetimActionFilter>();
 builder.Services.AddScoped<IZimmetServisi, ZimmetYonetimServisi>();
 
 var app = builder.Build();

@@ -100,12 +100,13 @@ Bu hedefin seçilme nedeni:
 
 ### Faz 7 - DenetimKaydiServisi
 
-- MongoDB Docker Compose'a eklenir.
-- DenetimKaydiServisi oluşturulur.
-- CAP event consumer yapısı eklenir.
-- Eventler MongoDB'ye audit log olarak yazılır.
-- CRUD audit log yaklaşımı tasarlanır ve uygulanır.
-- Audit sorgulama endpointleri hazırlanır.
+- Tamamlandı.
+- MongoDB Docker Compose'a eklendi.
+- DenetimKaydiServisi `http://localhost:5003` adresinde ayrı API olarak oluşturuldu.
+- CAP event consumer yapısı eklendi.
+- Eventler MongoDB `DenetimKayitlari` koleksiyonuna audit log olarak yazılır.
+- CRUD audit log yaklaşımı best-effort HTTP kayıt endpointiyle uygulanır.
+- Audit sorgulama endpointleri ve MVC Denetim ekranı hazırlandı.
 
 ### Faz 8 - Redis Cache
 
@@ -166,7 +167,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 ### Uygulama kararı
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
-- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 ve sonrası sırasıyla audit log, cache, bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
+- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 ve sonrası sırasıyla cache, bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
 
 ## 6. Güncel Faz 4 Client Kararı - 2026-08-03
 
@@ -230,4 +231,15 @@ Faz 6 kapsamında event üreten servislerde DotNetCore.CAP ve RabbitMQ entegrasy
 - KimlikVePersonelServisi `personel.isten-ayrildi` eventini üretir.
 - EnvanterServisi `cihaz.durumu-degisti` ve `stok.kritik-seviyeye-dusuldu` eventlerini üretir.
 - ZimmetServisi `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade durumunda `cihaz.hasarli-teslim-alindi` eventlerini üretir.
-- Event tüketicileri bu fazda eklenmemiştir; DenetimKaydiServisi Faz 7'de, bildirim tüketimi Faz 9'da uygulanacaktır.
+- Event tüketicilerinden DenetimKaydiServisi Faz 7'de uygulanmıştır; bildirim tüketimi Faz 9'da uygulanacaktır.
+
+## 15. Faz 7 DenetimKaydiServisi Durumu - 2026-08-11
+
+Faz 7 ile DenetimKaydiServisi ayrı API olarak eklenmiştir.
+
+- Servis portu `5003` olarak sabitlenmiştir.
+- MongoDB `docker-compose.yml` içine `mongodb` servisi olarak eklenmiştir.
+- CAP/RabbitMQ event consumer yapısı `denetim-kaydi-servisi` consumer grubu ile çalışır.
+- `personel.isten-ayrildi`, `cihaz.durumu-degisti`, `stok.kritik-seviyeye-dusuldu`, `zimmet.olusturuldu`, `zimmet.iade-alindi`, `zimmet.iade-edildi`, `cihaz.kontrole-alindi` ve `cihaz.hasarli-teslim-alindi` eventleri MongoDB'ye yazılır.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı mutasyonları DenetimKaydiServisi `POST /api/denetim-kayitlari/crud` endpointine best-effort olarak gönderir.
+- MVC client içinde Denetim ekranı eklenmiştir; Admin/IT kullanıcıları kayıtları filtreleyebilir ve payload detayını görebilir.

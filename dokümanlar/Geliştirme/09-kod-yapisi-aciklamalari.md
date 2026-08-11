@@ -335,4 +335,14 @@ Event yayınlayan iş akışları:
 - Cihaz veya sarf malzeme kritik stok eşiğinin altına düştüğünde EnvanterServisi `stok.kritik-seviyeye-dusuldu` eventini üretir.
 - Zimmet oluşturma ve iade akışlarında ZimmetServisi ilgili zimmet ve cihaz kontrol eventlerini üretir.
 
-DenetimKaydiServisi ve BildirimServisi henüz eklenmediği için bu fazda event consumer sınıfı bulunmaz.
+DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event consumer sınıfları bulunur. BildirimServisi henüz eklenmediği için bildirim consumer sınıfı Faz 9 kapsamındadır.
+
+## Faz 7 DenetimKaydiServisi Kod Yapısı - 2026-08-11
+
+- `src/servisler/DenetimKaydiServisi/DenetimKaydiServisi.Api` yeni audit servisidir.
+- `Consumers/DenetimEventConsumer.cs`, CAP/RabbitMQ üzerinden gelen domain eventlerini tüketir.
+- `Repositories/MongoDenetimKaydiRepository.cs`, MongoDB `DenetimKayitlari` koleksiyonunu ve indexleri yönetir.
+- `Controllers/DenetimKayitlariController.cs`, audit listeleme, detay ve CRUD kayıt alma endpointlerini sağlar.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde `CrudDenetimActionFilter` başarılı mutasyonları yakalar.
+- Her kaynak servis içindeki `DenetimApiClient`, audit kaydını DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderir.
+- MVC client içinde `DenetimController`, `DenetimApiClient`, `DenetimModelleri` ve `Views/Denetim` dosyaları Denetim ekranını oluşturur.

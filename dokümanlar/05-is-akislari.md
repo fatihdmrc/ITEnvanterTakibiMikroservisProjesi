@@ -164,6 +164,26 @@ Akış:
 
 ## 7. Görsele Dönüştürme Notları
 
+## 7. Faz 7 Denetim Kaydı Akışı
+
+Başarılı domain eventleri:
+
+1. Kaynak servis iş verisini PostgreSQL'e yazar.
+2. CAP outbox kaydı aynı işlem kapsamında oluşur.
+3. CAP event'i RabbitMQ `inventory.events` exchange'ine yayınlar.
+4. DenetimKaydiServisi ilgili event'i tüketir.
+5. Event payload'ı MongoDB `DenetimKayitlari` koleksiyonuna `Event` kayıt türüyle yazılır.
+
+Başarılı CRUD/mutasyon işlemleri:
+
+1. Kaynak servis HTTP isteğini işler.
+2. İşlem başarılı dönerse global audit filter devreye girer.
+3. Filter, işlem özetini `POST /api/denetim-kayitlari/crud` endpointine gönderir.
+4. DenetimKaydiServisi kaydı MongoDB'ye `Crud` kayıt türüyle yazar.
+5. Denetim çağrısı başarısız olsa bile ana işlem sonucu değiştirilmez.
+
+## 8. Görsele Dönüştürme Notları
+
 Bu dokümandaki akışlar draw.io veya PlantUML ile activity diagram olarak çizilebilir.
 
 Önerilen görseller:
