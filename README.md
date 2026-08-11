@@ -6,7 +6,7 @@ Bu README, projeye ilk giriş ve hızlı çalıştırma rehberidir. Ayrıntılı
 
 ## Güncel Durum
 
-Faz 7'ye kadar olan temel geliştirmeler uygulanmıştır:
+Faz 8'e kadar olan temel geliştirmeler uygulanmıştır:
 
 - Kimlik ve personel yönetimi
 - Envanter yönetimi
@@ -15,10 +15,10 @@ Faz 7'ye kadar olan temel geliştirmeler uygulanmıştır:
 - ZimmetServisi ve zimmet yönetimi
 - DotNetCore.CAP + RabbitMQ + Outbox event yayınlama altyapısı
 - DenetimKaydiServisi, MongoDB audit/event log ve MVC Denetim ekranı
+- Redis ile EnvanterServisi kategori/lokasyon referans veri cache'i
 
 Sıradaki fazlar:
 
-- Faz 8: Redis Cache
 - Faz 9: SignalR Bildirimleri
 - Faz 10: ApiGateway Entegrasyonu
 - Faz 11: Demo ve Dokümantasyon
@@ -34,6 +34,7 @@ Sıradaki fazlar:
 | ORM | Entity Framework Core |
 | Kimlik | ASP.NET Core Identity, JWT |
 | Event altyapısı | DotNetCore.CAP, RabbitMQ, Outbox Pattern |
+| Cache | Redis |
 | Container | Docker Compose |
 | API dokümantasyonu | Swagger / OpenAPI |
 
@@ -50,6 +51,7 @@ Sıradaki fazlar:
 | RabbitMQ | `5672` | Event taşıyıcı |
 | RabbitMQ Management UI | `15672` | RabbitMQ yönetim paneli |
 | MongoDB | `27017` | Denetim kaydı depolama |
+| Redis | `6379` | Referans veri cache |
 
 Servisler arası anlık doğrulamalar HTTP ile yapılır. Başarılı domain işlemleri DotNetCore.CAP Outbox üzerinden RabbitMQ'ya event olarak yayınlanır.
 
@@ -71,7 +73,7 @@ cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi"
 ### 2. PostgreSQL ve RabbitMQ'yu Başlat
 
 ```powershell
-docker compose up -d postgres rabbitmq mongodb
+docker compose up -d postgres rabbitmq mongodb redis
 ```
 
 Durumu görüntülemek için:
@@ -175,6 +177,7 @@ Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründ
 - Kritik stok ve domain olayları CAP Outbox üzerinden RabbitMQ'ya yayınlanır.
 - DenetimKaydiServisi RabbitMQ eventlerini ve başarılı CRUD/mutasyon işlemlerini MongoDB'ye kaydeder.
 - MVC Denetim ekranında Admin/IT kullanıcıları audit kayıtlarını filtreleyip detay payload'ını görebilir.
+- EnvanterServisi kategori ve lokasyon listelerini Redis ile cache'ler; kayıt değişikliklerinde ilgili cache temizlenir.
 
 ## Dokümantasyon
 

@@ -769,3 +769,26 @@ Doğrulama:
 
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+### Faz 8 Redis Cache eklendi
+
+Ne yapıldı:
+
+- `docker-compose.yml` içine `redis:7-alpine` tabanlı Redis servisi eklendi.
+- EnvanterServisi projesine `Microsoft.Extensions.Caching.StackExchangeRedis` paketi eklendi.
+- EnvanterServisi `appsettings.json` içine `Redis:ConnectionString`, `Redis:InstanceName` ve `Cache:ReferansVeriDakika` ayarları eklendi.
+- `IReferansVeriCacheServisi` ve `RedisReferansVeriCacheServisi` ile küçük bir cache-aside servis katmanı oluşturuldu.
+- Kategori listesi `envanter:kategoriler:v1`, lokasyon listesi `envanter:lokasyonlar:v1` anahtarıyla cache'lenir hale getirildi.
+- Kategori/lokasyon oluşturma ve güncelleme işlemleri başarılı olduğunda ilgili cache anahtarı temizlenir hale getirildi.
+- Redis okuma, yazma veya silme hatalarında ana API akışının PostgreSQL üzerinden devam etmesi sağlandı.
+
+Neden yapıldı:
+
+- Kategori ve lokasyon listeleri sık okunan, nadiren değişen referans verilerdir.
+- Redis bu fazda veri kaynağı değil, yalnızca performans katmanı olarak konumlandırıldı.
+- Redis'in geçici olarak kapalı olması EnvanterServisi'nin kategori/lokasyon listeleme davranışını bozmamalıdır.
+
+Doğrulama:
+
+- `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

@@ -178,3 +178,27 @@ POST http://localhost:5003/api/denetim-kayitlari/crud
 ```
 
 Bu çağrı JWT token'ı forward eder. DenetimKaydiServisi geçici olarak kapalıysa ana işlem başarısız sayılmaz; kaynak servis yalnızca uyarı logu üretir.
+
+## 9. Faz 8 Redis Cache Kullanımı
+
+Redis, servisler arası bir iletişim kanalı değildir; EnvanterServisi içinde sık okunan referans verileri hızlandırmak için kullanılan cache katmanıdır.
+
+Kapsam:
+
+- `GET /api/kategoriler` listeleme akışı
+- `GET /api/lokasyonlar` listeleme akışı
+
+Cache anahtarları:
+
+```text
+envanter:kategoriler:v1
+envanter:lokasyonlar:v1
+```
+
+Davranış:
+
+- EnvanterServisi önce Redis cache'i okumayı dener.
+- Cache yoksa veya okunamazsa veri PostgreSQL'den alınır.
+- PostgreSQL'den alınan liste Redis'e 30 dakikalık süreyle yazılır.
+- Kategori veya lokasyon oluşturma/güncelleme başarılı olursa ilgili cache anahtarı temizlenir.
+- Redis kapalıysa API sözleşmesi değişmez; ana okuma akışı PostgreSQL üzerinden devam eder.

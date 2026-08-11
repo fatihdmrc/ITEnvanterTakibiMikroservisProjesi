@@ -110,9 +110,11 @@ Bu hedefin seçilme nedeni:
 
 ### Faz 8 - Redis Cache
 
-- Redis Docker Compose'a eklenir.
-- Kategori ve lokasyon listeleri cache'lenir.
-- Kategori veya lokasyon değiştiğinde cache invalidation uygulanır.
+- Tamamlandı.
+- Redis Docker Compose'a eklendi.
+- EnvanterServisi kategori ve lokasyon listeleri Redis ile cache'lenir.
+- Kategori veya lokasyon değiştiğinde ilgili cache invalidation uygulanır.
+- Redis geçici olarak kapalıysa okuma akışı PostgreSQL üzerinden devam eder.
 
 ### Faz 9 - SignalR Bildirimleri
 
@@ -167,7 +169,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 ### Uygulama kararı
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
-- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 ve sonrası sırasıyla cache, bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
+- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 Redis Cache tamamlanmıştır. Faz 9 ve sonrası sırasıyla bildirim, ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
 
 ## 6. Güncel Faz 4 Client Kararı - 2026-08-03
 
@@ -243,3 +245,14 @@ Faz 7 ile DenetimKaydiServisi ayrı API olarak eklenmiştir.
 - `personel.isten-ayrildi`, `cihaz.durumu-degisti`, `stok.kritik-seviyeye-dusuldu`, `zimmet.olusturuldu`, `zimmet.iade-alindi`, `zimmet.iade-edildi`, `cihaz.kontrole-alindi` ve `cihaz.hasarli-teslim-alindi` eventleri MongoDB'ye yazılır.
 - KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı mutasyonları DenetimKaydiServisi `POST /api/denetim-kayitlari/crud` endpointine best-effort olarak gönderir.
 - MVC client içinde Denetim ekranı eklenmiştir; Admin/IT kullanıcıları kayıtları filtreleyebilir ve payload detayını görebilir.
+
+## 16. Faz 8 Redis Cache Durumu - 2026-08-12
+
+Faz 8 ile Redis cache altyapısı eklenmiştir.
+
+- Redis `docker-compose.yml` içine `redis` servisi olarak eklenmiştir.
+- EnvanterServisi `Microsoft.Extensions.Caching.StackExchangeRedis` paketiyle Redis'e bağlanır.
+- `KategorileriListeleAsync` ve `LokasyonlariListeleAsync` metotları cache-aside yaklaşımıyla çalışır.
+- Cache anahtarları `envanter:kategoriler:v1` ve `envanter:lokasyonlar:v1` olarak belirlenmiştir.
+- Kategori veya lokasyon oluşturma/güncelleme başarılı olunca ilgili cache temizlenir.
+- Redis okunamaz, yazılamaz veya temizlenemezse ana API akışı PostgreSQL üzerinden devam eder ve uyarı logu yazılır.

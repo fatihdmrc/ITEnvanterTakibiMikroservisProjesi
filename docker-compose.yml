@@ -35,6 +35,13 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  redis:
+    image: redis:7-alpine
+    container_name: it-envanter-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
 volumes:
   postgres_data:
   mongodb_data:

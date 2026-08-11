@@ -7,8 +7,11 @@ using EnvanterServisi.Api.Contracts.Stok;
 using EnvanterServisi.Api.Data;
 using EnvanterServisi.Api.Domain.Entities;
 using EnvanterServisi.Api.Domain.Enums;
+using EnvanterServisi.Api.Options;
 using EnvanterServisi.Api.Repositories;
+using EnvanterServisi.Api.Services.Cache;
 using DotNetCore.CAP;
+using Microsoft.Extensions.Options;
 
 namespace EnvanterServisi.Api.Services;
 
@@ -20,13 +23,22 @@ public sealed class EnvanterYonetimServisi(
     ISarfMalzemeRepository sarfMalzemeRepository,
     IKritikStokKuraliRepository kritikStokKuraliRepository,
     IStokHareketiRepository stokHareketiRepository,
+    IReferansVeriCacheServisi referansVeriCacheServisi,
+    IOptions<CacheAyarlari> cacheAyarlari,
     ICapPublisher capPublisher) : IEnvanterServisi
 {
     // Servis katmanı, HTTP detayından bağımsız olarak envanter iş kurallarını uygular.
     public async Task<IReadOnlyCollection<KategoriCevap>> KategorileriListeleAsync(CancellationToken cancellationToken = default)
     {
-        var kategoriler = await kategoriRepository.ListeleAsync(cancellationToken);
-        return kategoriler.Select(KategoriCevabaDonustur).ToList();
+        return await referansVeriCacheServisi.GetOrSetAsync(
+            ReferansVeriCacheAnahtarlari.Kategoriler,
+            async token =>
+            {
+                var kategoriler = await kategoriRepository.ListeleAsync(token);
+                return kategoriler.Select(KategoriCevabaDonustur).ToList();
+            },
+            ReferansVeriCacheSuresi(),
+            cancellationToken);
     }
 
     public async Task<KategoriCevap?> KategoriGetirAsync(Guid id, CancellationToken cancellationToken = default)
@@ -63,6 +75,7 @@ public sealed class EnvanterYonetimServisi(
 
         kategoriRepository.Ekle(kategori);
         await kategoriRepository.KaydetAsync(cancellationToken);
+        await referansVeriCacheServisi.SilAsync(ReferansVeriCacheAnahtarlari.Kategoriler, cancellationToken);
 
         return Sonuc<KategoriCevap>.Basarili(KategoriCevabaDonustur(kategori));
     }
@@ -103,13 +116,21 @@ public sealed class EnvanterYonetimServisi(
         kategori.AktifMi = istek.AktifMi;
 
         await kategoriRepository.KaydetAsync(cancellationToken);
+        await referansVeriCacheServisi.SilAsync(ReferansVeriCacheAnahtarlari.Kategoriler, cancellationToken);
         return Sonuc<KategoriCevap>.Basarili(KategoriCevabaDonustur(kategori));
     }
 
     public async Task<IReadOnlyCollection<LokasyonCevap>> LokasyonlariListeleAsync(CancellationToken cancellationToken = default)
     {
-        var lokasyonlar = await lokasyonRepository.ListeleAsync(cancellationToken);
-        return lokasyonlar.Select(LokasyonCevabaDonustur).ToList();
+        return await referansVeriCacheServisi.GetOrSetAsync(
+            ReferansVeriCacheAnahtarlari.Lokasyonlar,
+            async token =>
+            {
+                var lokasyonlar = await lokasyonRepository.ListeleAsync(token);
+                return lokasyonlar.Select(LokasyonCevabaDonustur).ToList();
+            },
+            ReferansVeriCacheSuresi(),
+            cancellationToken);
     }
 
     public async Task<LokasyonCevap?> LokasyonGetirAsync(Guid id, CancellationToken cancellationToken = default)
@@ -144,6 +165,7 @@ public sealed class EnvanterYonetimServisi(
 
         lokasyonRepository.Ekle(lokasyon);
         await lokasyonRepository.KaydetAsync(cancellationToken);
+        await referansVeriCacheServisi.SilAsync(ReferansVeriCacheAnahtarlari.Lokasyonlar, cancellationToken);
 
         return Sonuc<LokasyonCevap>.Basarili(LokasyonCevabaDonustur(lokasyon));
     }
@@ -182,6 +204,7 @@ public sealed class EnvanterYonetimServisi(
         lokasyon.AktifMi = istek.AktifMi;
 
         await lokasyonRepository.KaydetAsync(cancellationToken);
+        await referansVeriCacheServisi.SilAsync(ReferansVeriCacheAnahtarlari.Lokasyonlar, cancellationToken);
         return Sonuc<LokasyonCevap>.Basarili(LokasyonCevabaDonustur(lokasyon));
     }
 
@@ -839,6 +862,9 @@ public sealed class EnvanterYonetimServisi(
 
         return Sonuc<bool>.Basarili(true);
     }
+
+    private TimeSpan ReferansVeriCacheSuresi()
+        => TimeSpan.FromMinutes(Math.Max(cacheAyarlari.Value.ReferansVeriDakika, 1));
 
     private static string? BosIseNull(string? deger)
         => string.IsNullOrWhiteSpace(deger) ? null : deger.Trim();

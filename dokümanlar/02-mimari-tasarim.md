@@ -162,6 +162,15 @@ DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktı
 - CRUD audit kayıtları kaynak servislerden DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderilir.
 - MVC client Denetim ekranı DenetimKaydiServisi API'sini doğrudan çağırır; ApiGateway Faz 10'a kadar devrede değildir.
 
+### Faz 8 Redis Cache Mimarisi
+
+- Redis `6379` portunda cache altyapısı olarak çalışır.
+- Faz 8 kapsamındaki tek cache kullanan servis EnvanterServisi'dir.
+- Kategori ve lokasyon listeleme akışları cache-aside yaklaşımıyla çalışır.
+- İlk okuma PostgreSQL üzerinden yapılır, sonuç Redis'e yazılır; sonraki okumalarda Redis kullanılabilir.
+- Kategori veya lokasyon değiştiğinde ilgili cache anahtarı temizlenir.
+- Redis geçici olarak kullanılamazsa EnvanterServisi PostgreSQL üzerinden okumaya devam eder ve ana API sözleşmesi değişmez.
+
 CAP Outbox şemaları:
 
 - `cap_kimlik`
@@ -194,6 +203,8 @@ Redis:
 
 - Kategori listesi cache
 - Lokasyon listesi cache
+- Cache anahtarları: `envanter:kategoriler:v1`, `envanter:lokasyonlar:v1`
+- Veri doğruluğunun tek kaynağı PostgreSQL'dir; Redis yalnızca performans katmanıdır.
 
 RabbitMQ:
 

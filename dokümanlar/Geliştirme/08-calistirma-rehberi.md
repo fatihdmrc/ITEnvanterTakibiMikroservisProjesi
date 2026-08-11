@@ -51,7 +51,7 @@ Oluşturma başarılı oldu.
 ## 5. PostgreSQL ve RabbitMQ'yu Docker ile Başlat
 
 ```powershell
-docker compose up -d postgres rabbitmq mongodb
+docker compose up -d postgres rabbitmq mongodb redis
 ```
 
 Çalışıyor mu kontrol etmek için:
@@ -78,6 +78,14 @@ Management UI: http://localhost:15672
 User: guest
 Password: guest
 Exchange: inventory.events
+```
+
+Redis bilgileri:
+
+```text
+Host: localhost
+Port: 6379
+Kullanım: EnvanterServisi kategori/lokasyon referans veri cache
 ```
 
 PostgreSQL'i durdurmak için:
@@ -439,6 +447,7 @@ Yetki notu:
 - PostgreSQL Docker Compose 
 - RabbitMQ Docker Compose
 - MongoDB Docker Compose
+- Redis Docker Compose
 - KimlikVePersonelServisi EF Core migration yapısı
 - KimlikVePersonelServisi PostgreSQL bağlantısı
 - ASP.NET Core Identity ile kullanıcı, rol ve şifre yönetimi
@@ -459,11 +468,11 @@ Yetki notu:
 - DotNetCore.CAP + RabbitMQ event yayınlama altyapısı
 - CAP Outbox şemaları: `cap_kimlik`, `cap_envanter`, `cap_zimmet`
 - MongoDB audit log koleksiyonu: `DenetimKayitlari`
+- Redis referans veri cache anahtarları: `envanter:kategoriler:v1`, `envanter:lokasyonlar:v1`
 
 Henüz eklenmeyenler:
 
 - ApiGateway
-- Redis cache
 - SignalR bildirimleri
 Swagger ve EF Core paketleri proje dosyalarına eklenmiştir.
 
@@ -578,3 +587,14 @@ Faz 7 ile DenetimKaydiServisi ve MongoDB eklenmiştir:
 - Servis CAP/RabbitMQ üzerinden domain eventlerini tüketir ve MongoDB'ye yazar.
 - KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı CRUD/mutasyon işlemlerini best-effort HTTP çağrısıyla DenetimKaydiServisi'ne gönderir.
 - DenetimServisi kapalıysa ana iş akışları başarısız sayılmaz; kaynak servis uyarı logu üretir.
+
+## 16. Faz 8 Redis Cache Notları - 2026-08-12
+
+Faz 8 ile Redis cache altyapısı EnvanterServisi referans verileri için eklenmiştir:
+
+- Redis container adı `it-envanter-redis`, portu `6379` olarak ayarlanmıştır.
+- EnvanterServisi `Redis:ConnectionString = 127.0.0.1:6379` ayarıyla Redis'e bağlanır.
+- `Cache:ReferansVeriDakika = 30` ayarı kategori ve lokasyon liste cache süresini belirler.
+- Kategoriler `envanter:kategoriler:v1`, lokasyonlar `envanter:lokasyonlar:v1` anahtarıyla cache'lenir.
+- Kategori veya lokasyon oluşturma/güncelleme başarılı olunca ilgili cache temizlenir.
+- Redis geçici olarak kapalıysa EnvanterServisi kategori/lokasyon okumasını PostgreSQL üzerinden sürdürür ve uyarı logu yazar.

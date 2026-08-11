@@ -346,3 +346,16 @@ DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event consumer sın
 - KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde `CrudDenetimActionFilter` başarılı mutasyonları yakalar.
 - Her kaynak servis içindeki `DenetimApiClient`, audit kaydını DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderir.
 - MVC client içinde `DenetimController`, `DenetimApiClient`, `DenetimModelleri` ve `Views/Denetim` dosyaları Denetim ekranını oluşturur.
+
+## Faz 8 Redis Cache Kod Yapısı - 2026-08-12
+
+- `docker-compose.yml` içinde `redis` servisi bulunur ve `6379` portunu dışarı açar.
+- `EnvanterServisi.Api.csproj`, `Microsoft.Extensions.Caching.StackExchangeRedis` paketini kullanır.
+- `Options/CacheAyarlari.cs`, referans veri cache süresini `Cache:ReferansVeriDakika` ayarından okur.
+- `Services/Cache/IReferansVeriCacheServisi.cs`, cache okuma/yazma ve temizleme soyutlamasını tutar.
+- `Services/Cache/ReferansVeriCacheAnahtarlari.cs`, `envanter:kategoriler:v1` ve `envanter:lokasyonlar:v1` anahtarlarını merkezileştirir.
+- `Services/Cache/RedisReferansVeriCacheServisi.cs`, `IDistributedCache` üzerinden cache-aside davranışını uygular.
+- `Program.cs`, Redis bağlantısını `AddStackExchangeRedisCache` ile yapılandırır ve cache servisini DI container'a ekler.
+- `EnvanterYonetimServisi.KategorileriListeleAsync` ve `LokasyonlariListeleAsync` liste okumasında cache'i kullanır.
+- Kategori/lokasyon oluşturma veya güncelleme başarılı olduğunda `EnvanterYonetimServisi` ilgili cache anahtarını temizler.
+- Redis hataları ana iş akışını kırmaz; servis PostgreSQL üzerinden devam eder ve uyarı logu üretir.

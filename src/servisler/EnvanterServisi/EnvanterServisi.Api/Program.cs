@@ -5,6 +5,7 @@ using EnvanterServisi.Api.Filters;
 using EnvanterServisi.Api.Options;
 using EnvanterServisi.Api.Repositories;
 using EnvanterServisi.Api.Services;
+using EnvanterServisi.Api.Services.Cache;
 using EnvanterServisi.Api.Services.Harici;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ builder.Logging.AddConsole();
 
 var jwtAyarlari = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
+builder.Services.Configure<CacheAyarlari>(builder.Configuration.GetSection("Cache"));
 var envanterConnectionString = builder.Configuration.GetConnectionString("EnvanterDb")
     ?? throw new InvalidOperationException("Envanter veritabanı bağlantısı bulunamadı.");
 
@@ -92,6 +94,12 @@ builder.Services.AddDbContext<EnvanterDbContext>(options =>
     options.UseNpgsql(envanterConnectionString);
 });
 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration["Redis:ConnectionString"] ?? "127.0.0.1:6379";
+    options.InstanceName = builder.Configuration["Redis:InstanceName"] ?? "ITEnvanter:";
+});
+
 builder.Services.AddCap(options =>
 {
     options.UsePostgreSql(postgreSql =>
@@ -132,6 +140,7 @@ builder.Services.AddScoped<ISarfMalzemeRepository, EfSarfMalzemeRepository>();
 builder.Services.AddScoped<IKritikStokKuraliRepository, EfKritikStokKuraliRepository>();
 builder.Services.AddScoped<IStokHareketiRepository, EfStokHareketiRepository>();
 builder.Services.AddScoped<CrudDenetimActionFilter>();
+builder.Services.AddScoped<IReferansVeriCacheServisi, RedisReferansVeriCacheServisi>();
 builder.Services.AddScoped<IEnvanterServisi, EnvanterYonetimServisi>();
 
 var app = builder.Build();

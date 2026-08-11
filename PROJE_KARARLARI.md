@@ -480,10 +480,14 @@ Kullanıcı bağlamı kararı:
 ## 14. Cache Tasarımı
 
 - Redis yalnızca sık okunan ve nadiren değişen referans veriler için kullanılacaktır.
+- Faz 8 itibarıyla ilk uygulama kapsamı EnvanterServisi referans verileridir.
 - İlk cache kapsamı:
   - Kategori listesi
   - Lokasyon listesi
 - Kategori veya lokasyon ekleme/güncelleme/pasifleştirme işlemlerinde ilgili cache temizlenmelidir.
+- Cache anahtarları `envanter:kategoriler:v1` ve `envanter:lokasyonlar:v1` olarak belirlenmiştir.
+- Varsayılan referans veri cache süresi 30 dakikadır.
+- Redis kapalıysa veya geçici hata verirse EnvanterServisi PostgreSQL üzerinden okumaya devam eder; cache hatası ana iş akışını bozmaz.
 
 ## 15. Güvenlik ve Yetki Tasarımı
 
@@ -570,7 +574,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 ## 18. Güncel Uygulama Kararları - 2026-08-02
 
 - Faz 5 ZimmetServisi uygulaması başlatılmış ve ayrı API projesi olarak eklenmiştir.
-- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 DenetimKaydiServisi uygulanmıştır. Faz 8 ve sonrası için Redis, SignalR ve ApiGateway ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
+- Faz 6 CAP/RabbitMQ + Outbox uygulanmıştır. Faz 7 DenetimKaydiServisi uygulanmıştır. Faz 8 Redis Cache uygulanmıştır. Faz 9 ve sonrası için SignalR, ApiGateway ve Demo/Dokümantasyon ele alınacaktır. ApiGateway, Demo ve Dokümantasyon fazından hemen önceki son teknik faz olarak planlanacaktır.
 - Yönetimsel kayıt silme işlemleri için fiziksel `DELETE` endpointleri eklenmeyecektir. Bunun yerine `AktifMi` alanı üzerinden pasifleştirme yapılacaktır.
 - `AktifMi` ile pasifleştirme departman, personel, kategori, lokasyon, cihaz ve sarf malzeme kayıtlarında kullanılacaktır.
 - Cihazlarda `AktifMi` manuel pasifleştirme checkbox'ı olarak kullanılmayacaktır. Cihazın aktifliği ve toplam varlık kapsamı cihaz durumu ile elden çıkarma tipinden sistem tarafından hesaplanacaktır.
@@ -648,3 +652,15 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - CRUD audit, kaynak servislerde global action filter üzerinden uygulanır.
 - CRUD audit çağrısı best-effort HTTP çağrısıdır. DenetimKaydiServisi kapalıysa ana iş akışı başarısız sayılmaz, kaynak servis uyarı logu yazar.
 - MVC client içine Denetim ekranı eklenmiştir. Admin ve ITPersoneli audit kayıtlarını filtreleyebilir, detay ekranında payload JSON içeriğini görebilir.
+
+## Faz 8 Redis Cache Kararı - 2026-08-12
+
+- Redis `docker-compose.yml` içine `redis:7-alpine` servisi olarak eklenmiştir.
+- Redis container adı `it-envanter-redis`, portu `6379` olarak belirlenmiştir.
+- Faz 8 kapsamı yalnızca EnvanterServisi kategori ve lokasyon listeleme akışıdır.
+- EnvanterServisi `Microsoft.Extensions.Caching.StackExchangeRedis` ve `IDistributedCache` üzerinden Redis cache kullanır.
+- Kategoriler `envanter:kategoriler:v1`, lokasyonlar `envanter:lokasyonlar:v1` anahtarıyla cache'lenir.
+- Cache süresi `Cache:ReferansVeriDakika` ayarıyla yönetilir ve varsayılan değer 30 dakikadır.
+- Kategori/lokasyon oluşturma veya güncelleme başarılı olunca ilgili cache temizlenir.
+- Redis performans katmanıdır; veri doğruluğunun tek kaynağı PostgreSQL olarak kalır.
+- Redis okunamaz, yazılamaz veya temizlenemezse ana API işlemi başarısız sayılmaz, kaynak servis uyarı logu yazar.
