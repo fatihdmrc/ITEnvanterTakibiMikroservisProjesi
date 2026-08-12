@@ -847,3 +847,43 @@ Doğrulama:
 - `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+### MongoDB CAP storage replica set ayarı yapıldı
+
+Ne yapıldı:
+
+- MongoDB Docker Compose ayarı standalone yerine tek node replica set olarak güncellendi.
+- Replica set adı `rs0` olarak belirlendi.
+- DenetimKaydiServisi, BildirimServisi ve MailServisi MongoDB connection string değerlerine `replicaSet=rs0` eklendi.
+- Çalıştırma rehberine `rs.initiate` komutu eklendi.
+
+Neden yapıldı:
+
+- DotNetCore.CAP MongoDB storage delayed message işlemlerinde transaction kullanır.
+- MongoDB standalone modda transaction desteklemediği için servis loglarında `Standalone servers do not support transactions` hatası oluşuyordu.
+- Tek node replica set, local geliştirme ortamında transaction desteği sağlayarak CAP consumer servislerinin hatasız çalışmasını sağlar.
+
+### Docker Desktop Compose grupları tek isim altında toplandı
+
+Ne yapıldı:
+
+- `docker-compose.yml` içine sabit proje adı olarak `it-envanter` eklendi.
+- PostgreSQL ve MongoDB volume adları klasör/proje adından bağımsız olacak şekilde sabitlendi.
+- Eski PostgreSQL volume verisi `it-envanter-postgres-data` volume'una kopyalandı.
+- Eski MongoDB volume verisi `it-envanter-mongodb-data` volume'una kopyalandı.
+- Eski compose project etiketlerine sahip container kayıtları kaldırıldı.
+- PostgreSQL, RabbitMQ, MongoDB ve Redis containerları `it-envanter` compose grubu altında yeniden oluşturuldu.
+- MongoDB replica set durumu tekrar doğrulandı.
+
+Neden yapıldı:
+
+- Docker Desktop'ta altyapı containerlarının iki ayrı compose grubu altında görünmesi kafa karıştırıyordu.
+- Sorun container sayısı değil, eski compose project label değerleriydi.
+- Sabit compose proje adı ve sabit volume adları, klasör adı değişse bile Docker Desktop görünümünü ve veri volume adlarını tutarlı tutar.
+
+Doğrulama:
+
+- `docker compose ls` çıktısında `it-envanter` projesi `running(4)` olarak görüldü.
+- Container label değerlerinde `com.docker.compose.project = it-envanter` doğrulandı.
+- PostgreSQL içinde `kimlik_personel`, `envanter`, `zimmet` ve CAP şemalarının durduğu kontrol edildi.
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+

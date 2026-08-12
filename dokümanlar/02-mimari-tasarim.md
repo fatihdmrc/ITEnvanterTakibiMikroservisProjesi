@@ -179,7 +179,7 @@ DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktı
 ### Faz 7 Denetim Mimarisi
 
 - DenetimKaydiServisi `5003` portunda ayrı API olarak çalışır.
-- MongoDB audit/event log depolama için kullanılır.
+- MongoDB audit/event log depolama için kullanılır ve CAP MongoDB storage transaction ihtiyacı nedeniyle tek node replica set olarak `rs0` adıyla çalışır.
 - CAP/RabbitMQ eventleri DenetimKaydiServisi consumer sınıfları tarafından tüketilir.
 - CRUD audit kayıtları kaynak servislerden DenetimKaydiServisi'ne best-effort HTTP çağrısıyla gönderilir.
 - MVC client Denetim ekranı DenetimKaydiServisi API'sini doğrudan çağırır; ApiGateway Faz 10'a kadar devrede değildir.
@@ -207,7 +207,7 @@ DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktı
 - MailServisi `5006` portunda ayrı API olarak çalışır.
 - Sağlık endpointi `/saglik`, Swagger adresi `/swagger` olarak kullanılır.
 - CAP consumer grubu `mail-servisi` olarak belirlenmiştir.
-- CAP storage için mevcut MongoDB kullanılır; uygulama seviyesinde kalıcı mail log tutulmaz.
+- CAP storage için mevcut MongoDB replica set kullanılır; uygulama seviyesinde kalıcı mail log tutulmaz.
 - `zimmet.olusturuldu` payload'ı `PersonelEmail` alanını taşır.
 - Gmail ayarları `Gmail` configuration bölümünden okunur.
 - Test modu açıkken SMTP alıcısı her zaman `fathdmrc01@gmail.com` olur.
@@ -241,6 +241,7 @@ MongoDB:
 - Audit log
 - Event log
 - CAP consumer state verileri
+- Tek node replica set adı: `rs0`
 
 Redis:
 

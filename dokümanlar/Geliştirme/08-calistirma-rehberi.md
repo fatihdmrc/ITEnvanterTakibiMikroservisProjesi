@@ -48,10 +48,18 @@ Oluşturma başarılı oldu.
 0 Hata
 ```
 
-## 5. PostgreSQL ve RabbitMQ'yu Docker ile Başlat
+## 5. PostgreSQL, RabbitMQ, MongoDB ve Redis'i Docker ile Başlat
+
+Docker Compose proje adı `it-envanter` olarak sabitlenmiştir. Docker Desktop'ta altyapı servisleri aynı grup altında, ayrı containerlar olarak görünür.
 
 ```powershell
 docker compose up -d postgres rabbitmq mongodb redis
+```
+
+MongoDB, CAP MongoDB storage transaction ihtiyacı nedeniyle tek node replica set olarak çalışır. İlk başlatmadan sonra replica set'i hazırlamak için şu komutu çalıştır:
+
+```powershell
+docker exec it-envanter-mongodb mongosh --eval "try { rs.status() } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'127.0.0.1:27017'}]}) }"
 ```
 
 Çalışıyor mu kontrol etmek için:
@@ -78,6 +86,15 @@ Management UI: http://localhost:15672
 User: guest
 Password: guest
 Exchange: inventory.events
+```
+
+MongoDB bilgileri:
+
+```text
+Host: localhost
+Port: 27017
+Replica set: rs0
+Kullanım: DenetimKaydiServisi audit/event log ve CAP consumer storage
 ```
 
 Redis bilgileri:

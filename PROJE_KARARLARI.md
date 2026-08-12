@@ -658,7 +658,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 ## Faz 7 DenetimKaydiServisi Kararı - 2026-08-11
 
 - DenetimKaydiServisi ayrı API olarak `http://localhost:5003` adresinde çalışır.
-- MongoDB yalnızca audit/event log depolama için kullanılır; container adı `it-envanter-mongodb`, portu `27017` olarak belirlenmiştir.
+- MongoDB audit/event log ve CAP consumer storage için kullanılır; container adı `it-envanter-mongodb`, portu `27017`, replica set adı `rs0` olarak belirlenmiştir.
 - CAP/RabbitMQ üzerinden gelen audit kapsamındaki domain eventleri DenetimKaydiServisi tarafından tüketilir ve MongoDB `DenetimKayitlari` koleksiyonuna yazılır.
 - Event kayıtlarında `EventId` benzersizdir; aynı event tekrar teslim edilirse duplicate audit kaydı oluşturulmaz.
 - CRUD audit, kaynak servislerde global action filter üzerinden uygulanır.
@@ -695,7 +695,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Port `5005` ApiGateway için boş bırakılmıştır.
 - MailServisi yalnızca `zimmet.olusturuldu` eventini tüketir.
 - CAP consumer grubu `mail-servisi` olarak belirlenmiştir.
-- CAP storage için mevcut MongoDB kullanılır; bu kullanım teknik consumer state içindir, kalıcı mail log tablosu eklenmemiştir.
+- CAP storage için mevcut MongoDB replica set kullanılır; bu kullanım teknik consumer state içindir, kalıcı mail log tablosu eklenmemiştir.
 - Gmail SMTP için MailKit kullanılır.
 - Test modu varsayılan açıktır. Gerçek personel e-postası payload'da taşınır ve mail içeriğinde gösterilir; alıcı adresi test modunda `fathdmrc01@gmail.com` olarak override edilir.
 - Gönderen adresi `fathdmrc01@gmail.com` olarak yapılandırılmıştır.
@@ -703,3 +703,13 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - MailServisi kendi içinde 3 SMTP denemesi yapar. `FailedRetryCount = 0` ayarıyla CAP tarafında ek retry yapılmaz.
 - 3 deneme de başarısız olursa mail consumer hata fırlatır ve CAP tarafında başarısız tüketim olarak izlenebilir.
 - Mail gönderiminin başarısız olması zimmet oluşturma işlemini geri almaz.
+
+## Docker Compose Grup Kararı - 2026-08-12
+
+- Docker Compose proje adı `it-envanter` olarak sabitlenmiştir.
+- PostgreSQL, RabbitMQ, MongoDB ve Redis tek container içinde birleştirilmeyecektir; her altyapı bileşeni ayrı container olarak kalacaktır.
+- Docker Desktop'ta tüm altyapı containerlarının aynı `it-envanter` grubu altında görünmesi hedeflenmiştir.
+- Volume adları klasör adından bağımsız olacak şekilde sabitlenmiştir:
+  - `it-envanter-postgres-data`
+  - `it-envanter-mongodb-data`
+- Eski PostgreSQL verisi korunarak yeni sabit volume'a taşınmıştır.

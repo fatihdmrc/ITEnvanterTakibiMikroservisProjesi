@@ -55,7 +55,7 @@ Sıradaki fazlar:
 | PostgreSQL | `5432` | Operasyonel veri depolama |
 | RabbitMQ | `5672` | Event taşıyıcı |
 | RabbitMQ Management UI | `15672` | RabbitMQ yönetim paneli |
-| MongoDB | `27017` | Denetim kaydı depolama |
+| MongoDB | `27017` | Denetim kaydı ve CAP consumer storage, tek node replica set `rs0` |
 | Redis | `6379` | Referans veri cache |
 
 Servisler arası anlık doğrulamalar HTTP ile yapılır. Başarılı domain işlemleri DotNetCore.CAP Outbox üzerinden RabbitMQ'ya event olarak yayınlanır.
@@ -75,10 +75,18 @@ Servisler arası anlık doğrulamalar HTTP ile yapılır. Başarılı domain iş
 cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi"
 ```
 
-### 2. PostgreSQL ve RabbitMQ'yu Başlat
+### 2. PostgreSQL, RabbitMQ, MongoDB ve Redis'i Başlat
+
+Docker Compose proje adı `it-envanter` olarak sabitlenmiştir. Docker Desktop'ta PostgreSQL, RabbitMQ, MongoDB ve Redis aynı `it-envanter` grubu altında ayrı containerlar olarak görünür.
 
 ```powershell
 docker compose up -d postgres rabbitmq mongodb redis
+```
+
+MongoDB CAP transaction desteği için tek node replica set olarak hazırlanır:
+
+```powershell
+docker exec it-envanter-mongodb mongosh --eval "try { rs.status() } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'127.0.0.1:27017'}]}) }"
 ```
 
 Durumu görüntülemek için:
