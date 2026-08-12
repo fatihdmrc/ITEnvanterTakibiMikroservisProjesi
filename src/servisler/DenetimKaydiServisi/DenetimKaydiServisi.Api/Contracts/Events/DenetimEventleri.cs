@@ -42,6 +42,7 @@ public sealed record ZimmetOlusturulduEvent(
     Guid CihazId,
     Guid PersonelId,
     string PersonelAdSoyad,
+    string PersonelEmail,
     string CihazAd,
     string? CihazAssetTag,
     DateOnly ZimmetTarihi,

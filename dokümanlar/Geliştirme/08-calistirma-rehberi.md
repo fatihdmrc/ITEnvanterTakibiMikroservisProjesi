@@ -88,6 +88,15 @@ Port: 6379
 Kullanım: EnvanterServisi kategori/lokasyon referans veri cache
 ```
 
+MailServisi Gmail ayarları user-secrets ile verilir:
+
+```powershell
+dotnet user-secrets set "Gmail:KullaniciAdi" "fathdmrc01@gmail.com" --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj"
+dotnet user-secrets set "Gmail:AppPassword" "GMAIL_APP_PASSWORD" --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj"
+```
+
+Not: `GMAIL_APP_PASSWORD` normal Gmail şifresi değildir; Gmail app password değeri olmalıdır. Test modu açıkken e-postalar yalnızca `fathdmrc01@gmail.com` adresine gönderilir.
+
 PostgreSQL'i durdurmak için:
 
 ```powershell
@@ -416,7 +425,23 @@ http://localhost:5004/saglik
 
 BildirimServisi, `stok.kritik-seviyeye-dusuldu` eventini CAP/RabbitMQ üzerinden tüketir ve `/hubs/bildirim` SignalR hub'ı üzerinden Admin/IT kullanıcılarına canlı bildirim gönderir.
 
-### Terminal 6 - MVC Client
+### Terminal 6 - MailServisi
+
+```powershell
+cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
+dotnet run --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj" --launch-profile http
+```
+
+Kontrol adresi:
+
+```text
+http://localhost:5006/swagger
+http://localhost:5006/saglik
+```
+
+MailServisi, `zimmet.olusturuldu` eventini CAP/RabbitMQ üzerinden tüketir ve test modunda Gmail ile zimmet bilgilendirme e-postası gönderir. Gönderim 3 kez denenir; 3 deneme başarısız olursa CAP consumer başarısız tüketim olarak izlenir.
+
+### Terminal 7 - MVC Client
 
 ```powershell
 cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
@@ -442,7 +467,7 @@ MVC client üzerinden şu işlemler denenebilir:
 - Denetim ekranından event ve CRUD audit kayıtlarını filtrelemek ve detay payload'ını görüntülemek
 - Admin/IT kullanıcısı ile kritik stok canlı bildirimlerini görmek
 
-Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001`, `http://localhost:5002`, `http://localhost:5003` ve `http://localhost:5004` adreslerindeki servislere bağlanır. ApiGateway eklendiğinde bu adresler `appsettings.json` içinden gateway adresine çevrilecektir.
+Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001`, `http://localhost:5002`, `http://localhost:5003` ve `http://localhost:5004` adreslerindeki servislere bağlanır. MailServisi client tarafından doğrudan çağrılmaz, CAP/RabbitMQ event consumer olarak çalışır. ApiGateway eklendiğinde client servis adresleri `appsettings.json` içinden gateway adresine çevrilecektir.
 
 Yetki notu:
 
@@ -461,6 +486,7 @@ Yetki notu:
 - ZimmetServisi API projesi
 - DenetimKaydiServisi API projesi
 - BildirimServisi API projesi
+- MailServisi API projesi
 - ASP.NET Core MVC client projesi
 - PostgreSQL Docker Compose 
 - RabbitMQ Docker Compose
@@ -489,6 +515,7 @@ Yetki notu:
 - MongoDB audit log koleksiyonu: `DenetimKayitlari`
 - Redis referans veri cache anahtarları: `envanter:kategoriler:v1`, `envanter:lokasyonlar:v1`
 - BildirimServisi SignalR hub endpointi: `/hubs/bildirim`
+- MailServisi test mail consumer grubu: `mail-servisi`
 
 Henüz eklenmeyenler:
 
@@ -630,3 +657,17 @@ Faz 9 ile BildirimServisi ve MVC canlı bildirim merkezi eklenmiştir:
 - PersonelKullanicisi rolü canlı bildirim bağlantısı kuramaz.
 - MVC client içinde yerel SignalR istemci dosyası kullanılır; CDN bağımlılığı yoktur.
 - Bildirimler kalıcı saklanmaz; sayfa yenilenirse canlı liste sıfırlanır.
+
+## 18. Zimmet Oluşturuldu Test Mail Notları - 2026-08-12
+
+MailServisi test amaçlı Gmail gönderimi için eklenmiştir:
+
+- Servis adresi `http://localhost:5006` şeklindedir.
+- Swagger adresi `http://localhost:5006/swagger` şeklindedir.
+- Sağlık endpointi `http://localhost:5006/saglik` şeklindedir.
+- Servis yalnızca `zimmet.olusturuldu` eventini CAP/RabbitMQ üzerinden tüketir.
+- Event payload'ında `PersonelEmail` alanı bulunur.
+- Test modunda gerçek personele e-posta gönderilmez; alıcı `fathdmrc01@gmail.com` olarak override edilir.
+- Gmail kullanıcı adı ve app password user-secrets ile verilmelidir.
+- SMTP gönderimi 3 kez denenir.
+- Mail gönderimi başarısız olursa zimmet oluşturma işlemi geri alınmaz.

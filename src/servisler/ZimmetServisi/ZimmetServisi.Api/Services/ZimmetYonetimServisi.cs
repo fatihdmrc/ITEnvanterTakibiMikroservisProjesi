@@ -225,6 +225,7 @@ public sealed class ZimmetYonetimServisi(
             zimmet.CihazId,
             zimmet.PersonelId,
             zimmet.PersonelAdSoyad,
+            zimmet.PersonelEmail,
             zimmet.CihazAd,
             zimmet.CihazAssetTag,
             zimmet.ZimmetTarihi,

@@ -125,6 +125,18 @@ Bu hedefin seçilme nedeni:
 - MVC client üzerinde canlı kritik stok bildirim merkezi hazırlanır.
 - Bildirimler kalıcı saklanmaz; geçmiş/audit ihtiyacı Denetim ekranından karşılanır.
 
+### Ek Entegrasyon - Zimmet Oluşturuldu Test Maili
+
+- Tamamlandı.
+- MailServisi `http://localhost:5006` adresinde ayrı API olarak oluşturuldu.
+- `zimmet.olusturuldu` event payload'ına `PersonelEmail` alanı eklendi.
+- MailServisi yalnızca `zimmet.olusturuldu` eventini CAP/RabbitMQ üzerinden dinler.
+- Gmail SMTP gönderimi MailKit ile yapılır.
+- Test modu varsayılan açıktır; gerçek personel e-postası mail içeriğinde gösterilir ama alıcı `fathdmrc01@gmail.com` olarak override edilir.
+- Gmail kullanıcı adı ve app password kaynak koda yazılmaz; user-secrets veya environment variable ile verilir.
+- SMTP gönderimi servis içinde 3 kez denenir; 3 deneme başarısız olursa CAP consumer başarısız tüketim olarak izlenir.
+- Mail gönderim hatası ana zimmet oluşturma işlemini geri almaz.
+
 ### Faz 10 - ApiGateway Entegrasyonu
 
 - YARP tabanlı ApiGateway projesi eklenir.
@@ -171,7 +183,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 ### Uygulama kararı
 
 - Kayıt silme endpointleri bu aşamada eklenmemiştir. Departman, personel, kategori, lokasyon, cihaz ve sarf malzemelerde silme yerine `AktifMi` alanı üzerinden pasifleştirme yaklaşımı kullanılacaktır.
-- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 Redis Cache tamamlanmıştır. Faz 9 SignalR Bildirimleri tamamlanmıştır. Faz 10 ve sonrası sırasıyla ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
+- Faz 5 ZimmetServisi geliştirmesi tamamlanmıştır. Faz 6 CAP/RabbitMQ + Outbox entegrasyonu uygulanmıştır. Faz 7 DenetimKaydiServisi tamamlanmıştır. Faz 8 Redis Cache tamamlanmıştır. Faz 9 SignalR Bildirimleri tamamlanmıştır. Zimmet oluşturulduğunda test Gmail e-postası gönderen MailServisi eklenmiştir. Faz 10 ve sonrası sırasıyla ApiGateway ve Demo/Dokümantasyon olarak ele alınacaktır.
 
 ## 6. Güncel Faz 4 Client Kararı - 2026-08-03
 
@@ -270,3 +282,22 @@ Faz 9 ile canlı kritik stok bildirim altyapısı eklenmiştir.
 - Hub JWT ile korunur ve yalnızca `Admin` ile `ITPersoneli` rolleri bağlanabilir.
 - MVC client içinde canlı bildirim merkezi ve yerel SignalR istemci dosyası eklenmiştir.
 - Bildirimler kalıcı olarak saklanmaz; sayfa yenilenirse canlı liste sıfırlanır.
+
+## 18. Zimmet Oluşturuldu Test Mail Entegrasyonu Durumu - 2026-08-12
+
+Zimmet oluşturma eventinden test amaçlı Gmail e-postası gönderimi eklenmiştir.
+
+- `MailServisi.Api` solution içine ayrı servis olarak eklenmiştir.
+- Servis portu `5006`, Swagger adresi `http://localhost:5006/swagger` olarak belirlenmiştir.
+- Sağlık endpointi `/saglik` olarak eklenmiştir.
+- `zimmet.olusturuldu` event sözleşmesine `PersonelEmail` alanı eklenmiştir.
+- ZimmetServisi, zimmet kaydındaki `PersonelEmail` snapshot değerini event payload'ına koyar.
+- DenetimKaydiServisi aynı event sözleşmesini `PersonelEmail` alanıyla okuyacak şekilde güncellenmiştir.
+- MailServisi CAP/RabbitMQ üzerinden yalnızca `zimmet.olusturuldu` eventini tüketir.
+- CAP consumer grubu `mail-servisi` olarak ayarlanmıştır.
+- CAP storage için mevcut MongoDB kullanılır; kalıcı mail log tablosu eklenmemiştir.
+- Gmail SMTP gönderimi MailKit ile yapılır.
+- Test modu varsayılan açıktır ve alıcı `fathdmrc01@gmail.com` olarak override edilir.
+- Gmail kullanıcı adı ve app password user-secrets veya environment variable ile verilmelidir.
+- SMTP gönderimi 3 kez denenir; 3 deneme başarısız olursa consumer hata fırlatır.
+- CAP `FailedRetryCount = 0` ayarıyla ek CAP retry yapılmaz.

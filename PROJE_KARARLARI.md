@@ -103,6 +103,7 @@ Staj defteri konu başlığı:
 - Departmanda ortak kullanılan cihazlar departman sorumlusu adına zimmetlenir.
 - KimlikVePersonelServisi ve EnvanterServisi ile işlem anı doğrulama için senkron HTTP üzerinden konuşur.
 - Zimmet oluşturma ve iade olaylarını Faz 6 itibarıyla DotNetCore.CAP Outbox üzerinden RabbitMQ'ya yayınlar.
+- `zimmet.olusturuldu` eventinde personelin gerçek e-posta bilgisini `PersonelEmail` alanıyla taşır.
 
 ### DenetimKaydiServisi
 
@@ -115,6 +116,15 @@ Staj defteri konu başlığı:
 - DotNetCore.CAP ile RabbitMQ üzerinden kritik stok eventlerini tüketir.
 - SignalR ile yalnızca kritik stok seviyesi altına düşme bildirimlerini yayınlar.
 - Kritik stok bildirim paneli ile demo edilebilir.
+
+### MailServisi
+
+- DotNetCore.CAP ile RabbitMQ üzerinden `zimmet.olusturuldu` eventini tüketir.
+- Test amaçlı Gmail SMTP entegrasyonu yapar.
+- Zimmetlenen personelin gerçek e-posta bilgisini event payload'ından okur.
+- Test modunda gerçek alıcıya gönderim yapılmaz; tüm e-postalar `fathdmrc01@gmail.com` adresine gönderilir.
+- Gmail kullanıcı adı ve app password repo içinde tutulmaz; user-secrets veya environment variable ile verilir.
+- Mail gönderimi servis içinde 3 kez denenir. 3 deneme başarısız olursa CAP consumer tüketimi başarısız kabul edilir.
 
 ## 6. Ekipman ve Stok Kararları
 
@@ -255,6 +265,7 @@ Planlanan cihaz durumları:
 - Faz 5'te zimmet oluşturulduğunda cihaz durumu EnvanterServisi üzerinden `Zimmetlendi` hareketiyle güncellenir.
 - Faz 5'te zimmet iadesi alındığında cihaz durumu EnvanterServisi üzerinden `ZimmetIadeAlindi` hareketiyle `Incelemede` yapılır.
 - `ZimmetOlusturuldu`, `ZimmetIadeAlindi`, `CihazKontroleAlindi`, `ZimmetIadeEdildi` ve gerektiğinde `CihazHasarliTeslimAlindi` eventleri Faz 6 CAP/RabbitMQ aşamasında üretilir.
+- `zimmet.olusturuldu` event payload'ı personelin gerçek e-posta bilgisini `PersonelEmail` alanıyla taşır. Bu alan DenetimKaydiServisi tarafından audit amacıyla, MailServisi tarafından test mail içeriği için kullanılır.
 
 ## 9. Zimmet İade Süreci
 
@@ -642,6 +653,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Kritik stok eşiğinin altına düşen cihaz veya sarf malzeme için `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
 - Zimmet oluşturma ve iade akışlarında `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade için `cihaz.hasarli-teslim-alindi` eventleri yayınlanır.
 - DenetimKaydiServisi Faz 7'de event consumer olarak eklenmiştir; BildirimServisi event consumer uygulaması Faz 9'da eklenmiştir.
+- MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu` eventini tüketir. Bu entegrasyon ana zimmet oluşturma transaction'ını geri almaz; mail hatası yalnızca consumer tarafında başarısız tüketim olarak izlenir.
 
 ## Faz 7 DenetimKaydiServisi Kararı - 2026-08-11
 
@@ -676,3 +688,18 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Bildirimler kalıcı olarak saklanmaz; geçmiş ve denetim ihtiyacı DenetimKaydiServisi üzerinden karşılanır.
 - MVC client BildirimServisi'ne Faz 9'da doğrudan `http://localhost:5004` üzerinden bağlanır; ApiGateway entegrasyonu Faz 10 kapsamındadır.
 - Zimmet, cihaz durumu, audit veya personel eventleri SignalR bildirimi üretmez.
+
+## Zimmet Oluşturuldu Mail Entegrasyonu Kararı - 2026-08-12
+
+- MailServisi ayrı API olarak `http://localhost:5006` adresinde çalışır.
+- Port `5005` ApiGateway için boş bırakılmıştır.
+- MailServisi yalnızca `zimmet.olusturuldu` eventini tüketir.
+- CAP consumer grubu `mail-servisi` olarak belirlenmiştir.
+- CAP storage için mevcut MongoDB kullanılır; bu kullanım teknik consumer state içindir, kalıcı mail log tablosu eklenmemiştir.
+- Gmail SMTP için MailKit kullanılır.
+- Test modu varsayılan açıktır. Gerçek personel e-postası payload'da taşınır ve mail içeriğinde gösterilir; alıcı adresi test modunda `fathdmrc01@gmail.com` olarak override edilir.
+- Gönderen adresi `fathdmrc01@gmail.com` olarak yapılandırılmıştır.
+- Gmail kullanıcı adı ve app password kaynak koda yazılmaz; user-secrets veya ortam değişkeniyle sağlanır.
+- MailServisi kendi içinde 3 SMTP denemesi yapar. `FailedRetryCount = 0` ayarıyla CAP tarafında ek retry yapılmaz.
+- 3 deneme de başarısız olursa mail consumer hata fırlatır ve CAP tarafında başarısız tüketim olarak izlenebilir.
+- Mail gönderiminin başarısız olması zimmet oluşturma işlemini geri almaz.

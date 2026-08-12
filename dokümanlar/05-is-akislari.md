@@ -22,6 +22,8 @@ Akış:
 8. Teslim eden kullanıcı bilgisi zorunlu olarak kaydedilir.
 9. Cihaz durumu EnvanterServisi cihaz durum hareketi üzerinden `Zimmetli` yapılır.
 10. ZimmetServisi aynı transaction içinde CAP Outbox kaydı oluşturur ve `zimmet.olusturuldu` eventini yayınlar.
+11. DenetimKaydiServisi bu eventi audit kaydı olarak saklar.
+12. MailServisi bu eventi tüketir ve test modunda Gmail üzerinden `fathdmrc01@gmail.com` adresine zimmet bilgilendirme e-postası gönderir.
 
 Başarısızlık durumları:
 
@@ -164,8 +166,6 @@ Akış:
 8. `cihaz.durumu-degisti` eventi yayınlanır.
 9. Audit log kaydı Faz 7 DenetimKaydiServisi ile oluşur.
 
-## 7. Görsele Dönüştürme Notları
-
 ## 7. Faz 7 Denetim Kaydı Akışı
 
 Başarılı domain eventleri:
@@ -184,7 +184,26 @@ Başarılı CRUD/mutasyon işlemleri:
 4. DenetimKaydiServisi kaydı MongoDB'ye `Crud` kayıt türüyle yazar.
 5. Denetim çağrısı başarısız olsa bile ana işlem sonucu değiştirilmez.
 
-## 8. Görsele Dönüştürme Notları
+## 8. Zimmet Oluşturuldu Test Mail Akışı
+
+Amaç:
+
+- Zimmet oluşturulduğunda CAP/RabbitMQ üzerinden test amaçlı e-posta gönderimini doğrulamak.
+
+Akış:
+
+1. Admin veya ITPersoneli zimmet oluşturur.
+2. ZimmetServisi zimmet kaydını oluşturur ve `zimmet.olusturuldu` eventini yayınlar.
+3. Event payload'ında gerçek `PersonelEmail` bilgisi bulunur.
+4. MailServisi `mail-servisi` consumer grubu ile eventi tüketir.
+5. MailServisi Gmail ayarlarını configuration, user-secrets veya environment variable üzerinden okur.
+6. Test modu açık olduğu için SMTP alıcısı `fathdmrc01@gmail.com` olarak belirlenir.
+7. Mail içeriğine gerçek personel adı, gerçek personel e-postası, cihaz adı, asset tag ve zimmet tarihi yazılır.
+8. SMTP gönderimi başarısız olursa MailServisi kısa beklemeyle tekrar dener.
+9. Toplam 3 deneme başarısız olursa consumer hata fırlatır.
+10. Mail hatası ana zimmet oluşturma işlemini geri almaz; hata CAP tüketim tarafında izlenir.
+
+## 9. Görsele Dönüştürme Notları
 
 Bu dokümandaki akışlar draw.io veya PlantUML ile activity diagram olarak çizilebilir.
 
@@ -195,3 +214,4 @@ Bu dokümandaki akışlar draw.io veya PlantUML ile activity diagram olarak çiz
 - Personel işten ayrılma activity diagram
 - Kritik stok bildirim activity diagram
 - Hurda/ıskarta elden çıkarma activity diagram
+- Zimmet oluşturuldu test mail activity diagram
