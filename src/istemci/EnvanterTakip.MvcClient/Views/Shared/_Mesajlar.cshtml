@@ -1,0 +1,24 @@
+@model (string? BasariMesaji, string? HataMesaji, IReadOnlyCollection<string> ListelemeHatalari)
+
+@if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
+{
+    <div class="alert alert-success" role="alert">@Model.BasariMesaji</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+{
+    <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+}
+
+@if (Model.ListelemeHatalari.Count > 0)
+{
+    <div class="alert alert-warning" role="alert">
+        <div class="fw-semibold mb-1">Bazı bilgiler alınamadı.</div>
+        <ul class="mb-0">
+            @foreach (var hata in Model.ListelemeHatalari)
+            {
+                <li>@hata</li>
+            }
+        </ul>
+    </div>
+}

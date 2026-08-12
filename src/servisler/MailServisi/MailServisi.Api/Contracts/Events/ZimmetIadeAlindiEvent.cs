@@ -1,4 +1,4 @@
-namespace ZimmetServisi.Api.Contracts.Events;
+namespace MailServisi.Api.Contracts.Events;
 
 public sealed record ZimmetIadeAlindiEvent(
     Guid EventId,

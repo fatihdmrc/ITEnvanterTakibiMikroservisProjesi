@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using EnvanterTakip.MvcClient.Models;
+using EnvanterTakip.MvcClient.Sabitler;
 using EnvanterTakip.MvcClient.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +10,6 @@ public class HomeController(
     ILogger<HomeController> logger,
     KimlikPersonelApiClient kimlikPersonelApiClient) : Controller
 {
-    private const string TokenSessionKey = "KimlikToken";
-    private const string KullaniciAdiSessionKey = "KullaniciAdi";
-    private const string KullaniciIdSessionKey = "KullaniciId";
-    private const string PersonelIdSessionKey = "PersonelId";
-    private const string RolSessionKey = "Rol";
-
     public async Task<IActionResult> Index(string? personelArama, Guid? personelDepartmanId, string? sekme)
     {
         var model = await PanelModeliOlustur(personelArama, personelDepartmanId, sekme);
@@ -42,11 +37,11 @@ public class HomeController(
             return RedirectToAction(nameof(Index));
         }
 
-        HttpContext.Session.SetString(TokenSessionKey, sonuc.Veri.Token);
-        HttpContext.Session.SetString(KullaniciAdiSessionKey, form.KullaniciAdi);
-        HttpContext.Session.SetString(KullaniciIdSessionKey, sonuc.Veri.KullaniciId.ToString());
-        HttpContext.Session.SetString(PersonelIdSessionKey, sonuc.Veri.PersonelId.ToString());
-        HttpContext.Session.SetString(RolSessionKey, sonuc.Veri.Rol.ToString());
+        HttpContext.Session.SetString(MvcSabitleri.TokenSessionKey, sonuc.Veri.Token);
+        HttpContext.Session.SetString(MvcSabitleri.KullaniciAdiSessionKey, form.KullaniciAdi);
+        HttpContext.Session.SetString(MvcSabitleri.KullaniciIdSessionKey, sonuc.Veri.KullaniciId.ToString());
+        HttpContext.Session.SetString(MvcSabitleri.PersonelIdSessionKey, sonuc.Veri.PersonelId.ToString());
+        HttpContext.Session.SetString(MvcSabitleri.RolSessionKey, sonuc.Veri.Rol.ToString());
 
         TempData["BasariMesaji"] = $"{form.KullaniciAdi} kullanıcısı ile giriş yapıldı.";
         return RedirectToAction(nameof(Index));
@@ -256,10 +251,10 @@ public class HomeController(
         if (!string.IsNullOrWhiteSpace(token))
         {
             model.OturumKullanici = new OturumKullaniciModel(
-                HttpContext.Session.GetString(KullaniciIdSessionKey),
-                HttpContext.Session.GetString(KullaniciAdiSessionKey),
-                HttpContext.Session.GetString(PersonelIdSessionKey),
-                HttpContext.Session.GetString(RolSessionKey));
+                HttpContext.Session.GetString(MvcSabitleri.KullaniciIdSessionKey),
+                HttpContext.Session.GetString(MvcSabitleri.KullaniciAdiSessionKey),
+                HttpContext.Session.GetString(MvcSabitleri.PersonelIdSessionKey),
+                HttpContext.Session.GetString(MvcSabitleri.RolSessionKey));
 
             var departmanSonucu = await kimlikPersonelApiClient.DepartmanlariListeleAsync(token);
             model.Departmanlar = ListeSonucunuYansit(model, "Departmanlar", departmanSonucu);
@@ -367,7 +362,7 @@ public class HomeController(
         => sekme is "personel" or "kullanici" ? sekme : "departman";
 
     private string? TokenAl()
-        => HttpContext.Session.GetString(TokenSessionKey);
+        => HttpContext.Session.GetString(MvcSabitleri.TokenSessionKey);
 
     private IActionResult OturumYok()
     {

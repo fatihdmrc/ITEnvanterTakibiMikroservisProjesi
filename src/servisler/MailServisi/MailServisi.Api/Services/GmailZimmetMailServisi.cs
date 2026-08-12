@@ -2,6 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MailServisi.Api.Contracts.Events;
 using MailServisi.Api.Options;
+using MailServisi.Api.Sabitler;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
@@ -11,7 +12,115 @@ public sealed class GmailZimmetMailServisi(
     IOptions<GmailAyarlari> gmailAyarlari,
     ILogger<GmailZimmetMailServisi> logger) : IZimmetMailServisi
 {
-    public async Task ZimmetOlusturulduMailiGonderAsync(ZimmetOlusturulduEvent payload, CancellationToken cancellationToken = default)
+    public Task ZimmetOlusturulduMailiGonderAsync(ZimmetOlusturulduEvent payload, CancellationToken cancellationToken = default)
+    {
+        var assetTag = AssetTagMetni(payload.CihazAssetTag);
+        var icerik = new MailIcerigi(
+            "zimmet oluşturuldu",
+            payload.EventId,
+            payload.PersonelEmail,
+            MailMesajlari.ZimmetOlusturulduKonu,
+            $"""
+            <p>Merhaba,</p>
+            <p>Aşağıdaki ekipman zimmet kaydı oluşturuldu.</p>
+            <ul>
+                <li><strong>Personel:</strong> {payload.PersonelAdSoyad}</li>
+                <li><strong>Personel e-posta:</strong> {payload.PersonelEmail}</li>
+                <li><strong>Cihaz:</strong> {payload.CihazAd}</li>
+                <li><strong>Asset tag:</strong> {assetTag}</li>
+                <li><strong>Zimmet tarihi:</strong> {payload.ZimmetTarihi:dd.MM.yyyy}</li>
+            </ul>
+            """,
+            $"""
+            Merhaba,
+
+            Aşağıdaki ekipman zimmet kaydı oluşturuldu.
+
+            Personel: {payload.PersonelAdSoyad}
+            Personel e-posta: {payload.PersonelEmail}
+            Cihaz: {payload.CihazAd}
+            Asset tag: {assetTag}
+            Zimmet tarihi: {payload.ZimmetTarihi:dd.MM.yyyy}
+            """);
+
+        return ZimmetMailiGonderAsync(icerik, cancellationToken);
+    }
+
+    public Task ZimmetIadeAlindiMailiGonderAsync(ZimmetIadeAlindiEvent payload, CancellationToken cancellationToken = default)
+    {
+        var assetTag = AssetTagMetni(payload.CihazAssetTag);
+        var not = NotMetni(payload.IadeNotu);
+        var icerik = new MailIcerigi(
+            "zimmet iade alındı",
+            payload.EventId,
+            payload.PersonelEmail,
+            MailMesajlari.ZimmetIadeAlindiKonu,
+            $"""
+            <p>Merhaba,</p>
+            <p>Aşağıdaki ekipmanın zimmet iadesi alındı ve cihaz inceleme sürecine taşındı.</p>
+            <ul>
+                <li><strong>Personel:</strong> {payload.PersonelAdSoyad}</li>
+                <li><strong>Personel e-posta:</strong> {payload.PersonelEmail}</li>
+                <li><strong>Cihaz:</strong> {payload.CihazAd}</li>
+                <li><strong>Asset tag:</strong> {assetTag}</li>
+                <li><strong>İade tarihi:</strong> {payload.IadeTarihi:dd.MM.yyyy}</li>
+                <li><strong>İade notu:</strong> {not}</li>
+            </ul>
+            """,
+            $"""
+            Merhaba,
+
+            Aşağıdaki ekipmanın zimmet iadesi alındı ve cihaz inceleme sürecine taşındı.
+
+            Personel: {payload.PersonelAdSoyad}
+            Personel e-posta: {payload.PersonelEmail}
+            Cihaz: {payload.CihazAd}
+            Asset tag: {assetTag}
+            İade tarihi: {payload.IadeTarihi:dd.MM.yyyy}
+            İade notu: {not}
+            """);
+
+        return ZimmetMailiGonderAsync(icerik, cancellationToken);
+    }
+
+    public Task ZimmetIadeEdildiMailiGonderAsync(ZimmetIadeEdildiEvent payload, CancellationToken cancellationToken = default)
+    {
+        var assetTag = AssetTagMetni(payload.CihazAssetTag);
+        var not = NotMetni(payload.IadeNotu);
+        var icerik = new MailIcerigi(
+            "zimmet iade edildi",
+            payload.EventId,
+            payload.PersonelEmail,
+            MailMesajlari.ZimmetIadeEdildiKonu,
+            $"""
+            <p>Merhaba,</p>
+            <p>Aşağıdaki ekipmanın iade kontrolü tamamlandı.</p>
+            <ul>
+                <li><strong>Personel:</strong> {payload.PersonelAdSoyad}</li>
+                <li><strong>Personel e-posta:</strong> {payload.PersonelEmail}</li>
+                <li><strong>Cihaz:</strong> {payload.CihazAd}</li>
+                <li><strong>Asset tag:</strong> {assetTag}</li>
+                <li><strong>Kontrol sonucu:</strong> {payload.IadeKontrolDurumu}</li>
+                <li><strong>Kontrol notu:</strong> {not}</li>
+            </ul>
+            """,
+            $"""
+            Merhaba,
+
+            Aşağıdaki ekipmanın iade kontrolü tamamlandı.
+
+            Personel: {payload.PersonelAdSoyad}
+            Personel e-posta: {payload.PersonelEmail}
+            Cihaz: {payload.CihazAd}
+            Asset tag: {assetTag}
+            Kontrol sonucu: {payload.IadeKontrolDurumu}
+            Kontrol notu: {not}
+            """);
+
+        return ZimmetMailiGonderAsync(icerik, cancellationToken);
+    }
+
+    private async Task ZimmetMailiGonderAsync(MailIcerigi icerik, CancellationToken cancellationToken)
     {
         var ayarlar = gmailAyarlari.Value;
         AyarlariDogrula(ayarlar);
@@ -23,14 +132,14 @@ public sealed class GmailZimmetMailServisi(
         {
             try
             {
-                await MailGonderAsync(payload, ayarlar, cancellationToken);
-                logger.LogInformation("Zimmet maili gonderildi. EventId: {EventId}, Deneme: {Deneme}", payload.EventId, deneme);
+                await MailGonderAsync(icerik, ayarlar, cancellationToken);
+                logger.LogInformation("{MailTuru} maili gönderildi. EventId: {EventId}, Deneme: {Deneme}", icerik.MailTuru, icerik.EventId, deneme);
                 return;
             }
             catch (Exception exception) when (deneme < denemeSayisi && !cancellationToken.IsCancellationRequested)
             {
                 sonHata = exception;
-                logger.LogWarning(exception, "Zimmet maili gonderilemedi. EventId: {EventId}, Deneme: {Deneme}/{DenemeSayisi}", payload.EventId, deneme, denemeSayisi);
+                logger.LogWarning(exception, "{MailTuru} maili gönderilemedi. EventId: {EventId}, Deneme: {Deneme}/{DenemeSayisi}", icerik.MailTuru, icerik.EventId, deneme, denemeSayisi);
                 await Task.Delay(TimeSpan.FromSeconds(Math.Max(ayarlar.DenemeBeklemeSaniye, 1)), cancellationToken);
             }
             catch (Exception exception)
@@ -40,50 +149,33 @@ public sealed class GmailZimmetMailServisi(
             }
         }
 
-        throw new InvalidOperationException($"{denemeSayisi} deneme sonunda zimmet maili gonderilemedi.", sonHata);
+        throw new InvalidOperationException(MailMesajlari.MailGonderilemedi(icerik.MailTuru, denemeSayisi), sonHata);
     }
 
-    private static async Task MailGonderAsync(ZimmetOlusturulduEvent payload, GmailAyarlari ayarlar, CancellationToken cancellationToken)
+    private static async Task MailGonderAsync(MailIcerigi icerik, GmailAyarlari ayarlar, CancellationToken cancellationToken)
     {
-        var aliciEmail = ayarlar.TestModu ? ayarlar.TestAliciEmail : payload.PersonelEmail;
+        var aliciEmail = ayarlar.TestModu ? ayarlar.TestAliciEmail : icerik.GercekAliciEmail;
+        var testModuHtml = ayarlar.TestModu
+            ? MailMesajlari.TestModuHtml(icerik.GercekAliciEmail, ayarlar.TestAliciEmail)
+            : string.Empty;
+        var testModuText = ayarlar.TestModu
+            ? $"{Environment.NewLine}{MailMesajlari.TestModuText(icerik.GercekAliciEmail, ayarlar.TestAliciEmail)}"
+            : string.Empty;
 
         var mesaj = new MimeMessage();
         mesaj.From.Add(MailboxAddress.Parse(ayarlar.GonderenEmail));
         mesaj.To.Add(MailboxAddress.Parse(aliciEmail));
-        mesaj.Subject = "IT ekipman zimmet bilgilendirmesi";
-
-        var assetTag = string.IsNullOrWhiteSpace(payload.CihazAssetTag) ? "-" : payload.CihazAssetTag;
-        var testModuNotu = ayarlar.TestModu
-            ? $"<p><strong>Test modu:</strong> Gerçek alıcı {payload.PersonelEmail}, test alıcısı {ayarlar.TestAliciEmail}.</p>"
-            : string.Empty;
-
+        mesaj.Subject = icerik.Konu;
         mesaj.Body = new BodyBuilder
         {
             HtmlBody = $"""
-                <p>Merhaba,</p>
-                <p>Aşağıdaki ekipman zimmet kaydı oluşturuldu.</p>
-                <ul>
-                    <li><strong>Personel:</strong> {payload.PersonelAdSoyad}</li>
-                    <li><strong>Personel e-posta:</strong> {payload.PersonelEmail}</li>
-                    <li><strong>Cihaz:</strong> {payload.CihazAd}</li>
-                    <li><strong>Asset tag:</strong> {assetTag}</li>
-                    <li><strong>Zimmet tarihi:</strong> {payload.ZimmetTarihi:dd.MM.yyyy}</li>
-                </ul>
-                {testModuNotu}
+                {icerik.HtmlGovde}
+                {testModuHtml}
                 <p>Bu e-posta IT Envanter Takip Sistemi test mail akışı tarafından gönderilmiştir.</p>
                 """,
             TextBody = $"""
-                Merhaba,
-
-                Aşağıdaki ekipman zimmet kaydı oluşturuldu.
-
-                Personel: {payload.PersonelAdSoyad}
-                Personel e-posta: {payload.PersonelEmail}
-                Cihaz: {payload.CihazAd}
-                Asset tag: {assetTag}
-                Zimmet tarihi: {payload.ZimmetTarihi:dd.MM.yyyy}
-
-                {(ayarlar.TestModu ? $"Test modu: Gerçek alıcı {payload.PersonelEmail}, test alıcısı {ayarlar.TestAliciEmail}." : string.Empty)}
+                {icerik.TextGovde}
+                {testModuText}
 
                 Bu e-posta IT Envanter Takip Sistemi test mail akışı tarafından gönderilmiştir.
                 """
@@ -100,22 +192,36 @@ public sealed class GmailZimmetMailServisi(
     {
         if (string.IsNullOrWhiteSpace(ayarlar.KullaniciAdi))
         {
-            throw new InvalidOperationException("Gmail kullanıcı adı tanımlı değil.");
+            throw new InvalidOperationException(MailMesajlari.GmailKullaniciAdiEksik);
         }
 
         if (string.IsNullOrWhiteSpace(ayarlar.AppPassword))
         {
-            throw new InvalidOperationException("Gmail app password tanımlı değil.");
+            throw new InvalidOperationException(MailMesajlari.GmailAppPasswordEksik);
         }
 
         if (string.IsNullOrWhiteSpace(ayarlar.GonderenEmail))
         {
-            throw new InvalidOperationException("Gönderen e-posta adresi tanımlı değil.");
+            throw new InvalidOperationException(MailMesajlari.GmailGonderenEksik);
         }
 
         if (ayarlar.TestModu && string.IsNullOrWhiteSpace(ayarlar.TestAliciEmail))
         {
-            throw new InvalidOperationException("Test modu açıkken test alıcı e-posta adresi tanımlı olmalıdır.");
+            throw new InvalidOperationException(MailMesajlari.GmailTestAliciEksik);
         }
     }
+
+    private static string AssetTagMetni(string? assetTag)
+        => string.IsNullOrWhiteSpace(assetTag) ? "-" : assetTag;
+
+    private static string NotMetni(string? not)
+        => string.IsNullOrWhiteSpace(not) ? "-" : not;
+
+    private sealed record MailIcerigi(
+        string MailTuru,
+        Guid EventId,
+        string GercekAliciEmail,
+        string Konu,
+        string HtmlGovde,
+        string TextGovde);
 }

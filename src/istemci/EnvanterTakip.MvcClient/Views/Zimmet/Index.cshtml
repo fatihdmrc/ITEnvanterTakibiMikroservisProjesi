@@ -1,17 +1,20 @@
 @model ZimmetPanelModel
 @{
     ViewData["Title"] = "Zimmetler";
+    var aktifSayisi = Model.Zimmetler.Count(zimmet => zimmet.Durum == ZimmetDurumuModel.Aktif);
+    var iadeSureciSayisi = Model.Zimmetler.Count(zimmet => zimmet.Durum == ZimmetDurumuModel.IadeSurecinde);
+    var tamamlananSayisi = Model.Zimmetler.Count(zimmet => zimmet.Durum == ZimmetDurumuModel.IadeEdildi);
 }
 
-<div class="py-3">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+<div>
+    <div class="page-header">
         <div>
-            <h1 class="h3 mb-1">Zimmetler</h1>
-            <p class="text-muted mb-0">Cihaz zimmetlerini, iade sürecini ve fiziki kontrol sonucunu yönet.</p>
+            <h1 class="page-title">Zimmet Yönetimi</h1>
+            <p class="page-subtitle">Cihaz zimmetlerini, iade sürecini ve fiziki kontrol sonucunu yönet.</p>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary" href="http://localhost:5002/swagger" target="_blank" rel="noopener">Swagger</a>
-            <a class="btn btn-outline-secondary" href="http://localhost:5002/saglik" target="_blank" rel="noopener">Servis Durumu</a>
+            <a class="btn btn-ghost" href="http://localhost:5002/swagger" target="_blank" rel="noopener">Swagger</a>
+            <a class="btn btn-ghost" href="http://localhost:5002/saglik" target="_blank" rel="noopener">Servis Durumu</a>
         </div>
     </div>
 
@@ -20,38 +23,38 @@
         <div class="alert alert-warning" role="alert">Zimmetleri görüntülemek için önce kontrol panelinden giriş yap.</div>
     }
 
-    @if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
-    {
-        <div class="alert alert-success" role="alert">@Model.BasariMesaji</div>
-    }
+    @await Html.PartialAsync("_Mesajlar", (Model.BasariMesaji, Model.HataMesaji, (IReadOnlyCollection<string>)Model.ListelemeHatalari))
 
-    @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
-    {
-        <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
-    }
-
-    @if (Model.ListelemeHatalari.Count > 0)
-    {
-        <div class="alert alert-warning" role="alert">
-            <div class="fw-semibold mb-1">Bazı zimmet bilgileri alınamadı.</div>
-            <ul class="mb-0">
-                @foreach (var hata in Model.ListelemeHatalari)
-                {
-                    <li>@hata</li>
-                }
-            </ul>
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start"><div class="metric-label">Toplam Zimmet</div><div class="metric-icon"><span class="material-symbols-outlined">assignment</span></div></div>
+            <div class="metric-value">@Model.Zimmetler.Count</div>
         </div>
-    }
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start"><div class="metric-label">Aktif</div><div class="metric-icon"><span class="material-symbols-outlined">check_circle</span></div></div>
+            <div class="metric-value">@aktifSayisi</div>
+        </div>
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start"><div class="metric-label">İade Süreci</div><div class="metric-icon"><span class="material-symbols-outlined">pending_actions</span></div></div>
+            <div class="metric-value">@iadeSureciSayisi</div>
+        </div>
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start"><div class="metric-label">Tamamlanan</div><div class="metric-icon"><span class="material-symbols-outlined">task_alt</span></div></div>
+            <div class="metric-value">@tamamlananSayisi</div>
+        </div>
+    </div>
 
     <div class="row g-4">
         <div class="col-xl-8">
-            <div class="border rounded-2 p-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h6 mb-0">Zimmet Listesi</h2>
-                    <span class="text-muted small">@Model.Zimmetler.Count kayıt</span>
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <div>
+                        <h2 class="h6 mb-0">Zimmet Listesi</h2>
+                        <div class="text-muted small">@Model.Zimmetler.Count kayıt</div>
+                    </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle">
+                    <table class="table table-modern align-middle">
                         <thead>
                             <tr>
                                 <th>Cihaz</th>
@@ -77,7 +80,7 @@
                             @foreach (var zimmet in Model.Zimmetler)
                             {
                                 <tr>
-                                    <td>@zimmet.CihazAd</td>
+                                    <td class="fw-semibold">@zimmet.CihazAd</td>
                                     <td>
                                         <div>@(zimmet.CihazAssetTag ?? "-")</div>
                                         <div class="text-muted small">@(zimmet.CihazSeriNumarasi ?? "-")</div>
@@ -87,7 +90,7 @@
                                         <div class="text-muted small">@zimmet.PersonelEmail</div>
                                     </td>
                                     <td>@zimmet.ZimmetTarihi.ToString("dd.MM.yyyy")</td>
-                                    <td>@DurumEtiketi(zimmet.Durum)</td>
+                                    <td>@Html.Raw(DurumEtiketi(zimmet.Durum))</td>
                                     <td>@(zimmet.IadeTarihi?.ToString("dd.MM.yyyy") ?? "-")</td>
                                     <td>@(zimmet.IadeKontrolDurumu?.ToString() ?? "-")</td>
                                     @if (Model.YonetimYetkisiVarMi)
@@ -118,7 +121,7 @@
         <div class="col-xl-4">
             @if (Model.YonetimYetkisiVarMi)
             {
-                <form asp-action="ZimmetOlustur" method="post" class="border rounded-2 p-3">
+                <form asp-action="ZimmetOlustur" method="post" class="form-card">
                     <h2 class="h6 mb-3">Zimmet Oluştur</h2>
                     <div class="mb-3">
                         <label class="form-label">Personel</label>
@@ -147,7 +150,7 @@
             }
             else if (Model.OturumVarMi)
             {
-                <div class="border rounded-2 p-3">
+                <div class="form-card">
                     <h2 class="h6">Zimmetlerim</h2>
                     <p class="text-muted mb-0">Bu ekranda sadece kendi zimmet kayıtların gösterilir.</p>
                 </div>
@@ -160,9 +163,9 @@
     private static string DurumEtiketi(ZimmetDurumuModel durum)
         => durum switch
         {
-            ZimmetDurumuModel.Aktif => "Aktif",
-            ZimmetDurumuModel.IadeSurecinde => "İade sürecinde",
-            ZimmetDurumuModel.IadeEdildi => "İade edildi",
-            _ => durum.ToString()
+            ZimmetDurumuModel.Aktif => """<span class="status-badge success">Aktif</span>""",
+            ZimmetDurumuModel.IadeSurecinde => """<span class="status-badge warning">İade sürecinde</span>""",
+            ZimmetDurumuModel.IadeEdildi => """<span class="status-badge info">İade edildi</span>""",
+            _ => $"""<span class="status-badge info">{durum}</span>"""
         };
 }

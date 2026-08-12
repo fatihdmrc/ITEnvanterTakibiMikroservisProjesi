@@ -159,6 +159,8 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ZimmetDbContext>();
     await dbContext.Database.MigrateAsync();
+    var demoVeriyiSifirla = app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("DemoVeri:Sifirla");
+    await DemoVeriSeeder.SeedAsync(dbContext, demoVeriyiSifirla);
 }
 
 app.MapControllers();

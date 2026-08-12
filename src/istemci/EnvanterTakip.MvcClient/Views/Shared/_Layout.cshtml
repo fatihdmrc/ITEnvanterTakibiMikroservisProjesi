@@ -1,80 +1,137 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var kullaniciAdi = Context.Session.GetString("KullaniciAdi") ?? "Misafir";
+    var rol = Context.Session.GetString("Rol") ?? "Oturum yok";
+    var oturumVarMi = Context.Session.GetString("KimlikToken") is not null;
+
+    string AktifSinif(string hedefController)
+        => string.Equals(controller, hedefController, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : string.Empty;
+}
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - IT Ekipman Takip Sistemi</title>
+    <title>@ViewData["Title"] - IT Envanter Takip</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/EnvanterTakip.MvcClient.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">IT Ekipman Takip</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarNavigasyon"
-                        aria-expanded="false" aria-label="Menüyü aç/kapat">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between" id="navbarNavigasyon">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Kontrol Paneli</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Envanter" asp-action="Index">Envanter</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Zimmet" asp-action="Index">Zimmetler</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Denetim" asp-action="Index">Denetim</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="http://localhost:5000/swagger" target="_blank" rel="noopener">Kimlik API</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="http://localhost:5001/swagger" target="_blank" rel="noopener">Envanter API</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="http://localhost:5002/swagger" target="_blank" rel="noopener">Zimmet API</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="http://localhost:5003/swagger" target="_blank" rel="noopener">Denetim API</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="http://localhost:5004/swagger" target="_blank" rel="noopener">Bildirim API</a>
-                        </li>
-                    </ul>
+    <div class="app-shell">
+        <aside class="app-sidebar" id="appSidebar" aria-label="Ana menü">
+            <div class="sidebar-brand">
+                <div class="brand-mark">IT</div>
+                <div>
+                    <div class="brand-title">Envanter Takip</div>
+                    <div class="brand-subtitle">Mikroservis Paneli</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="sidebar-link @AktifSinif("Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Kontrol Paneli</span>
+                </a>
+                <a class="sidebar-link @AktifSinif("Envanter")" asp-area="" asp-controller="Envanter" asp-action="Index">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                    <span>Envanter</span>
+                </a>
+                <a class="sidebar-link @AktifSinif("Zimmet")" asp-area="" asp-controller="Zimmet" asp-action="Index">
+                    <span class="material-symbols-outlined">assignment_ind</span>
+                    <span>Zimmetler</span>
+                </a>
+                <a class="sidebar-link @AktifSinif("Denetim")" asp-area="" asp-controller="Denetim" asp-action="Index">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    <span>Denetim</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">API Swagger</div>
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5000/swagger" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined">key</span>
+                    <span>Kimlik API</span>
+                </a>
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5001/swagger" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined">devices</span>
+                    <span>Envanter API</span>
+                </a>
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5002/swagger" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined">assignment_return</span>
+                    <span>Zimmet API</span>
+                </a>
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5003/swagger" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Denetim API</span>
+                </a>
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5004/swagger" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span>Bildirim API</span>
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <span class="status-dot"></span>
+                Faz 9 + Mail Test Akışı
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="icon-button d-lg-none" type="button" id="sidebarToggle" aria-label="Menüyü aç">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                    <div class="topbar-search">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="search" placeholder="Personel, cihaz veya zimmet ara..." aria-label="Genel arama" />
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
                     <div id="bildirimMerkezi" class="bildirim-merkezi dropdown d-none">
-                        <button class="btn btn-outline-danger btn-sm dropdown-toggle position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Bildirimler
-                            <span id="bildirimSayaci" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                        <button class="icon-button notification-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Bildirimler">
+                            <span class="material-symbols-outlined">notifications</span>
+                            <span id="bildirimSayaci" class="notification-badge d-none">0</span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end bildirim-menusu p-0">
-                            <div class="px-3 py-2 border-bottom fw-semibold">Kritik stok bildirimleri</div>
+                            <div class="notification-header">Kritik stok bildirimleri</div>
                             <div id="bildirimListesi" class="bildirim-listesi">
                                 <div class="text-muted small px-3 py-3">Henüz canlı bildirim yok.</div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </nav>
-    </header>
 
-    <div class="container-fluid px-3 px-lg-4">
-        <main role="main" class="pb-4">
-            @RenderBody()
-        </main>
+                    <div class="user-chip">
+                        <div class="user-avatar">@kullaniciAdi[..1].ToUpperInvariant()</div>
+                        <div class="user-meta">
+                            <div class="user-name">@kullaniciAdi</div>
+                            <div class="user-role">@rol</div>
+                        </div>
+                    </div>
+
+                    @if (oturumVarMi)
+                    {
+                        <a asp-controller="Home" asp-action="Cikis" class="btn btn-ghost btn-sm">Çıkış</a>
+                    }
+                </div>
+            </header>
+
+            <main role="main" class="app-content">
+                @RenderBody()
+            </main>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container-fluid px-3 px-lg-4">
-            &copy; 2026 - IT Ekipman Takip Sistemi
-        </div>
-    </footer>
+    <div class="bildirim-toast-container" id="bildirimToastContainer"></div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

@@ -186,7 +186,8 @@ using (var scope = app.Services.CreateScope())
 
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UygulamaKullanici>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-    await DemoVeriSeeder.SeedAsync(dbContext, userManager, roleManager);
+    var demoVeriyiSifirla = app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("DemoVeri:Sifirla");
+    await DemoVeriSeeder.SeedAsync(dbContext, userManager, roleManager, demoVeriyiSifirla);
 }
 
 app.MapControllers();

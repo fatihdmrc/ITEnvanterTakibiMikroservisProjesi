@@ -1,6 +1,6 @@
-namespace ZimmetServisi.Api.Contracts.Events;
+namespace MailServisi.Api.Contracts.Events;
 
-public sealed record ZimmetIadeAlindiEvent(
+public sealed record ZimmetIadeEdildiEvent(
     Guid EventId,
     Guid ZimmetId,
     Guid CihazId,
@@ -9,7 +9,7 @@ public sealed record ZimmetIadeAlindiEvent(
     string PersonelEmail,
     string CihazAd,
     string? CihazAssetTag,
-    DateOnly IadeTarihi,
-    Guid IadeAlanKullaniciId,
+    string IadeKontrolDurumu,
+    Guid IadeKontroluYapanKullaniciId,
     string? IadeNotu,
     DateTime OlusmaZamaniUtc);
