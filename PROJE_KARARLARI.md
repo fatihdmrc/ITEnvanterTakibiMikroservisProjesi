@@ -119,7 +119,7 @@ Staj defteri konu başlığı:
 
 ### MailServisi
 
-- DotNetCore.CAP ile RabbitMQ üzerinden `zimmet.olusturuldu` eventini tüketir.
+- DotNetCore.CAP ile RabbitMQ üzerinden `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir.
 - Test amaçlı Gmail SMTP entegrasyonu yapar.
 - Zimmetlenen personelin gerçek e-posta bilgisini event payload'ından okur.
 - Test modunda gerçek alıcıya gönderim yapılmaz; tüm e-postalar `fathdmrc01@gmail.com` adresine gönderilir.
@@ -653,7 +653,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Kritik stok eşiğinin altına düşen cihaz veya sarf malzeme için `stok.kritik-seviyeye-dusuldu` eventi yayınlanır.
 - Zimmet oluşturma ve iade akışlarında `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade için `cihaz.hasarli-teslim-alindi` eventleri yayınlanır.
 - DenetimKaydiServisi Faz 7'de event consumer olarak eklenmiştir; BildirimServisi event consumer uygulaması Faz 9'da eklenmiştir.
-- MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu` eventini tüketir. Bu entegrasyon ana zimmet oluşturma transaction'ını geri almaz; mail hatası yalnızca consumer tarafında başarısız tüketim olarak izlenir.
+- MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir. Bu entegrasyon ana zimmet transaction'larını geri almaz; mail hatası consumer tarafında başarısız tüketim olarak izlenir.
 
 ## Faz 7 DenetimKaydiServisi Kararı - 2026-08-11
 
@@ -693,7 +693,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 
 - MailServisi ayrı API olarak `http://localhost:5006` adresinde çalışır.
 - Port `5005` ApiGateway için boş bırakılmıştır.
-- MailServisi yalnızca `zimmet.olusturuldu` eventini tüketir.
+- MailServisi `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir.
 - CAP consumer grubu `mail-servisi` olarak belirlenmiştir.
 - CAP storage için mevcut MongoDB replica set kullanılır; bu kullanım teknik consumer state içindir, kalıcı mail log tablosu eklenmemiştir.
 - Gmail SMTP için MailKit kullanılır.
@@ -702,7 +702,16 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Gmail kullanıcı adı ve app password kaynak koda yazılmaz; user-secrets veya ortam değişkeniyle sağlanır.
 - MailServisi kendi içinde 3 SMTP denemesi yapar. `FailedRetryCount = 0` ayarıyla CAP tarafında ek retry yapılmaz.
 - 3 deneme de başarısız olursa mail consumer hata fırlatır ve CAP tarafında başarısız tüketim olarak izlenebilir.
-- Mail gönderiminin başarısız olması zimmet oluşturma işlemini geri almaz.
+- Mail gönderiminin başarısız olması zimmet oluşturma, iade alma veya iade kontrolü işlemini geri almaz.
+
+## String Sabitleri ve Demo Seed Kararı - 2026-08-13
+
+- Kullanıcıya dönen hata/başarı/uyarı mesajları, rol adları, event adları, SignalR metod adları, session/tempdata anahtarları ve tekrar eden teknik stringler servis bazlı `Sabitler` sınıflarında toplanacaktır.
+- MVC client tarafında `TempData` ve `Session` anahtarları doğrudan string literal olarak kullanılmayacak; `MvcSabitleri` üzerinden okunacaktır.
+- Dinamik kullanıcı mesajları controller/service içinde dağınık interpolation olarak yazılmayacak; ilgili mesaj sınıfındaki `static string` yardımcı metotları kullanılacaktır.
+- Demo veri reset davranışı varsayılan olarak kapalıdır. `DemoVeri:Sifirla=false` normal geliştirme çalıştırmasında mevcut veriyi silmez.
+- Bilinçli demo reset gerektiğinde servisler `$env:DemoVeri__Sifirla="true"` override değeriyle başlatılacaktır.
+- Audit/Mongo ve CAP teknik kayıtları domain seed resetinden ayrı ele alınır; domain seed mekanizması bu kayıtları temizlemek için kullanılmayacaktır.
 
 ## Docker Compose Grup Kararı - 2026-08-12
 

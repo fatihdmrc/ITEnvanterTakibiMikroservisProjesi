@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using EnvanterTakip.MvcClient.Models;
+using EnvanterTakip.MvcClient.Sabitler;
 
 namespace EnvanterTakip.MvcClient.Services;
 
@@ -48,15 +49,15 @@ public sealed class DenetimApiClient(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Denetim kaydi servisine ulasilamadi. Servisin calistigindan emin ol.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.DenetimServisineUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Denetim kaydi servisi zamaninda cevap vermedi.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Denetim kaydi servisi beklenmeyen formatta cevap dondurdu.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -67,7 +68,7 @@ public sealed class DenetimApiClient(HttpClient httpClient)
         {
             var veri = JsonSerializer.Deserialize<T>(icerik, JsonAyarlari);
             return veri is null
-                ? ApiIslemSonucu<T>.Basarisiz("Servis bos cevap dondurdu.")
+                ? ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisBosCevapDondu)
                 : ApiIslemSonucu<T>.Basarili(veri);
         }
 
@@ -84,10 +85,10 @@ public sealed class DenetimApiClient(HttpClient httpClient)
 
         return durumKodu switch
         {
-            HttpStatusCode.Unauthorized => "Oturum bulunamadi veya suresi doldu. Lutfen tekrar giris yap.",
-            HttpStatusCode.Forbidden => "Denetim kayitlarini goruntulemek icin yetkin yok.",
-            HttpStatusCode.NotFound => "Denetim kaydi bulunamadi.",
-            _ => "Denetim kaydi servisi hata dondurdu."
+            HttpStatusCode.Unauthorized => MvcMesajlari.OturumBulunamadiVeyaSuresiDoldu,
+            HttpStatusCode.Forbidden => MvcMesajlari.YetkiYok,
+            HttpStatusCode.NotFound => MvcMesajlari.IstenenKayitBulunamadi,
+            _ => MvcMesajlari.ServisHataDondurdu
         };
     }
 

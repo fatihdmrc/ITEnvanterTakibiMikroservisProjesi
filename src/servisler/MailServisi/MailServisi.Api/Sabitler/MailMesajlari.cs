@@ -10,6 +10,7 @@ public static class MailMesajlari
     public const string GmailAppPasswordEksik = "Gmail app password tanımlı değil.";
     public const string GmailGonderenEksik = "Gönderen e-posta adresi tanımlı değil.";
     public const string GmailTestAliciEksik = "Test modu açıkken test alıcı e-posta adresi tanımlı olmalıdır.";
+    public const string MongoDbAyarlariYok = "MongoDB ayarları bulunamadı.";
 
     public static string MailGonderilemedi(string mailTuru, int denemeSayisi)
         => $"{denemeSayisi} deneme sonunda {mailTuru} maili gönderilemedi.";

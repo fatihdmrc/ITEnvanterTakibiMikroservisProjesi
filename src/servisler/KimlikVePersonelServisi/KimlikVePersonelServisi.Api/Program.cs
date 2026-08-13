@@ -5,6 +5,7 @@ using KimlikVePersonelServisi.Api.Data;
 using KimlikVePersonelServisi.Api.Domain.Entities;
 using KimlikVePersonelServisi.Api.Options;
 using KimlikVePersonelServisi.Api.Repositories;
+using KimlikVePersonelServisi.Api.Sabitler;
 using KimlikVePersonelServisi.Api.Services;
 using KimlikVePersonelServisi.Api.Services.Harici;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,7 +25,7 @@ builder.Logging.AddConsole();
 var jwtAyarlari = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
 var kimlikPersonelConnectionString = builder.Configuration.GetConnectionString("KimlikPersonelDb")
-    ?? throw new InvalidOperationException("Kimlik/personel veritabanı bağlantısı bulunamadı.");
+    ?? throw new InvalidOperationException(KimlikPersonelMesajlari.KimlikDbBaglantisiYok);
 
 builder.Services.AddControllers(options =>
     {
@@ -71,7 +72,7 @@ builder.Services
     .AddJwtBearer(options =>
     {
         var ayarlar = jwtAyarlari.Get<JwtAyarlari>()
-            ?? throw new InvalidOperationException("JWT ayarları bulunamadı.");
+            ?? throw new InvalidOperationException(KimlikPersonelMesajlari.JwtAyarlariYok);
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -90,11 +91,11 @@ builder.Services.AddAuthorization(options =>
 {
     // Admin ve IT personeli, kimlik/personel yönetim ekranlarını kullanabilir.
     options.AddPolicy("AdminVeyaITPersoneli", policy =>
-        policy.RequireRole("Admin", "ITPersoneli"));
+        policy.RequireRole(KimlikPersonelMesajlari.AdminRolu, KimlikPersonelMesajlari.ITPersoneliRolu));
 
     // Kullanıcı hesabı açma gibi daha hassas işlemler yalnızca admin rolüne bırakılır.
     options.AddPolicy("SadeceAdmin", policy =>
-        policy.RequireRole("Admin"));
+        policy.RequireRole(KimlikPersonelMesajlari.AdminRolu));
 });
 
 // DataProtection; cookie, antiforgery ve bazı framework anahtarlarını yönetir.
@@ -135,7 +136,7 @@ builder.Services.AddCap(options =>
 builder.Services.AddHttpClient<DenetimApiClient>(client =>
 {
     var servisAdresi = builder.Configuration["ServisAdresleri:DenetimKaydiServisi"]
-        ?? throw new InvalidOperationException("Denetim kaydi servisi adresi tanimli degil.");
+        ?? throw new InvalidOperationException(KimlikPersonelMesajlari.DenetimServisiAdresiYok);
 
     client.BaseAddress = new Uri(servisAdresi);
     client.Timeout = TimeSpan.FromSeconds(2);

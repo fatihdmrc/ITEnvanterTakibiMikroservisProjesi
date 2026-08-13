@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using MailServisi.Api.Consumers;
 using MailServisi.Api.Options;
+using MailServisi.Api.Sabitler;
 using MailServisi.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +22,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var mongoAyarlari = builder.Configuration.GetSection("MongoDb").Get<MongoDbAyarlari>()
-    ?? throw new InvalidOperationException("MongoDB ayarlari bulunamadi.");
+    ?? throw new InvalidOperationException(MailMesajlari.MongoDbAyarlariYok);
 
 builder.Services.AddCap(options =>
 {

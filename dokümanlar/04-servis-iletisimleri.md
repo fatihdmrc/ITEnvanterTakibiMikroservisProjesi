@@ -24,7 +24,7 @@ Faz 6 güncel uygulamasında ZimmetServisi, KimlikVePersonelServisi ve EnvanterS
 | ZimmetServisi | 5002 | Zimmet oluşturma ve iade işlemleri |
 | DenetimKaydiServisi | 5003 | Audit/event log sorgulama |
 | BildirimServisi | 5004 | Kritik stok SignalR bildirim paneli |
-| MailServisi | 5006 | Zimmet oluşturuldu test Gmail gönderimi |
+| MailServisi | 5006 | Zimmet oluşturma ve iade süreçlerinde test Gmail gönderimi |
 
 ## 3. Senkron HTTP Çağrıları
 
@@ -95,7 +95,7 @@ Faz 5 uygulama kararı:
 
 ## 4. CAP + RabbitMQ Eventleri
 
-Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Faz 7 itibarıyla DenetimKaydiServisi event consumer olarak eklenmiştir. Faz 9 itibarıyla BildirimServisi kritik stok event consumer olarak eklenmiştir. Test mail entegrasyonu için MailServisi `zimmet.olusturuldu` event consumer olarak eklenmiştir.
+Bu bölüm Faz 6 ile uygulanan asenkron iletişim modelidir. Event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde aktiftir. Faz 7 itibarıyla DenetimKaydiServisi event consumer olarak eklenmiştir. Faz 9 itibarıyla BildirimServisi kritik stok event consumer olarak eklenmiştir. Test mail entegrasyonu için MailServisi `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` event consumer olarak eklenmiştir.
 
 Event bus:
 
@@ -121,8 +121,8 @@ Eventler:
 | Event Adı | Routing Key | Üreten Servis | Tüketen Servisler | Amaç |
 | --- | --- | --- | --- | --- |
 | ZimmetOlusturuldu | `zimmet.olusturuldu` | ZimmetServisi | DenetimKaydiServisi, MailServisi | Zimmet oluşturma olayını audit ve test mail için duyurmak |
-| ZimmetIadeAlindi | `zimmet.iade-alindi` | ZimmetServisi | DenetimKaydiServisi | Zimmetin fiziki kontrol sürecine alındığını duyurmak |
-| ZimmetIadeEdildi | `zimmet.iade-edildi` | ZimmetServisi | DenetimKaydiServisi | Zimmet iade olayını audit için duyurmak |
+| ZimmetIadeAlindi | `zimmet.iade-alindi` | ZimmetServisi | DenetimKaydiServisi, MailServisi | Zimmetin fiziki kontrol sürecine alındığını audit ve test mail için duyurmak |
+| ZimmetIadeEdildi | `zimmet.iade-edildi` | ZimmetServisi | DenetimKaydiServisi, MailServisi | Zimmet iade olayını audit ve test mail için duyurmak |
 | KritikStokSeviyesineDusuldu | `stok.kritik-seviyeye-dusuldu` | EnvanterServisi | DenetimKaydiServisi, BildirimServisi | Kritik stok bildirimi üretmek |
 | CihazDurumuDegisti | `cihaz.durumu-degisti` | EnvanterServisi | DenetimKaydiServisi | Cihaz durum değişikliğini kaydetmek |
 | CihazKontroleAlindi | `cihaz.kontrole-alindi` | ZimmetServisi | DenetimKaydiServisi | İade sonrası fiziki kontrol sürecini duyurmak |
@@ -141,7 +141,7 @@ Faz 6 uygulamasında event adı CAP routing key üzerinden taşınır. Payload t
 | KullaniciId alanları | İşlemi başlatan veya kontrolü yapan kullanıcı id bilgisi, event için gerekliyse |
 | Evente özel alanlar | Durum, neden, kritik stok seviyesi, iade notu gibi domain verileri |
 
-`zimmet.olusturuldu` payload'ında ayrıca `PersonelEmail` alanı bulunur. Bu alan gerçek zimmetlenen personelin e-posta bilgisidir; MailServisi test modunda bu adresi mail içeriğinde gösterir ancak SMTP alıcısını `fathdmrc01@gmail.com` olarak değiştirir.
+Zimmet mail event payload'larında ayrıca `PersonelEmail` alanı bulunur. Bu alan gerçek zimmetlenen personelin e-posta bilgisidir; MailServisi test modunda bu adresi mail içeriğinde gösterir ancak SMTP alıcısını `fathdmrc01@gmail.com` olarak değiştirir.
 
 Kullanıcı bağlamı:
 
@@ -161,7 +161,7 @@ Kullanıcı bağlamı:
 8. ZimmetServisi aynı transaction içinde `zimmet.olusturuldu` Outbox kaydını oluşturur.
 9. CAP, Outbox kaydını RabbitMQ `inventory.events` exchange'ine yayınlar.
 10. DenetimKaydiServisi eventi audit kaydı olarak MongoDB'ye yazar.
-11. MailServisi aynı eventi tüketir ve test modunda Gmail üzerinden `fathdmrc01@gmail.com` adresine bilgilendirme e-postası gönderir.
+11. MailServisi aynı eventi tüketir ve test modunda Gmail üzerinden `fathdmrc01@gmail.com` adresine zimmet oluşturma bilgilendirme e-postası gönderir.
 
 ## 7. Örnek Akış: Personel İşten Ayrılma
 
@@ -239,12 +239,12 @@ Davranış:
 
 ## 11. Test Gmail Mail İletişimi
 
-MailServisi servisler arası yeni bir HTTP bağımlılığı oluşturmaz; yalnızca CAP/RabbitMQ üzerinden gelen `zimmet.olusturuldu` eventini tüketir.
+MailServisi servisler arası yeni bir HTTP bağımlılığı oluşturmaz; CAP/RabbitMQ üzerinden gelen `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir.
 
 CAP tüketimi:
 
 ```text
-Event: zimmet.olusturuldu
+Eventler: zimmet.olusturuldu, zimmet.iade-alindi, zimmet.iade-edildi
 Consumer group: mail-servisi
 Kaynak: ZimmetServisi
 Hedef: MailServisi
@@ -262,7 +262,7 @@ Test alıcısı: fathdmrc01@gmail.com
 
 Davranış:
 
-- MailServisi event payload'ındaki `PersonelEmail` bilgisini okur.
+- MailServisi event payload'ındaki `PersonelEmail` bilgisini ve zimmet/cihaz snapshot alanlarını okur.
 - Test modu açıkken gerçek personel e-postasına gönderim yapılmaz.
 - Mail içeriğinde gerçek personel adı, gerçek personel e-postası, cihaz adı, asset tag ve zimmet tarihi yer alır.
 - Gmail kullanıcı adı ve app password user-secrets veya environment variable ile verilir.

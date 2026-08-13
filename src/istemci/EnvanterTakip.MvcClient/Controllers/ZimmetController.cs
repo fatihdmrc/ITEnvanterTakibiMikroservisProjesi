@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using EnvanterTakip.MvcClient.Models;
+using EnvanterTakip.MvcClient.Sabitler;
 using EnvanterTakip.MvcClient.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,9 +12,6 @@ public sealed class ZimmetController(
     KimlikPersonelApiClient kimlikPersonelApiClient,
     EnvanterApiClient envanterApiClient) : Controller
 {
-    private const string TokenSessionKey = "KimlikToken";
-    private const string RolSessionKey = "Rol";
-
     public async Task<IActionResult> Index()
     {
         var token = TokenAl();
@@ -22,8 +20,8 @@ public sealed class ZimmetController(
             OturumVarMi = !string.IsNullOrWhiteSpace(token),
             Rol = RolAl(),
             YonetimYetkisiVarMi = YonetimYetkisiVarMi(),
-            BasariMesaji = TempData["BasariMesaji"] as string,
-            HataMesaji = TempData["HataMesaji"] as string
+            BasariMesaji = TempData[MvcSabitleri.BasariMesajiTempDataKey] as string,
+            HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string
         };
 
         if (string.IsNullOrWhiteSpace(token))
@@ -71,19 +69,19 @@ public sealed class ZimmetController(
 
         if (!YonetimYetkisiVarMi())
         {
-            TempData["HataMesaji"] = "Zimmet oluşturmak için Admin veya ITPersoneli rolü gerekir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.ZimmetOlusturmaYetkisiYok;
             return RedirectToAction(nameof(Index));
         }
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Zimmet oluşturma bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.ZimmetOlusturmaBilgileriHatali;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await zimmetApiClient.ZimmetOlusturAsync(form, token);
-        TempData[sonuc.BasariliMi ? "BasariMesaji" : "HataMesaji"] = sonuc.BasariliMi
-            ? "Zimmet oluşturuldu ve cihaz zimmetli duruma alındı."
+        TempData[sonuc.BasariliMi ? MvcSabitleri.BasariMesajiTempDataKey : MvcSabitleri.HataMesajiTempDataKey] = sonuc.BasariliMi
+            ? MvcMesajlari.ZimmetOlusturuldu
             : sonuc.Hata;
 
         return RedirectToAction(nameof(Index));
@@ -100,7 +98,7 @@ public sealed class ZimmetController(
 
         if (!YonetimYetkisiVarMi())
         {
-            TempData["HataMesaji"] = "Zimmet iadesi almak için Admin veya ITPersoneli rolü gerekir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.ZimmetIadeYetkisiYok;
             return RedirectToAction(nameof(Index));
         }
 
@@ -112,7 +110,7 @@ public sealed class ZimmetController(
 
         if (zimmet.Durum != ZimmetDurumuModel.Aktif)
         {
-            TempData["HataMesaji"] = "Yalnızca aktif zimmetler iade sürecine alınabilir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.SadeceAktifZimmetIadeSurecineAlinir;
             return RedirectToAction(nameof(Index));
         }
 
@@ -120,7 +118,7 @@ public sealed class ZimmetController(
         {
             Zimmet = zimmet,
             Form = new ZimmetIadeAlindiFormModel { Id = zimmet.Id },
-            HataMesaji = TempData["HataMesaji"] as string
+            HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string
         });
     }
 
@@ -136,13 +134,13 @@ public sealed class ZimmetController(
 
         if (!YonetimYetkisiVarMi())
         {
-            TempData["HataMesaji"] = "Zimmet iadesi almak için Admin veya ITPersoneli rolü gerekir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.ZimmetIadeYetkisiYok;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await zimmetApiClient.IadeAlindiAsync(form, token);
-        TempData[sonuc.BasariliMi ? "BasariMesaji" : "HataMesaji"] = sonuc.BasariliMi
-            ? "Zimmet iadesi alındı ve cihaz incelemeye alındı."
+        TempData[sonuc.BasariliMi ? MvcSabitleri.BasariMesajiTempDataKey : MvcSabitleri.HataMesajiTempDataKey] = sonuc.BasariliMi
+            ? MvcMesajlari.ZimmetIadesiAlindi
             : sonuc.Hata;
 
         return RedirectToAction(nameof(Index));
@@ -159,7 +157,7 @@ public sealed class ZimmetController(
 
         if (!YonetimYetkisiVarMi())
         {
-            TempData["HataMesaji"] = "İade kontrolünü tamamlamak için Admin veya ITPersoneli rolü gerekir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.IadeKontrolYetkisiYok;
             return RedirectToAction(nameof(Index));
         }
 
@@ -171,7 +169,7 @@ public sealed class ZimmetController(
 
         if (zimmet.Durum != ZimmetDurumuModel.IadeSurecinde)
         {
-            TempData["HataMesaji"] = "Fiziki kontrol yalnızca iade sürecindeki zimmetler için tamamlanabilir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.SadeceIadeSurecindekiZimmetKontrolEdilir;
             return RedirectToAction(nameof(Index));
         }
 
@@ -179,7 +177,7 @@ public sealed class ZimmetController(
         {
             Zimmet = zimmet,
             Form = new ZimmetIadeKontroluFormModel { Id = zimmet.Id },
-            HataMesaji = TempData["HataMesaji"] as string
+            HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string
         });
     }
 
@@ -195,13 +193,13 @@ public sealed class ZimmetController(
 
         if (!YonetimYetkisiVarMi())
         {
-            TempData["HataMesaji"] = "İade kontrolünü tamamlamak için Admin veya ITPersoneli rolü gerekir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.IadeKontrolYetkisiYok;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await zimmetApiClient.IadeKontroluTamamlaAsync(form, token);
-        TempData[sonuc.BasariliMi ? "BasariMesaji" : "HataMesaji"] = sonuc.BasariliMi
-            ? "İade kontrolü tamamlandı ve cihaz durumu güncellendi."
+        TempData[sonuc.BasariliMi ? MvcSabitleri.BasariMesajiTempDataKey : MvcSabitleri.HataMesajiTempDataKey] = sonuc.BasariliMi
+            ? MvcMesajlari.IadeKontroluTamamlandi
             : sonuc.Hata;
 
         return RedirectToAction(nameof(Index));
@@ -210,7 +208,7 @@ public sealed class ZimmetController(
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
-        logger.LogError("Zimmet MVC hata sayfası gösterildi. RequestId: {RequestId}", Activity.Current?.Id ?? HttpContext.TraceIdentifier);
+        logger.LogError(MvcMesajlari.ZimmetHataSayfasiLogu, Activity.Current?.Id ?? HttpContext.TraceIdentifier);
         return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
@@ -222,25 +220,25 @@ public sealed class ZimmetController(
             return sonuc.Veri;
         }
 
-        TempData["HataMesaji"] = sonuc.Hata;
+        TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
         return null;
     }
 
     private string? TokenAl()
-        => HttpContext.Session.GetString(TokenSessionKey);
+        => HttpContext.Session.GetString(MvcSabitleri.TokenSessionKey);
 
     private string? RolAl()
-        => HttpContext.Session.GetString(RolSessionKey);
+        => HttpContext.Session.GetString(MvcSabitleri.RolSessionKey);
 
     private bool YonetimYetkisiVarMi()
     {
         var rol = RolAl();
-        return rol is "Admin" or "ITPersoneli";
+        return rol is MvcSabitleri.AdminRolu or MvcSabitleri.ITPersoneliRolu;
     }
 
     private IActionResult OturumYok()
     {
-        TempData["HataMesaji"] = "Bu işlem için önce kontrol panelinden giriş yapmalısın.";
+        TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KontrolPanelindenOturumYok;
         return RedirectToAction(nameof(Index));
     }
 
@@ -254,7 +252,7 @@ public sealed class ZimmetController(
             return sonuc.Veri;
         }
 
-        model.ListelemeHatalari.Add($"{listeAdi} alınamadı: {sonuc.Hata}");
+        model.ListelemeHatalari.Add(MvcMesajlari.ListeAlinamadi(listeAdi, sonuc.Hata));
         return [];
     }
 }

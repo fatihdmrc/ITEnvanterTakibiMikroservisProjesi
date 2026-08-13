@@ -1,4 +1,5 @@
 using EnvanterServisi.Api.Contracts.Kategoriler;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ public sealed class KategorilerController(IEnvanterServisi envanterServisi) : Co
     public async Task<ActionResult<KategoriCevap>> Getir(Guid id, CancellationToken cancellationToken)
     {
         var kategori = await envanterServisi.KategoriGetirAsync(id, cancellationToken);
-        return kategori is null ? NotFound(new { hata = "Kategori bulunamadı." }) : Ok(kategori);
+        return kategori is null ? NotFound(new { hata = EnvanterMesajlari.KategoriBulunamadi }) : Ok(kategori);
     }
 
     [HttpPost]

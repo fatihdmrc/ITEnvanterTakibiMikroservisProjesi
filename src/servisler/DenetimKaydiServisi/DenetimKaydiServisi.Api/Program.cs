@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using DenetimKaydiServisi.Api.Consumers;
 using DenetimKaydiServisi.Api.Options;
 using DenetimKaydiServisi.Api.Repositories;
+using DenetimKaydiServisi.Api.Sabitler;
 using DenetimKaydiServisi.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -58,7 +59,7 @@ builder.Services
     .AddJwtBearer(options =>
     {
         var ayarlar = jwtAyarlari.Get<JwtAyarlari>()
-            ?? throw new InvalidOperationException("JWT ayarlari bulunamadi.");
+            ?? throw new InvalidOperationException(DenetimMesajlari.JwtAyarlariYok);
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -76,11 +77,11 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminVeyaITPersoneli", policy =>
-        policy.RequireRole("Admin", "ITPersoneli"));
+        policy.RequireRole(DenetimMesajlari.AdminRolu, DenetimMesajlari.ITPersoneliRolu));
 });
 
 var mongoAyarlari = builder.Configuration.GetSection("MongoDb").Get<MongoDbAyarlari>()
-    ?? throw new InvalidOperationException("MongoDB ayarlari bulunamadi.");
+    ?? throw new InvalidOperationException(DenetimMesajlari.MongoDbAyarlariYok);
 
 builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoAyarlari.ConnectionString));
 builder.Services.AddSingleton(provider =>

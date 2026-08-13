@@ -1,8 +1,9 @@
+@using EnvanterTakip.MvcClient.Sabitler
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
-    var kullaniciAdi = Context.Session.GetString("KullaniciAdi") ?? "Misafir";
-    var rol = Context.Session.GetString("Rol") ?? "Oturum yok";
-    var oturumVarMi = Context.Session.GetString("KimlikToken") is not null;
+    var kullaniciAdi = Context.Session.GetString(MvcSabitleri.KullaniciAdiSessionKey) ?? MvcMesajlari.Misafir;
+    var rol = Context.Session.GetString(MvcSabitleri.RolSessionKey) ?? MvcMesajlari.OturumYokKisa;
+    var oturumVarMi = Context.Session.GetString(MvcSabitleri.TokenSessionKey) is not null;
 
     string AktifSinif(string hedefController)
         => string.Equals(controller, hedefController, StringComparison.OrdinalIgnoreCase)

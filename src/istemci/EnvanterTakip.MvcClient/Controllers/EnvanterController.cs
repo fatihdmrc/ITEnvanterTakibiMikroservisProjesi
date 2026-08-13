@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using EnvanterTakip.MvcClient.Models;
+using EnvanterTakip.MvcClient.Sabitler;
 using EnvanterTakip.MvcClient.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,8 +10,6 @@ public sealed class EnvanterController(
     ILogger<EnvanterController> logger,
     EnvanterApiClient envanterApiClient) : Controller
 {
-    private const string TokenSessionKey = "KimlikToken";
-
     public async Task<IActionResult> Index(string? sekme, Guid? cihazKategoriId, Guid? cihazLokasyonId, bool? cihazAktifMi)
     {
         var token = TokenAl();
@@ -24,8 +23,8 @@ public sealed class EnvanterController(
                 LokasyonId = cihazLokasyonId,
                 AktifMi = cihazAktifMi
             },
-            BasariMesaji = TempData["BasariMesaji"] as string,
-            HataMesaji = TempData["HataMesaji"] as string
+            BasariMesaji = TempData[MvcSabitleri.BasariMesajiTempDataKey] as string,
+            HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string
         };
 
         if (!string.IsNullOrWhiteSpace(token))
@@ -49,7 +48,7 @@ public sealed class EnvanterController(
             }
             else
             {
-                model.ListelemeHatalari.Add($"Stok özeti alınamadı: {stokOzetSonucu.Hata}");
+                model.ListelemeHatalari.Add(MvcMesajlari.ListeAlinamadi("Stok özeti", stokOzetSonucu.Hata));
             }
         }
 
@@ -71,8 +70,8 @@ public sealed class EnvanterController(
             return RedirectToSekme("cihaz");
         }
 
-        model.BasariMesaji = TempData["BasariMesaji"] as string;
-        model.HataMesaji ??= TempData["HataMesaji"] as string;
+        model.BasariMesaji = TempData[MvcSabitleri.BasariMesajiTempDataKey] as string;
+        model.HataMesaji ??= TempData[MvcSabitleri.HataMesajiTempDataKey] as string;
         return View(model);
     }
 
@@ -91,8 +90,8 @@ public sealed class EnvanterController(
             return RedirectToSekme("sarf");
         }
 
-        model.BasariMesaji = TempData["BasariMesaji"] as string;
-        model.HataMesaji ??= TempData["HataMesaji"] as string;
+        model.BasariMesaji = TempData[MvcSabitleri.BasariMesajiTempDataKey] as string;
+        model.HataMesaji ??= TempData[MvcSabitleri.HataMesajiTempDataKey] as string;
         return View(model);
     }
 
@@ -108,12 +107,12 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Kategori bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KategoriBilgileriHatali;
             return RedirectToSekme("kategori");
         }
 
         var sonuc = await envanterApiClient.KategoriOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Kategori oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.KategoriOlusturuldu);
         return RedirectToSekme("kategori");
     }
 
@@ -129,12 +128,12 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Kategori güncelleme bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KategoriGuncellemeBilgileriHatali;
             return RedirectToSekme("kategori");
         }
 
         var sonuc = await envanterApiClient.KategoriGuncelleAsync(form, token);
-        IslemSonucunuYansit(sonuc, form.AktifMi ? "Kategori güncellendi." : "Kategori pasifleştirildi.");
+        IslemSonucunuYansit(sonuc, form.AktifMi ? MvcMesajlari.KategoriGuncellendi : MvcMesajlari.KategoriPasiflestirildi);
         return RedirectToSekme("kategori");
     }
 
@@ -150,12 +149,12 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Lokasyon bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.LokasyonBilgileriHatali;
             return RedirectToSekme("lokasyon");
         }
 
         var sonuc = await envanterApiClient.LokasyonOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Lokasyon oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.LokasyonOlusturuldu);
         return RedirectToSekme("lokasyon");
     }
 
@@ -171,12 +170,12 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Lokasyon güncelleme bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.LokasyonGuncellemeBilgileriHatali;
             return RedirectToSekme("lokasyon");
         }
 
         var sonuc = await envanterApiClient.LokasyonGuncelleAsync(form, token);
-        IslemSonucunuYansit(sonuc, form.AktifMi ? "Lokasyon güncellendi." : "Lokasyon pasifleştirildi.");
+        IslemSonucunuYansit(sonuc, form.AktifMi ? MvcMesajlari.LokasyonGuncellendi : MvcMesajlari.LokasyonPasiflestirildi);
         return RedirectToSekme("lokasyon");
     }
 
@@ -192,12 +191,12 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Cihaz bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.CihazBilgileriHatali;
             return RedirectToSekme("cihaz");
         }
 
         var sonuc = await envanterApiClient.CihazOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Cihaz oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.CihazOlusturuldu);
         return RedirectToSekme("cihaz");
     }
 
@@ -213,16 +212,16 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            return await CihazIslemleriFormHatasi(form, token, "Cihaz güncelleme bilgileri eksik veya hatalı.");
+            return await CihazIslemleriFormHatasi(form, token, MvcMesajlari.CihazGuncellemeBilgileriHatali);
         }
 
         var sonuc = await envanterApiClient.CihazGuncelleAsync(form, token);
         if (!sonuc.BasariliMi)
         {
-            return await CihazIslemleriFormHatasi(form, token, sonuc.Hata ?? "Cihaz güncellenemedi.");
+            return await CihazIslemleriFormHatasi(form, token, sonuc.Hata ?? MvcMesajlari.CihazGuncellenemedi);
         }
 
-        TempData["BasariMesaji"] = "Cihaz güncellendi.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.CihazGuncellendi;
         return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
     }
 
@@ -238,18 +237,18 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Cihaz durum hareketi bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.CihazDurumHareketiHatali;
             return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
         }
 
         var sonuc = await envanterApiClient.CihazDurumHareketiIsleAsync(form, token);
         if (!sonuc.BasariliMi)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
         }
 
-        TempData["BasariMesaji"] = "Cihaz durum hareketi işlendi.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.CihazDurumHareketiIslendi;
         return RedirectToAction(nameof(CihazIslemleri), new { id = form.Id });
     }
 
@@ -265,12 +264,12 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Sarf malzeme bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.SarfMalzemeBilgileriHatali;
             return RedirectToSekme("sarf");
         }
 
         var sonuc = await envanterApiClient.SarfMalzemeOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Sarf malzeme oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.SarfMalzemeOlusturuldu);
         return RedirectToSekme("sarf");
     }
 
@@ -286,16 +285,16 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            return await SarfMalzemeIslemleriFormHatasi(form, token, "Sarf malzeme güncelleme bilgileri eksik veya hatalı.");
+            return await SarfMalzemeIslemleriFormHatasi(form, token, MvcMesajlari.SarfMalzemeGuncellemeBilgileriHatali);
         }
 
         var sonuc = await envanterApiClient.SarfMalzemeGuncelleAsync(form, token);
         if (!sonuc.BasariliMi)
         {
-            return await SarfMalzemeIslemleriFormHatasi(form, token, sonuc.Hata ?? "Sarf malzeme güncellenemedi.");
+            return await SarfMalzemeIslemleriFormHatasi(form, token, sonuc.Hata ?? MvcMesajlari.SarfMalzemeGuncellenemedi);
         }
 
-        TempData["BasariMesaji"] = form.AktifMi ? "Sarf malzeme güncellendi." : "Sarf malzeme pasifleştirildi.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = form.AktifMi ? MvcMesajlari.SarfMalzemeGuncellendi : MvcMesajlari.SarfMalzemePasiflestirildi;
         return RedirectToAction(nameof(SarfMalzemeIslemleri), new { id = form.Id });
     }
 
@@ -311,25 +310,25 @@ public sealed class EnvanterController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Sarf malzeme stok hareketi bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.SarfStokHareketiHatali;
             return RedirectToAction(nameof(SarfMalzemeIslemleri), new { id = form.Id });
         }
 
         var sonuc = await envanterApiClient.SarfMalzemeStokHareketiIsleAsync(form, token);
         if (!sonuc.BasariliMi)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return RedirectToAction(nameof(SarfMalzemeIslemleri), new { id = form.Id });
         }
 
-        TempData["BasariMesaji"] = "Sarf malzeme stok hareketi işlendi.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.SarfStokHareketiIslendi;
         return RedirectToAction(nameof(SarfMalzemeIslemleri), new { id = form.Id });
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
-        logger.LogError("Envanter MVC hata sayfası gösterildi. RequestId: {RequestId}", Activity.Current?.Id ?? HttpContext.TraceIdentifier);
+        logger.LogError(MvcMesajlari.EnvanterHataSayfasiLogu, Activity.Current?.Id ?? HttpContext.TraceIdentifier);
         return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
@@ -338,7 +337,7 @@ public sealed class EnvanterController(
         var model = await CihazIslemleriModeliOlustur(form.Id, token);
         if (model is null)
         {
-            TempData["HataMesaji"] = hataMesaji;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = hataMesaji;
             return RedirectToSekme("cihaz");
         }
 
@@ -352,7 +351,7 @@ public sealed class EnvanterController(
         var model = await SarfMalzemeIslemleriModeliOlustur(form.Id, token);
         if (model is null)
         {
-            TempData["HataMesaji"] = hataMesaji;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = hataMesaji;
             return RedirectToSekme("sarf");
         }
 
@@ -366,7 +365,7 @@ public sealed class EnvanterController(
         var cihazSonucu = await envanterApiClient.CihazGetirAsync(id, token);
         if (!cihazSonucu.BasariliMi || cihazSonucu.Veri is null)
         {
-            TempData["HataMesaji"] = cihazSonucu.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = cihazSonucu.Hata;
             return null;
         }
 
@@ -401,7 +400,7 @@ public sealed class EnvanterController(
             Lokasyonlar = lokasyonlar,
             HataMesaji = durumHareketleriSonucu.BasariliMi
                 ? null
-                : $"Cihaz durum geçmişi alınamadı: {durumHareketleriSonucu.Hata}"
+                : MvcMesajlari.GecmisAlinamadi("Cihaz durum geçmişi", durumHareketleriSonucu.Hata)
         };
     }
 
@@ -410,7 +409,7 @@ public sealed class EnvanterController(
         var sarfSonucu = await envanterApiClient.SarfMalzemeGetirAsync(id, token);
         if (!sarfSonucu.BasariliMi || sarfSonucu.Veri is null)
         {
-            TempData["HataMesaji"] = sarfSonucu.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sarfSonucu.Hata;
             return null;
         }
 
@@ -437,7 +436,7 @@ public sealed class EnvanterController(
             Lokasyonlar = lokasyonlar,
             HataMesaji = stokHareketleriSonucu.BasariliMi
                 ? null
-                : $"Sarf malzeme stok hareketi geçmişi alınamadı: {stokHareketleriSonucu.Hata}"
+                : MvcMesajlari.GecmisAlinamadi("Sarf malzeme stok hareketi geçmişi", stokHareketleriSonucu.Hata)
         };
     }
 
@@ -446,7 +445,7 @@ public sealed class EnvanterController(
         var sonuc = await envanterApiClient.KategorileriListeleAsync(token);
         if (!sonuc.BasariliMi)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return [];
         }
 
@@ -460,7 +459,7 @@ public sealed class EnvanterController(
         var sonuc = await envanterApiClient.LokasyonlariListeleAsync(token);
         if (!sonuc.BasariliMi)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return [];
         }
 
@@ -470,11 +469,11 @@ public sealed class EnvanterController(
     }
 
     private string? TokenAl()
-        => HttpContext.Session.GetString(TokenSessionKey);
+        => HttpContext.Session.GetString(MvcSabitleri.TokenSessionKey);
 
     private IActionResult OturumYok()
     {
-        TempData["HataMesaji"] = "Bu işlem için önce kontrol panelinden giriş yapmalısın.";
+        TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KontrolPanelindenOturumYok;
         return RedirectToAction(nameof(Index));
     }
 
@@ -494,13 +493,13 @@ public sealed class EnvanterController(
             return sonuc.Veri;
         }
 
-        model.ListelemeHatalari.Add($"{listeAdi} alınamadı: {sonuc.Hata}");
+        model.ListelemeHatalari.Add(MvcMesajlari.ListeAlinamadi(listeAdi, sonuc.Hata));
         return [];
     }
 
     private void IslemSonucunuYansit<T>(ApiIslemSonucu<T> sonuc, string basariMesaji)
     {
-        TempData[sonuc.BasariliMi ? "BasariMesaji" : "HataMesaji"] = sonuc.BasariliMi
+        TempData[sonuc.BasariliMi ? MvcSabitleri.BasariMesajiTempDataKey : MvcSabitleri.HataMesajiTempDataKey] = sonuc.BasariliMi
             ? basariMesaji
             : sonuc.Hata;
     }

@@ -1,5 +1,6 @@
 using EnvanterServisi.Api.Contracts.SarfMalzemeler;
 using EnvanterServisi.Api.Contracts.Stok;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +26,7 @@ public sealed class SarfMalzemelerController(IEnvanterServisi envanterServisi) :
     public async Task<ActionResult<SarfMalzemeCevap>> Getir(Guid id, CancellationToken cancellationToken)
     {
         var sarfMalzeme = await envanterServisi.SarfMalzemeGetirAsync(id, cancellationToken);
-        return sarfMalzeme is null ? NotFound(new { hata = "Sarf malzeme bulunamadı." }) : Ok(sarfMalzeme);
+        return sarfMalzeme is null ? NotFound(new { hata = EnvanterMesajlari.SarfMalzemeBulunamadi }) : Ok(sarfMalzeme);
     }
 
     [HttpPost]
@@ -50,7 +51,7 @@ public sealed class SarfMalzemelerController(IEnvanterServisi envanterServisi) :
         var kullaniciId = KullaniciIdGetir();
         if (!kullaniciId.HasValue)
         {
-            return Unauthorized(new { hata = "Token içinde KullaniciId bilgisi bulunamadı." });
+            return Unauthorized(new { hata = EnvanterMesajlari.TokenKullaniciIdYok });
         }
 
         var sonuc = await envanterServisi.SarfMalzemeStokHareketiIsleAsync(id, istek, kullaniciId.Value, cancellationToken);

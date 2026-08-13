@@ -1,4 +1,5 @@
 using KimlikVePersonelServisi.Api.Contracts.Departmanlar;
+using KimlikVePersonelServisi.Api.Sabitler;
 using KimlikVePersonelServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ public sealed class DepartmanlarController(IKimlikPersonelServisi kimlikPersonel
     {
         var departman = await kimlikPersonelServisi.DepartmanGetirAsync(id, cancellationToken);
         return departman is null
-            ? NotFound(new { hata = "Departman bulunamadı." })
+            ? NotFound(new { hata = KimlikPersonelMesajlari.DepartmanBulunamadi })
             : Ok(departman);
     }
 

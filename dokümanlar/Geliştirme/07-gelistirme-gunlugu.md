@@ -816,17 +816,17 @@ Doğrulama:
 - `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
-### Zimmet oluşturuldu test mail entegrasyonu eklendi
+### Zimmet test mail entegrasyonu eklendi
 
 Ne yapıldı:
 
 - `MailServisi.Api` ayrı Web API projesi olarak solution'a eklendi.
 - MailServisi `http://localhost:5006` portunda çalışacak şekilde ayarlandı.
 - `/saglik` endpointi ve Swagger desteği eklendi.
-- `zimmet.olusturuldu` event sözleşmesine `PersonelEmail` alanı eklendi.
-- ZimmetServisi, zimmet kaydındaki `PersonelEmail` snapshot değerini event payload'ına ekleyecek şekilde güncellendi.
-- DenetimKaydiServisi aynı event sözleşmesini `PersonelEmail` alanıyla okuyacak şekilde güncellendi.
-- MailServisi CAP/RabbitMQ üzerinden yalnızca `zimmet.olusturuldu` eventini tüketir hale getirildi.
+- Zimmet mail event sözleşmelerine `PersonelEmail` alanı ve mail içeriği için gerekli snapshot bilgiler eklendi.
+- ZimmetServisi, zimmet kaydındaki personel/cihaz snapshot değerlerini event payload'larına ekleyecek şekilde güncellendi.
+- DenetimKaydiServisi aynı event sözleşmelerini mail için gerekli alanlarla okuyacak şekilde güncellendi.
+- MailServisi CAP/RabbitMQ üzerinden `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir hale getirildi.
 - CAP consumer grubu `mail-servisi` olarak ayarlandı.
 - CAP storage için mevcut MongoDB bağlantısı kullanıldı.
 - Gmail SMTP gönderimi için MailKit paketi eklendi.
@@ -837,8 +837,8 @@ Ne yapıldı:
 
 Neden yapıldı:
 
-- Zimmet oluşturma eventinin CAP/RabbitMQ üzerinden başka bir teknik entegrasyon tarafından tüketilebildiğini göstermek istiyoruz.
-- Mail gönderimi zimmet oluşturma transaction'ını geri almamalıdır; bu yüzden akış event consumer tarafında ayrıştırıldı.
+- Zimmet oluşturma ve iade eventlerinin CAP/RabbitMQ üzerinden başka bir teknik entegrasyon tarafından tüketilebildiğini göstermek istiyoruz.
+- Mail gönderimi zimmet transaction'larını geri almamalıdır; bu yüzden akış event consumer tarafında ayrıştırıldı.
 - Test aşamasında gerçek personele yanlışlıkla e-posta gitmemesi için alıcı adresi sabit test adresiyle override edildi.
 - Gmail app password gizli bilgi olduğu için repo içinde tutulmamalıdır.
 
@@ -846,6 +846,28 @@ Doğrulama:
 
 - `dotnet restore ITEnvanterTakipSistemi.sln` komutu başarıyla tamamlandı.
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
+### Doküman, string sabitleri ve risksiz demo seed temizliği yapıldı - 2026-08-13
+
+Ne yapıldı:
+
+- Faz 1-9 ve MailServisi ek entegrasyonu dokümanlarda gerçek kod durumuna göre güncellendi.
+- MailServisi dokümanları `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini kapsayacak şekilde düzeltildi.
+- Kullanıcı mesajları, rol adları, event adları, SignalR metod adları, session/tempdata anahtarları ve tekrar eden teknik stringler servis bazlı `Sabitler` sınıflarında toplandı.
+- MVC client içinde `TempData` ve `Session` anahtarları `MvcSabitleri`, kullanıcı mesajları `MvcMesajlari` üzerinden okunacak hale getirildi.
+- KimlikVePersonelServisi, EnvanterServisi, ZimmetServisi, DenetimKaydiServisi, BildirimServisi ve MailServisi tarafında merkezi sabit sınıfları standartlaştırıldı.
+- Development ortamında `DemoVeri:Sifirla` varsayılanı `false` yapıldı; normal servis başlangıcında mevcut verinin silinmesi engellendi.
+
+Neden yapıldı:
+
+- Mesaj ve teknik stringlerin dağınık kalması bakım maliyetini artırıyordu.
+- Demo seed reset davranışının varsayılan açık olması geliştirme sırasında gerçek test verisi kaybı riski yaratıyordu.
+- Dokümanların faz ve entegrasyon durumunu güncel kodla aynı anlatması gerekiyor.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+- Bozuk Türkçe karakter aramasında eşleşme bulunmadı.
 
 ### MongoDB CAP storage replica set ayarı yapıldı
 

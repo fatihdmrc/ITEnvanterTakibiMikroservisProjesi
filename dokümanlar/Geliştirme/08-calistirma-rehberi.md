@@ -260,6 +260,18 @@ it.personel / ItPersonel123! / ITPersoneli
 personel / Personel123! / PersonelKullanicisi
 ```
 
+Demo veri reset varsayılan olarak kapalıdır. Normal development çalıştırmasında `DemoVeri:Sifirla=false` olduğu için mevcut veriler silinmez. Demo verisini bilinçli olarak sıfırlamak gerektiğinde ilgili servisleri başlatmadan önce PowerShell'de şu override verilir:
+
+```powershell
+$env:DemoVeri__Sifirla="true"
+```
+
+Reset işlemi tamamlandıktan sonra aynı terminalde normal çalışmaya dönmek için:
+
+```powershell
+Remove-Item Env:\DemoVeri__Sifirla
+```
+
 Örnek giriş gövdesi:
 
 ```json
@@ -456,7 +468,7 @@ http://localhost:5006/swagger
 http://localhost:5006/saglik
 ```
 
-MailServisi, `zimmet.olusturuldu` eventini CAP/RabbitMQ üzerinden tüketir ve test modunda Gmail ile zimmet bilgilendirme e-postası gönderir. Gönderim 3 kez denenir; 3 deneme başarısız olursa CAP consumer başarısız tüketim olarak izlenir.
+MailServisi, `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini CAP/RabbitMQ üzerinden tüketir ve test modunda Gmail ile zimmet bilgilendirme e-postası gönderir. Gönderim 3 kez denenir; 3 deneme başarısız olursa CAP consumer başarısız tüketim olarak izlenir.
 
 ### Terminal 7 - MVC Client
 
@@ -513,7 +525,7 @@ Yetki notu:
 - KimlikVePersonelServisi PostgreSQL bağlantısı
 - ASP.NET Core Identity ile kullanıcı, rol ve şifre yönetimi
 - KimlikVePersonelServisi JWT token üretimi
-- Demo departman, personel ve kullanıcı kayıtları
+- Varsayılan kapalı reset davranışına sahip demo departman, personel ve kullanıcı kayıtları
 - Her iki API için `/saglik` endpointi
 - DBeaver Community ile veritabanı görüntüleme
 - Repository pattern ile ayrılmış veri erişim katmanı
@@ -675,16 +687,24 @@ Faz 9 ile BildirimServisi ve MVC canlı bildirim merkezi eklenmiştir:
 - MVC client içinde yerel SignalR istemci dosyası kullanılır; CDN bağımlılığı yoktur.
 - Bildirimler kalıcı saklanmaz; sayfa yenilenirse canlı liste sıfırlanır.
 
-## 18. Zimmet Oluşturuldu Test Mail Notları - 2026-08-12
+## 18. Zimmet Test Mail Notları - 2026-08-12
 
 MailServisi test amaçlı Gmail gönderimi için eklenmiştir:
 
 - Servis adresi `http://localhost:5006` şeklindedir.
 - Swagger adresi `http://localhost:5006/swagger` şeklindedir.
 - Sağlık endpointi `http://localhost:5006/saglik` şeklindedir.
-- Servis yalnızca `zimmet.olusturuldu` eventini CAP/RabbitMQ üzerinden tüketir.
-- Event payload'ında `PersonelEmail` alanı bulunur.
+- Servis `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini CAP/RabbitMQ üzerinden tüketir.
+- Event payload'larında `PersonelEmail` alanı ve mail içeriği için gerekli zimmet/cihaz snapshot bilgileri bulunur.
 - Test modunda gerçek personele e-posta gönderilmez; alıcı `fathdmrc01@gmail.com` olarak override edilir.
 - Gmail kullanıcı adı ve app password user-secrets ile verilmelidir.
 - SMTP gönderimi 3 kez denenir.
-- Mail gönderimi başarısız olursa zimmet oluşturma işlemi geri alınmaz.
+- Mail gönderimi başarısız olursa zimmet oluşturma veya iade işlemleri geri alınmaz.
+
+## 19. String Sabitleri ve Demo Seed Notları - 2026-08-13
+
+- Kullanıcı mesajları, rol adları, event adları, SignalR metod adları, session/tempdata anahtarları ve tekrar eden teknik stringler servis bazlı `Sabitler` sınıflarından okunur.
+- MVC client içinde oturum ve bildirim mesaj anahtarları `MvcSabitleri`, kullanıcıya dönen Türkçe mesajlar `MvcMesajlari` üzerinden yönetilir.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi için development reset ayarı varsayılan kapalıdır.
+- Reset yalnızca `$env:DemoVeri__Sifirla="true"` açıkça verildiğinde yapılmalıdır.
+- Audit/Mongo ve CAP teknik kayıtları domain demo seed resetinden ayrı kabul edilir.

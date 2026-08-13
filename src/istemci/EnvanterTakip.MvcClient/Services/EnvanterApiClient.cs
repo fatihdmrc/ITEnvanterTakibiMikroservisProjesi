@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using EnvanterTakip.MvcClient.Models;
+using EnvanterTakip.MvcClient.Sabitler;
 
 namespace EnvanterTakip.MvcClient.Services;
 
@@ -183,15 +184,15 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+            return ApiIslemSonucu<StokOzetModel>.Basarisiz(MvcMesajlari.EnvanterServisineUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+            return ApiIslemSonucu<StokOzetModel>.Basarisiz(MvcMesajlari.ServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return ApiIslemSonucu<StokOzetModel>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
+            return ApiIslemSonucu<StokOzetModel>.Basarisiz(MvcMesajlari.ServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -207,15 +208,15 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.EnvanterServisineUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -239,15 +240,15 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return ApiListeSonucu<T>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+            return ApiListeSonucu<T>.Basarisiz(MvcMesajlari.EnvanterServisineUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return ApiListeSonucu<T>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+            return ApiListeSonucu<T>.Basarisiz(MvcMesajlari.ServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return ApiListeSonucu<T>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
+            return ApiListeSonucu<T>.Basarisiz(MvcMesajlari.ServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -274,15 +275,15 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.EnvanterServisineUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi zamanında cevap vermedi.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return ApiIslemSonucu<T>.Basarisiz("Envanter servisi beklenmeyen formatta cevap döndürdü.");
+            return ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -314,7 +315,7 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         {
             var veri = JsonSerializer.Deserialize<T>(icerik, JsonAyarlari);
             return veri is null
-                ? ApiIslemSonucu<T>.Basarisiz("Servis boş cevap döndürdü.")
+                ? ApiIslemSonucu<T>.Basarisiz(MvcMesajlari.ServisBosCevapDondu)
                 : ApiIslemSonucu<T>.Basarili(veri);
         }
 
@@ -331,11 +332,11 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
 
         return durumKodu switch
         {
-            HttpStatusCode.Unauthorized => "Oturum bulunamadı veya süresi doldu. Lütfen tekrar giriş yap.",
-            HttpStatusCode.Forbidden => "Bu işlem için yetkin yok.",
-            HttpStatusCode.NotFound => "İstenen kayıt bulunamadı.",
-            HttpStatusCode.BadRequest => "Gönderilen bilgiler geçerli değil.",
-            _ => "Servis hata döndürdü."
+            HttpStatusCode.Unauthorized => MvcMesajlari.OturumBulunamadiVeyaSuresiDoldu,
+            HttpStatusCode.Forbidden => MvcMesajlari.YetkiYok,
+            HttpStatusCode.NotFound => MvcMesajlari.IstenenKayitBulunamadi,
+            HttpStatusCode.BadRequest => MvcMesajlari.GonderilenBilgilerGecerliDegil,
+            _ => MvcMesajlari.ServisHataDondurdu
         };
     }
 

@@ -1,5 +1,6 @@
 using ZimmetServisi.Api.Contracts.Zimmetler;
 using ZimmetServisi.Api.Domain.Enums;
+using ZimmetServisi.Api.Sabitler;
 using ZimmetServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,7 @@ public sealed class ZimmetlerController(IZimmetServisi zimmetServisi) : Controll
         var personelId = PersonelIdGetir();
         if (!personelId.HasValue)
         {
-            return Unauthorized(new { hata = "Token içinde PersonelId bilgisi bulunamadı." });
+            return Unauthorized(new { hata = ZimmetMesajlari.TokenPersonelIdYok });
         }
 
         return Ok(await zimmetServisi.ZimmetleriListeleAsync(personelId: personelId.Value, cancellationToken: cancellationToken));
@@ -40,7 +41,7 @@ public sealed class ZimmetlerController(IZimmetServisi zimmetServisi) : Controll
         var zimmet = await zimmetServisi.ZimmetGetirAsync(id, cancellationToken);
         if (zimmet is null)
         {
-            return NotFound(new { hata = "Zimmet kaydı bulunamadı." });
+            return NotFound(new { hata = ZimmetMesajlari.ZimmetKaydiBulunamadi });
         }
 
         if (!YonetimRolundeMi() && zimmet.PersonelId != PersonelIdGetir())
@@ -59,7 +60,7 @@ public sealed class ZimmetlerController(IZimmetServisi zimmetServisi) : Controll
         var bearerToken = BearerTokenAl();
         if (!kullaniciId.HasValue || bearerToken is null)
         {
-            return Unauthorized(new { hata = "Token içinde kullanıcı bilgisi bulunamadı." });
+            return Unauthorized(new { hata = ZimmetMesajlari.TokenKullaniciBilgisiYok });
         }
 
         var sonuc = await zimmetServisi.ZimmetOlusturAsync(istek, kullaniciId.Value, bearerToken, cancellationToken);
@@ -76,7 +77,7 @@ public sealed class ZimmetlerController(IZimmetServisi zimmetServisi) : Controll
         var bearerToken = BearerTokenAl();
         if (!kullaniciId.HasValue || bearerToken is null)
         {
-            return Unauthorized(new { hata = "Token içinde kullanıcı bilgisi bulunamadı." });
+            return Unauthorized(new { hata = ZimmetMesajlari.TokenKullaniciBilgisiYok });
         }
 
         var sonuc = await zimmetServisi.IadeAlindiAsync(id, istek, kullaniciId.Value, bearerToken, cancellationToken);
@@ -91,7 +92,7 @@ public sealed class ZimmetlerController(IZimmetServisi zimmetServisi) : Controll
         var bearerToken = BearerTokenAl();
         if (!kullaniciId.HasValue || bearerToken is null)
         {
-            return Unauthorized(new { hata = "Token içinde kullanıcı bilgisi bulunamadı." });
+            return Unauthorized(new { hata = ZimmetMesajlari.TokenKullaniciBilgisiYok });
         }
 
         var sonuc = await zimmetServisi.IadeKontroluTamamlaAsync(id, istek, kullaniciId.Value, bearerToken, cancellationToken);
@@ -120,5 +121,5 @@ public sealed class ZimmetlerController(IZimmetServisi zimmetServisi) : Controll
     }
 
     private bool YonetimRolundeMi()
-        => User.IsInRole("Admin") || User.IsInRole("ITPersoneli");
+        => User.IsInRole(ZimmetMesajlari.AdminRolu) || User.IsInRole(ZimmetMesajlari.ITPersoneliRolu);
 }

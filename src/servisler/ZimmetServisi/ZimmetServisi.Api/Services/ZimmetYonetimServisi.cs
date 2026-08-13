@@ -4,6 +4,7 @@ using ZimmetServisi.Api.Data;
 using ZimmetServisi.Api.Domain.Entities;
 using ZimmetServisi.Api.Domain.Enums;
 using ZimmetServisi.Api.Repositories;
+using ZimmetServisi.Api.Sabitler;
 using ZimmetServisi.Api.Services.Harici;
 using DotNetCore.CAP;
 using Microsoft.EntityFrameworkCore;
@@ -41,34 +42,34 @@ public sealed class ZimmetYonetimServisi(
     {
         if (istek.CihazId == Guid.Empty || istek.PersonelId == Guid.Empty)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Cihaz ve personel seçimi zorunludur.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.CihazVePersonelSecimiZorunlu);
         }
 
         if (await zimmetRepository.AcikZimmetVarMiAsync(istek.CihazId, cancellationToken: cancellationToken))
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Bu cihaz için açık bir zimmet zaten var.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.CihazdaAcikZimmetVar);
         }
 
         var personelSonucu = await kimlikPersonelApiClient.PersonelGetirAsync(istek.PersonelId, bearerToken, cancellationToken);
         if (!personelSonucu.BasariliMi || personelSonucu.Veri is null)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz($"Personel doğrulanamadı: {personelSonucu.Hata}");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.PersonelDogrulanamadi(personelSonucu.Hata));
         }
 
         if (!personelSonucu.Veri.AktifMi || personelSonucu.Veri.Durum != HariciPersonelDurumu.Aktif)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Aktif olmayan veya işten ayrılmış personele zimmet oluşturulamaz.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.AktifOlmayanPersoneleZimmetOlusturulamaz);
         }
 
         var cihazSonucu = await envanterApiClient.CihazGetirAsync(istek.CihazId, bearerToken, cancellationToken);
         if (!cihazSonucu.BasariliMi || cihazSonucu.Veri is null)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz($"Cihaz doğrulanamadı: {cihazSonucu.Hata}");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.CihazDogrulanamadi(cihazSonucu.Hata));
         }
 
         if (!cihazSonucu.Veri.AktifMi || cihazSonucu.Veri.Durum != HariciCihazDurumu.Kullanilabilir)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Yalnızca aktif ve kullanılabilir durumdaki cihazlar zimmetlenebilir.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.KullanilabilirOlmayanCihazZimmetlenemez);
         }
 
         var personelAdSoyad = $"{personelSonucu.Veri.Ad} {personelSonucu.Veri.Soyad}".Trim();
@@ -95,14 +96,14 @@ public sealed class ZimmetYonetimServisi(
         }
         catch (DbUpdateException)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Zimmet kaydı oluşturulamadı. Bu cihaz için açık zimmet olup olmadığını kontrol et.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.ZimmetKaydiOlusturulamadi);
         }
 
         var cihazDurumSonucu = await envanterApiClient.CihazDurumHareketiIsleAsync(
             istek.CihazId,
             new HariciCihazDurumHareketiIstek(
                 HariciStokHareketNedeni.Zimmetlendi,
-                $"{personelAdSoyad} personeline zimmetlendi.",
+                ZimmetMesajlari.ZimmetlendiAciklamasi(personelAdSoyad),
                 HariciEldenCikarmaTipi.Yok,
                 null),
             bearerToken,
@@ -111,7 +112,7 @@ public sealed class ZimmetYonetimServisi(
         if (!cihazDurumSonucu.BasariliMi)
         {
             await transaction.RollbackAsync(cancellationToken);
-            return Sonuc<ZimmetCevap>.Basarisiz($"Cihaz durumu zimmetli yapılamadı: {cihazDurumSonucu.Hata}");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.CihazDurumuZimmetliYapilamadi(cihazDurumSonucu.Hata));
         }
 
         await ZimmetOlusturulduEventiYayinlaAsync(zimmet, cancellationToken);
@@ -130,12 +131,12 @@ public sealed class ZimmetYonetimServisi(
         var zimmet = await zimmetRepository.GetirAsync(id, cancellationToken);
         if (zimmet is null)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Zimmet kaydı bulunamadı.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.ZimmetKaydiBulunamadi);
         }
 
         if (zimmet.Durum != ZimmetDurumu.Aktif)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Yalnızca aktif zimmetler iade sürecine alınabilir.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.SadeceAktifZimmetIadeSurecineAlinir);
         }
 
         using var transaction = dbContext.Database.BeginTransaction(capPublisher, autoCommit: false);
@@ -151,7 +152,7 @@ public sealed class ZimmetYonetimServisi(
             zimmet.CihazId,
             new HariciCihazDurumHareketiIstek(
                 HariciStokHareketNedeni.ZimmetIadeAlindi,
-                $"{zimmet.PersonelAdSoyad} personelinden zimmet iadesi alındı.",
+                ZimmetMesajlari.ZimmetIadesiAlindiAciklamasi(zimmet.PersonelAdSoyad),
                 HariciEldenCikarmaTipi.Yok,
                 null),
             bearerToken,
@@ -160,7 +161,7 @@ public sealed class ZimmetYonetimServisi(
         if (!cihazDurumSonucu.BasariliMi)
         {
             await transaction.RollbackAsync(cancellationToken);
-            return Sonuc<ZimmetCevap>.Basarisiz($"Cihaz iade incelemesine alınamadı: {cihazDurumSonucu.Hata}");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.CihazIadeIncelemesineAlinamadi(cihazDurumSonucu.Hata));
         }
 
         await ZimmetIadeAlindiEventleriniYayinlaAsync(zimmet, cancellationToken);
@@ -178,12 +179,12 @@ public sealed class ZimmetYonetimServisi(
         var zimmet = await zimmetRepository.GetirAsync(id, cancellationToken);
         if (zimmet is null)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Zimmet kaydı bulunamadı.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.ZimmetKaydiBulunamadi);
         }
 
         if (zimmet.Durum != ZimmetDurumu.IadeSurecinde)
         {
-            return Sonuc<ZimmetCevap>.Basarisiz("Fiziki kontrol yalnızca iade sürecindeki zimmetler için tamamlanabilir.");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.SadeceIadeSurecindekiZimmetKontrolEdilir);
         }
 
         var neden = IadeKontrolDurumunuHareketeDonustur(istek.IadeKontrolDurumu);
@@ -209,7 +210,7 @@ public sealed class ZimmetYonetimServisi(
         if (!cihazDurumSonucu.BasariliMi)
         {
             await transaction.RollbackAsync(cancellationToken);
-            return Sonuc<ZimmetCevap>.Basarisiz($"Cihaz durumu iade kontrol sonucuna göre güncellenemedi: {cihazDurumSonucu.Hata}");
+            return Sonuc<ZimmetCevap>.Basarisiz(ZimmetMesajlari.CihazDurumuIadeKontroluneGoreGuncellenemedi(cihazDurumSonucu.Hata));
         }
 
         await ZimmetIadeEdildiEventleriniYayinlaAsync(zimmet, cancellationToken);
@@ -327,16 +328,14 @@ public sealed class ZimmetYonetimServisi(
         var not = BosIseNull(istek.IadeNotu);
         var sonuc = istek.IadeKontrolDurumu switch
         {
-            IadeKontrolDurumu.Saglam => "sağlam, tekrar kullanılabilir",
-            IadeKontrolDurumu.Bakimda => "bakıma alınacak",
-            IadeKontrolDurumu.HurdaIskarta => "hurda/ıskarta olarak ayrıldı",
-            IadeKontrolDurumu.HasarliTeslimAlindi => "hasarlı teslim alındı",
-            _ => "incelemede"
+            IadeKontrolDurumu.Saglam => ZimmetMesajlari.IadeKontrolSonucuSaglam,
+            IadeKontrolDurumu.Bakimda => ZimmetMesajlari.IadeKontrolSonucuBakimda,
+            IadeKontrolDurumu.HurdaIskarta => ZimmetMesajlari.IadeKontrolSonucuHurdaIskarta,
+            IadeKontrolDurumu.HasarliTeslimAlindi => ZimmetMesajlari.IadeKontrolSonucuHasarli,
+            _ => ZimmetMesajlari.IadeKontrolSonucuIncelemede
         };
 
-        return string.IsNullOrWhiteSpace(not)
-            ? $"{zimmet.PersonelAdSoyad} personelinden alınan zimmetin fiziki kontrol sonucu: {sonuc}."
-            : $"{zimmet.PersonelAdSoyad} personelinden alınan zimmetin fiziki kontrol sonucu: {sonuc}. Not: {not}";
+        return ZimmetMesajlari.IadeKontrolAciklamasi(zimmet.PersonelAdSoyad, sonuc, not);
     }
 
     private static string CihazAdiniOlustur(HariciCihazCevap cihaz)

@@ -4,6 +4,7 @@ using EnvanterServisi.Api.Data;
 using EnvanterServisi.Api.Filters;
 using EnvanterServisi.Api.Options;
 using EnvanterServisi.Api.Repositories;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services;
 using EnvanterServisi.Api.Services.Cache;
 using EnvanterServisi.Api.Services.Harici;
@@ -22,7 +23,7 @@ var jwtAyarlari = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
 builder.Services.Configure<CacheAyarlari>(builder.Configuration.GetSection("Cache"));
 var envanterConnectionString = builder.Configuration.GetConnectionString("EnvanterDb")
-    ?? throw new InvalidOperationException("Envanter veritabanı bağlantısı bulunamadı.");
+    ?? throw new InvalidOperationException(EnvanterMesajlari.EnvanterDbBaglantisiYok);
 
 builder.Services.AddControllers(options =>
     {
@@ -68,7 +69,7 @@ builder.Services
     .AddJwtBearer(options =>
     {
         var ayarlar = jwtAyarlari.Get<JwtAyarlari>()
-            ?? throw new InvalidOperationException("JWT ayarları bulunamadı.");
+            ?? throw new InvalidOperationException(EnvanterMesajlari.JwtAyarlariYok);
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -86,7 +87,7 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminVeyaITPersoneli", policy =>
-        policy.RequireRole("Admin", "ITPersoneli"));
+        policy.RequireRole(EnvanterMesajlari.AdminRolu, EnvanterMesajlari.ITPersoneliRolu));
 });
 
 builder.Services.AddDbContext<EnvanterDbContext>(options =>
@@ -126,7 +127,7 @@ builder.Services.AddCap(options =>
 builder.Services.AddHttpClient<DenetimApiClient>(client =>
 {
     var servisAdresi = builder.Configuration["ServisAdresleri:DenetimKaydiServisi"]
-        ?? throw new InvalidOperationException("Denetim kaydi servisi adresi tanimli degil.");
+        ?? throw new InvalidOperationException(EnvanterMesajlari.DenetimServisiAdresiYok);
 
     client.BaseAddress = new Uri(servisAdresi);
     client.Timeout = TimeSpan.FromSeconds(2);

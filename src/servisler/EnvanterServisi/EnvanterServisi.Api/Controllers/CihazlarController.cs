@@ -1,6 +1,7 @@
 using EnvanterServisi.Api.Contracts.Cihazlar;
 using EnvanterServisi.Api.Contracts.Stok;
 using EnvanterServisi.Api.Domain.Enums;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,7 @@ public sealed class CihazlarController(IEnvanterServisi envanterServisi) : Contr
     public async Task<ActionResult<CihazCevap>> Getir(Guid id, CancellationToken cancellationToken)
     {
         var cihaz = await envanterServisi.CihazGetirAsync(id, cancellationToken);
-        return cihaz is null ? NotFound(new { hata = "Cihaz bulunamadı." }) : Ok(cihaz);
+        return cihaz is null ? NotFound(new { hata = EnvanterMesajlari.CihazBulunamadi }) : Ok(cihaz);
     }
 
     [HttpPost]
@@ -53,7 +54,7 @@ public sealed class CihazlarController(IEnvanterServisi envanterServisi) : Contr
         var kullaniciId = KullaniciIdGetir();
         if (!kullaniciId.HasValue)
         {
-            return Unauthorized(new { hata = "Token içinde KullaniciId bilgisi bulunamadı." });
+            return Unauthorized(new { hata = EnvanterMesajlari.TokenKullaniciIdYok });
         }
 
         var sonuc = await envanterServisi.CihazDurumHareketiIsleAsync(id, istek, kullaniciId.Value, cancellationToken);

@@ -14,8 +14,8 @@ public class HomeController(
     {
         var model = await PanelModeliOlustur(personelArama, personelDepartmanId, sekme);
 
-        model.BasariMesaji = TempData["BasariMesaji"] as string;
-        model.HataMesaji = TempData["HataMesaji"] as string;
+        model.BasariMesaji = TempData[MvcSabitleri.BasariMesajiTempDataKey] as string;
+        model.HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string;
 
         return View(model);
     }
@@ -26,14 +26,14 @@ public class HomeController(
     {
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Kullanıcı adı ve şifre girilmelidir.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.GirisBilgileriEksik;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await kimlikPersonelApiClient.GirisYapAsync(form);
         if (!sonuc.BasariliMi || sonuc.Veri is null)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return RedirectToAction(nameof(Index));
         }
 
@@ -43,14 +43,14 @@ public class HomeController(
         HttpContext.Session.SetString(MvcSabitleri.PersonelIdSessionKey, sonuc.Veri.PersonelId.ToString());
         HttpContext.Session.SetString(MvcSabitleri.RolSessionKey, sonuc.Veri.Rol.ToString());
 
-        TempData["BasariMesaji"] = $"{form.KullaniciAdi} kullanıcısı ile giriş yapıldı.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.GirisYapildi(form.KullaniciAdi);
         return RedirectToAction(nameof(Index));
     }
 
     public IActionResult Cikis()
     {
         HttpContext.Session.Clear();
-        TempData["BasariMesaji"] = "Oturum kapatıldı.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.OturumKapatildi;
         return RedirectToAction(nameof(Index));
     }
 
@@ -66,12 +66,12 @@ public class HomeController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Departman bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.DepartmanBilgileriHatali;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await kimlikPersonelApiClient.DepartmanOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Departman oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.DepartmanOlusturuldu);
         return RedirectToAction(nameof(Index));
     }
 
@@ -87,12 +87,12 @@ public class HomeController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Departman güncelleme bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.DepartmanGuncellemeBilgileriHatali;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await kimlikPersonelApiClient.DepartmanGuncelleAsync(form, token);
-        IslemSonucunuYansit(sonuc, form.AktifMi ? "Departman güncellendi." : "Departman pasifleştirildi.");
+        IslemSonucunuYansit(sonuc, form.AktifMi ? MvcMesajlari.DepartmanGuncellendi : MvcMesajlari.DepartmanPasiflestirildi);
         return RedirectToAction(nameof(Index));
     }
 
@@ -108,12 +108,12 @@ public class HomeController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Personel bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.PersonelBilgileriHatali;
             return RedirectToPersonelSekmesi();
         }
 
         var sonuc = await kimlikPersonelApiClient.PersonelOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Personel oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.PersonelOlusturuldu);
         return RedirectToPersonelSekmesi();
     }
 
@@ -132,7 +132,7 @@ public class HomeController(
             return RedirectToPersonelSekmesi();
         }
 
-        model.HataMesaji = TempData["HataMesaji"] as string;
+        model.HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string;
         return View(model);
     }
 
@@ -149,7 +149,7 @@ public class HomeController(
         if (!ModelState.IsValid)
         {
             model.Departmanlar = await AktifDepartmanlariGetir(token);
-            model.HataMesaji = "Personel güncelleme bilgileri eksik veya hatalı.";
+            model.HataMesaji = MvcMesajlari.PersonelGuncellemeBilgileriHatali;
             return View(model);
         }
 
@@ -161,7 +161,7 @@ public class HomeController(
             return View(model);
         }
 
-        TempData["BasariMesaji"] = $"{model.Form.Ad} {model.Form.Soyad} personeli güncellendi.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.PersonelGuncellendi(model.Form.Ad, model.Form.Soyad);
         return RedirectToPersonelSekmesi();
     }
 
@@ -202,11 +202,11 @@ public class HomeController(
         var sonuc = await kimlikPersonelApiClient.PersoneliIstenAyrildiYapAsync(id, token);
         if (!sonuc.BasariliMi)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return RedirectToPersonelSekmesi();
         }
 
-        TempData["BasariMesaji"] = $"{model.AdSoyad} {model.DepartmanAdi} personeli işten ayrıldı yapıldı.";
+        TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.PersonelIstenAyrildi(model.AdSoyad, model.DepartmanAdi);
         return RedirectToPersonelSekmesi();
     }
 
@@ -222,19 +222,19 @@ public class HomeController(
 
         if (!ModelState.IsValid)
         {
-            TempData["HataMesaji"] = "Kullanıcı bilgileri eksik veya hatalı.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KullaniciBilgileriHatali;
             return RedirectToKullaniciSekmesi();
         }
 
         var sonuc = await kimlikPersonelApiClient.KullaniciOlusturAsync(form, token);
-        IslemSonucunuYansit(sonuc, "Kullanıcı oluşturuldu.");
+        IslemSonucunuYansit(sonuc, MvcMesajlari.KullaniciOlusturuldu);
         return RedirectToKullaniciSekmesi();
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
-        logger.LogError("MVC client hata sayfası gösterildi. RequestId: {RequestId}", Activity.Current?.Id ?? HttpContext.TraceIdentifier);
+        logger.LogError(MvcMesajlari.HomeHataSayfasiLogu, Activity.Current?.Id ?? HttpContext.TraceIdentifier);
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
@@ -275,7 +275,7 @@ public class HomeController(
         var personelSonucu = await kimlikPersonelApiClient.PersonelGetirAsync(id, token);
         if (!personelSonucu.BasariliMi || personelSonucu.Veri is null)
         {
-            TempData["HataMesaji"] = personelSonucu.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = personelSonucu.Hata;
             return null;
         }
 
@@ -302,7 +302,7 @@ public class HomeController(
         var personelSonucu = await kimlikPersonelApiClient.PersonelGetirAsync(id, token);
         if (!personelSonucu.BasariliMi || personelSonucu.Veri is null)
         {
-            TempData["HataMesaji"] = personelSonucu.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = personelSonucu.Hata;
             return null;
         }
 
@@ -325,7 +325,7 @@ public class HomeController(
         var departmanSonucu = await kimlikPersonelApiClient.DepartmanlariListeleAsync(token);
         if (!departmanSonucu.BasariliMi)
         {
-            TempData["HataMesaji"] = departmanSonucu.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = departmanSonucu.Hata;
             return [];
         }
 
@@ -366,7 +366,7 @@ public class HomeController(
 
     private IActionResult OturumYok()
     {
-        TempData["HataMesaji"] = "Bu işlem için önce giriş yapmalısın.";
+        TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.OturumYok;
         return RedirectToAction(nameof(Index));
     }
 
@@ -386,13 +386,13 @@ public class HomeController(
             return sonuc.Veri;
         }
 
-        model.ListelemeHatalari.Add($"{listeAdi} alınamadı: {sonuc.Hata}");
+        model.ListelemeHatalari.Add(MvcMesajlari.ListeAlinamadi(listeAdi, sonuc.Hata));
         return [];
     }
 
     private void IslemSonucunuYansit<T>(ApiIslemSonucu<T> sonuc, string basariMesaji)
     {
-        TempData[sonuc.BasariliMi ? "BasariMesaji" : "HataMesaji"] = sonuc.BasariliMi
+        TempData[sonuc.BasariliMi ? MvcSabitleri.BasariMesajiTempDataKey : MvcSabitleri.HataMesajiTempDataKey] = sonuc.BasariliMi
             ? basariMesaji
             : sonuc.Hata;
     }

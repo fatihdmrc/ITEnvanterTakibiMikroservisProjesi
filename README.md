@@ -17,7 +17,7 @@ Faz 9'a kadar olan temel geliştirmeler uygulanmıştır:
 - DenetimKaydiServisi, MongoDB audit/event log ve MVC Denetim ekranı
 - Redis ile EnvanterServisi kategori/lokasyon referans veri cache'i
 - BildirimServisi, SignalR canlı kritik stok bildirimleri ve MVC bildirim merkezi
-- MailServisi, `zimmet.olusturuldu` eventinden test amaçlı Gmail e-postası gönderimi
+- MailServisi, zimmet oluşturma, iade alma ve iade kontrolü eventlerinden test amaçlı Gmail e-postası gönderimi
 
 Sıradaki fazlar:
 
@@ -50,7 +50,7 @@ Sıradaki fazlar:
 | ZimmetServisi | `5002` | Zimmet oluşturma, iade alma ve iade kontrolü |
 | DenetimKaydiServisi | `5003` | Event ve CRUD audit kayıtları |
 | BildirimServisi | `5004` | Kritik stok SignalR bildirimleri |
-| MailServisi | `5006` | Zimmet oluşturulduğunda test Gmail e-postası gönderimi |
+| MailServisi | `5006` | Zimmet oluşturma ve iade süreçlerinde test Gmail e-postası gönderimi |
 | MVC Client | `5010` | Yönetim arayüzü |
 | PostgreSQL | `5432` | Operasyonel veri depolama |
 | RabbitMQ | `5672` | Event taşıyıcı |
@@ -149,6 +149,14 @@ MailServisi:
 dotnet run --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj" --launch-profile http
 ```
 
+Demo veriler normal development açılışında silinmez. Geniş demo verisini bilinçli şekilde sıfırlayıp yeniden kurmak için ilgili servisleri başlatmadan önce aynı terminalde şu override verilir:
+
+```powershell
+$env:DemoVeri__Sifirla="true"
+```
+
+Bu değer yalnızca o terminal oturumu için geçerlidir. Normal geliştirme ve manuel testlerde boş bırakılmalıdır.
+
 MVC Client:
 
 ```powershell
@@ -213,7 +221,8 @@ Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründ
 - MVC Denetim ekranında Admin/IT kullanıcıları audit kayıtlarını filtreleyip detay payload'ını görebilir.
 - EnvanterServisi kategori ve lokasyon listelerini Redis ile cache'ler; kayıt değişikliklerinde ilgili cache temizlenir.
 - BildirimServisi kritik stok eventini tüketir ve Admin/IT kullanıcılarına MVC üzerinde canlı SignalR bildirimi gösterir.
-- MailServisi `zimmet.olusturuldu` eventini tüketir; test modunda gerçek personel e-postasını içerikte gösterir ama alıcıyı `fathdmrc01@gmail.com` olarak override eder.
+- MailServisi `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir; test modunda gerçek personel e-postasını içerikte gösterir ama alıcıyı `fathdmrc01@gmail.com` olarak override eder.
+- Kullanıcı mesajları, session/tempdata anahtarları, event adları ve tekrar eden teknik stringler servis bazlı sabit sınıflarından yönetilir.
 
 ## Dokümantasyon
 

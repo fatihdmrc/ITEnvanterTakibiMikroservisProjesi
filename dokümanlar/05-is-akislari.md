@@ -59,6 +59,7 @@ Akış:
 11. İade alma aşamasında `zimmet.iade-alindi` ve `cihaz.kontrole-alindi` eventleri yayınlanır.
 12. İade kontrolü tamamlandığında `zimmet.iade-edildi` eventi yayınlanır.
 13. Hasarlı teslim alınan cihazlarda ayrıca `cihaz.hasarli-teslim-alindi` eventi yayınlanır.
+14. MailServisi `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketerek test modunda personele yönelik bilgilendirme e-postasını `fathdmrc01@gmail.com` adresine gönderir.
 
 İş kuralları:
 
@@ -184,24 +185,24 @@ Başarılı CRUD/mutasyon işlemleri:
 4. DenetimKaydiServisi kaydı MongoDB'ye `Crud` kayıt türüyle yazar.
 5. Denetim çağrısı başarısız olsa bile ana işlem sonucu değiştirilmez.
 
-## 8. Zimmet Oluşturuldu Test Mail Akışı
+## 8. Zimmet Test Mail Akışı
 
 Amaç:
 
-- Zimmet oluşturulduğunda CAP/RabbitMQ üzerinden test amaçlı e-posta gönderimini doğrulamak.
+- Zimmet oluşturma, iade alma ve iade kontrolü tamamlanma olaylarında CAP/RabbitMQ üzerinden test amaçlı e-posta gönderimini doğrulamak.
 
 Akış:
 
-1. Admin veya ITPersoneli zimmet oluşturur.
-2. ZimmetServisi zimmet kaydını oluşturur ve `zimmet.olusturuldu` eventini yayınlar.
+1. Admin veya ITPersoneli zimmet oluşturur, iade alır veya iade kontrolünü tamamlar.
+2. ZimmetServisi ilgili işleme göre `zimmet.olusturuldu`, `zimmet.iade-alindi` veya `zimmet.iade-edildi` eventini yayınlar.
 3. Event payload'ında gerçek `PersonelEmail` bilgisi bulunur.
 4. MailServisi `mail-servisi` consumer grubu ile eventi tüketir.
 5. MailServisi Gmail ayarlarını configuration, user-secrets veya environment variable üzerinden okur.
 6. Test modu açık olduğu için SMTP alıcısı `fathdmrc01@gmail.com` olarak belirlenir.
-7. Mail içeriğine gerçek personel adı, gerçek personel e-postası, cihaz adı, asset tag ve zimmet tarihi yazılır.
+7. Mail içeriğine gerçek personel adı, gerçek personel e-postası, cihaz adı, asset tag, zimmet/iade tarihi ve varsa kontrol sonucu/not bilgisi yazılır.
 8. SMTP gönderimi başarısız olursa MailServisi kısa beklemeyle tekrar dener.
 9. Toplam 3 deneme başarısız olursa consumer hata fırlatır.
-10. Mail hatası ana zimmet oluşturma işlemini geri almaz; hata CAP tüketim tarafında izlenir.
+10. Mail hatası ana zimmet işlemini geri almaz; hata CAP tüketim tarafında izlenir.
 
 ## 9. Görsele Dönüştürme Notları
 
@@ -214,4 +215,4 @@ Bu dokümandaki akışlar draw.io veya PlantUML ile activity diagram olarak çiz
 - Personel işten ayrılma activity diagram
 - Kritik stok bildirim activity diagram
 - Hurda/ıskarta elden çıkarma activity diagram
-- Zimmet oluşturuldu test mail activity diagram
+- Zimmet test mail activity diagram

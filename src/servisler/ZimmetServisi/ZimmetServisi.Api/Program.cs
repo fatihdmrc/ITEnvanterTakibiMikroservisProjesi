@@ -4,6 +4,7 @@ using ZimmetServisi.Api.Data;
 using ZimmetServisi.Api.Filters;
 using ZimmetServisi.Api.Options;
 using ZimmetServisi.Api.Repositories;
+using ZimmetServisi.Api.Sabitler;
 using ZimmetServisi.Api.Services;
 using ZimmetServisi.Api.Services.Harici;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -20,7 +21,7 @@ builder.Logging.AddConsole();
 var jwtAyarlari = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtAyarlari>(jwtAyarlari);
 var zimmetConnectionString = builder.Configuration.GetConnectionString("ZimmetDb")
-    ?? throw new InvalidOperationException("Zimmet veritabanı bağlantısı bulunamadı.");
+    ?? throw new InvalidOperationException(ZimmetMesajlari.ZimmetDbBaglantisiYok);
 
 builder.Services.AddControllers(options =>
     {
@@ -65,7 +66,7 @@ builder.Services
     .AddJwtBearer(options =>
     {
         var ayarlar = jwtAyarlari.Get<JwtAyarlari>()
-            ?? throw new InvalidOperationException("JWT ayarları bulunamadı.");
+            ?? throw new InvalidOperationException(ZimmetMesajlari.JwtAyarlariYok);
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -83,7 +84,7 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminVeyaITPersoneli", policy =>
-        policy.RequireRole("Admin", "ITPersoneli"));
+        policy.RequireRole(ZimmetMesajlari.AdminRolu, ZimmetMesajlari.ITPersoneliRolu));
 });
 
 builder.Services.AddDbContext<ZimmetDbContext>(options =>
@@ -117,7 +118,7 @@ builder.Services.AddCap(options =>
 builder.Services.AddHttpClient<KimlikPersonelApiClient>(client =>
 {
     var servisAdresi = builder.Configuration["ServisAdresleri:KimlikVePersonelServisi"]
-        ?? throw new InvalidOperationException("Kimlik ve personel servisi adresi tanımlı değil.");
+        ?? throw new InvalidOperationException(ZimmetMesajlari.KimlikPersonelServisiAdresiYok);
 
     client.BaseAddress = new Uri(servisAdresi);
 });
@@ -125,7 +126,7 @@ builder.Services.AddHttpClient<KimlikPersonelApiClient>(client =>
 builder.Services.AddHttpClient<EnvanterApiClient>(client =>
 {
     var servisAdresi = builder.Configuration["ServisAdresleri:EnvanterServisi"]
-        ?? throw new InvalidOperationException("Envanter servisi adresi tanımlı değil.");
+        ?? throw new InvalidOperationException(ZimmetMesajlari.EnvanterServisiAdresiYok);
 
     client.BaseAddress = new Uri(servisAdresi);
 });
@@ -133,7 +134,7 @@ builder.Services.AddHttpClient<EnvanterApiClient>(client =>
 builder.Services.AddHttpClient<DenetimApiClient>(client =>
 {
     var servisAdresi = builder.Configuration["ServisAdresleri:DenetimKaydiServisi"]
-        ?? throw new InvalidOperationException("Denetim kaydi servisi adresi tanimli degil.");
+        ?? throw new InvalidOperationException(ZimmetMesajlari.DenetimServisiAdresiYok);
 
     client.BaseAddress = new Uri(servisAdresi);
     client.Timeout = TimeSpan.FromSeconds(2);

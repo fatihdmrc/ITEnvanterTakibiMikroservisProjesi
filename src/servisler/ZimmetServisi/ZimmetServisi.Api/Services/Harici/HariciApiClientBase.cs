@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ZimmetServisi.Api.Sabitler;
 
 namespace ZimmetServisi.Api.Services.Harici;
 
@@ -25,15 +26,15 @@ public abstract class HariciApiClientBase(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return HariciApiSonucu<T>.Basarisiz("Bağımlı servise ulaşılamadı.");
+            return HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServiseUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return HariciApiSonucu<T>.Basarisiz("Bağımlı servis zamanında cevap vermedi.");
+            return HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return HariciApiSonucu<T>.Basarisiz("Bağımlı servis beklenmeyen formatta cevap döndürdü.");
+            return HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -54,15 +55,15 @@ public abstract class HariciApiClientBase(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            return HariciApiSonucu<T>.Basarisiz("Bağımlı servise ulaşılamadı.");
+            return HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServiseUlasilamadi);
         }
         catch (TaskCanceledException)
         {
-            return HariciApiSonucu<T>.Basarisiz("Bağımlı servis zamanında cevap vermedi.");
+            return HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServisZamanindaCevapVermedi);
         }
         catch (JsonException)
         {
-            return HariciApiSonucu<T>.Basarisiz("Bağımlı servis beklenmeyen formatta cevap döndürdü.");
+            return HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServisBeklenmeyenFormattaCevapDondu);
         }
     }
 
@@ -78,7 +79,7 @@ public abstract class HariciApiClientBase(HttpClient httpClient)
         {
             var veri = JsonSerializer.Deserialize<T>(icerik, JsonAyarlari);
             return veri is null
-                ? HariciApiSonucu<T>.Basarisiz("Bağımlı servis boş cevap döndürdü.")
+                ? HariciApiSonucu<T>.Basarisiz(ZimmetMesajlari.BagimliServisBosCevapDondu)
                 : HariciApiSonucu<T>.Basarili(veri);
         }
 
@@ -95,11 +96,11 @@ public abstract class HariciApiClientBase(HttpClient httpClient)
 
         return durumKodu switch
         {
-            HttpStatusCode.Unauthorized => "Bağımlı servis oturumu doğrulayamadı.",
-            HttpStatusCode.Forbidden => "Bağımlı servis bu işlem için yetki vermedi.",
-            HttpStatusCode.NotFound => "Bağımlı serviste istenen kayıt bulunamadı.",
-            HttpStatusCode.BadRequest => "Bağımlı servis gönderilen bilgileri geçerli bulmadı.",
-            _ => "Bağımlı servis hata döndürdü."
+            HttpStatusCode.Unauthorized => ZimmetMesajlari.BagimliServisOturumuDogrulayamadi,
+            HttpStatusCode.Forbidden => ZimmetMesajlari.BagimliServisYetkiVermedi,
+            HttpStatusCode.NotFound => ZimmetMesajlari.BagimliServisteKayitBulunamadi,
+            HttpStatusCode.BadRequest => ZimmetMesajlari.BagimliServisBilgileriGecerliBulmadi,
+            _ => ZimmetMesajlari.BagimliServisHataDondurdu
         };
     }
 

@@ -1,4 +1,5 @@
 using EnvanterServisi.Api.Contracts.Lokasyonlar;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ public sealed class LokasyonlarController(IEnvanterServisi envanterServisi) : Co
     public async Task<ActionResult<LokasyonCevap>> Getir(Guid id, CancellationToken cancellationToken)
     {
         var lokasyon = await envanterServisi.LokasyonGetirAsync(id, cancellationToken);
-        return lokasyon is null ? NotFound(new { hata = "Lokasyon bulunamadı." }) : Ok(lokasyon);
+        return lokasyon is null ? NotFound(new { hata = EnvanterMesajlari.LokasyonBulunamadi }) : Ok(lokasyon);
     }
 
     [HttpPost]

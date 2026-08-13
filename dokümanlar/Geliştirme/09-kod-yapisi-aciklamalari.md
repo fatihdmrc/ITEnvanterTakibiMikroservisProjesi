@@ -336,7 +336,7 @@ Event yayınlayan iş akışları:
 - Zimmet oluşturma ve iade akışlarında ZimmetServisi ilgili zimmet ve cihaz kontrol eventlerini üretir.
 
 DenetimKaydiServisi Faz 7'de audit amaçlı event consumer sınıflarıyla eklenmiştir. BildirimServisi Faz 9'da kritik stok eventini canlı SignalR bildirimine dönüştüren consumer sınıfıyla eklenmiştir.
-MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu` eventini tüketen consumer sınıfıyla eklenmiştir.
+MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketen consumer sınıfıyla eklenmiştir.
 
 ## Faz 7 DenetimKaydiServisi Kod Yapısı - 2026-08-11
 
@@ -374,12 +374,12 @@ MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu` eventini tüketen
 - `wwwroot/lib/signalr/signalr.min.js`, yerel SignalR JSON/WebSocket istemcisidir.
 - `wwwroot/js/bildirimler.js`, hub bağlantısını kurar, otomatik yeniden bağlanır ve kritik stok bildirimlerini toast/liste olarak gösterir.
 
-## Zimmet Oluşturuldu Test Mail Kod Yapısı - 2026-08-12
+## Zimmet Test Mail Kod Yapısı - 2026-08-12
 
 - `src/servisler/MailServisi/MailServisi.Api` yeni test mail servisidir.
-- `Contracts/Events/ZimmetOlusturulduEvent.cs`, ZimmetServisi tarafından yayınlanan `zimmet.olusturuldu` payload sözleşmesini tutar.
-- `Contracts/Events/EventAdlari.cs`, MailServisi'nin dinlediği event routing key sabitini tutar.
-- `Consumers/ZimmetMailConsumer.cs`, CAP/RabbitMQ üzerinden `zimmet.olusturuldu` eventini tüketir.
+- `Contracts/Events/ZimmetOlusturulduEvent.cs`, `ZimmetIadeAlindiEvent.cs` ve `ZimmetIadeEdildiEvent.cs`, ZimmetServisi tarafından yayınlanan mail kapsamındaki event payload sözleşmelerini tutar.
+- `Contracts/Events/EventAdlari.cs`, MailServisi'nin dinlediği event routing key sabitlerini tutar.
+- `Consumers/ZimmetMailConsumer.cs`, CAP/RabbitMQ üzerinden `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir.
 - `Services/IZimmetMailServisi.cs`, zimmet mail gönderim sözleşmesini tanımlar.
 - `Services/GmailZimmetMailServisi.cs`, Gmail SMTP gönderimini MailKit ile yapar.
 - `Options/GmailAyarlari.cs`, SMTP host, port, kullanıcı adı, app password, test modu ve retry ayarlarını tutar.
@@ -388,6 +388,16 @@ MailServisi test mail entegrasyonu olarak `zimmet.olusturuldu` eventini tüketen
 - `Controllers/SaglikController.cs`, `/saglik` endpointini sağlar.
 - `MailServisi.Api.csproj`, `MailKit`, `DotNetCore.CAP.RabbitMQ`, `DotNetCore.CAP.MongoDB` ve Swagger paketlerini kullanır.
 
-ZimmetServisi tarafında `Contracts/Events/ZimmetOlusturulduEvent.cs` ve `ZimmetYonetimServisi.ZimmetOlusturulduEventiYayinlaAsync` metodu `PersonelEmail` alanını event payload'ına ekler. DenetimKaydiServisi tarafındaki event sözleşmesi de aynı alanla hizalanmıştır.
+ZimmetServisi tarafında `Contracts/Events/ZimmetOlusturulduEvent.cs`, `ZimmetIadeAlindiEvent.cs`, `ZimmetIadeEdildiEvent.cs` ve ilgili yayınlama metotları `PersonelEmail` alanını ve mail içeriği için gerekli snapshot bilgileri event payload'ına ekler. DenetimKaydiServisi tarafındaki event sözleşmeleri de aynı alanlarla hizalanmıştır.
 
 MailServisi kalıcı mail log tablosu tutmaz. CAP consumer state için mevcut MongoDB kullanılır. SMTP gönderimi 3 kez denenir ve CAP `FailedRetryCount = 0` olduğu için ek CAP retry yapılmaz.
+
+## String Sabitleri ve Demo Seed Kod Yapısı - 2026-08-13
+
+- MVC client içinde `Sabitler/MvcSabitleri.cs`, session anahtarları, tempdata anahtarları, rol adları, bildirim varsayılanları ve `MvcMesajlari` kullanıcı mesajlarını tutar.
+- KimlikVePersonelServisi içinde `Sabitler/KimlikPersonelMesajlari.cs`, personel/departman/kullanıcı hata mesajlarını, rol adlarını ve audit açıklamalarını merkezileştirir.
+- EnvanterServisi içinde `Sabitler/EnvanterMesajlari.cs`, cihaz/sarf/kategori/lokasyon hata mesajlarını, event adlarını, rol adlarını ve audit açıklamalarını merkezileştirir.
+- ZimmetServisi içinde `Sabitler/ZimmetMesajlari.cs`, zimmet iş kuralı mesajlarını, HTTP bağımlılık hata mesajlarını, event adlarını, rol adlarını ve audit açıklamalarını merkezileştirir.
+- DenetimKaydiServisi, BildirimServisi ve MailServisi kendi `Sabitler` dosyalarıyla config hata mesajlarını, event adlarını, CAP consumer grup adlarını ve teknik stringleri merkezileştirir.
+- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi `Program.cs` dosyaları `DemoVeri:Sifirla` ayarını okur; `appsettings.Development.json` içinde varsayılan değer `false` olduğu için normal geliştirme başlangıcında veri silinmez.
+- Bilinçli reset gerektiğinde environment override `DemoVeri__Sifirla=true` verilir; reset kapalıyken idempotent seed eksik demo verilerini tamamlayabilir ama mevcut kullanıcı verisini silmez.

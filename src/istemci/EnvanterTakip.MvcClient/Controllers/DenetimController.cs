@@ -1,4 +1,5 @@
 using EnvanterTakip.MvcClient.Models;
+using EnvanterTakip.MvcClient.Sabitler;
 using EnvanterTakip.MvcClient.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,9 +7,6 @@ namespace EnvanterTakip.MvcClient.Controllers;
 
 public sealed class DenetimController(DenetimApiClient denetimApiClient) : Controller
 {
-    private const string TokenSessionKey = "KimlikToken";
-    private const string RolSessionKey = "Rol";
-
     public async Task<IActionResult> Index([FromQuery] DenetimFiltreModel filtre)
     {
         filtre.Sayfa = Math.Max(filtre.Sayfa, 1);
@@ -20,19 +18,19 @@ public sealed class DenetimController(DenetimApiClient denetimApiClient) : Contr
             OturumVarMi = !string.IsNullOrWhiteSpace(token),
             YonetimYetkisiVarMi = YonetimYetkisiVarMi(),
             Rol = RolAl(),
-            HataMesaji = TempData["HataMesaji"] as string,
+            HataMesaji = TempData[MvcSabitleri.HataMesajiTempDataKey] as string,
             Filtre = filtre
         };
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            model.HataMesaji ??= "Denetim kayitlarini gormek icin once kontrol panelinden giris yapmalisin.";
+            model.HataMesaji ??= MvcMesajlari.DenetimOturumYok;
             return View(model);
         }
 
         if (!model.YonetimYetkisiVarMi)
         {
-            model.HataMesaji ??= "Denetim kayitlarini yalnizca Admin veya ITPersoneli rolu gorebilir.";
+            model.HataMesaji ??= MvcMesajlari.DenetimYetkisiYok;
             return View(model);
         }
 
@@ -54,20 +52,20 @@ public sealed class DenetimController(DenetimApiClient denetimApiClient) : Contr
         var token = TokenAl();
         if (string.IsNullOrWhiteSpace(token))
         {
-            TempData["HataMesaji"] = "Denetim kaydini gormek icin once giris yapmalisin.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.DenetimDetayOturumYok;
             return RedirectToAction(nameof(Index));
         }
 
         if (!YonetimYetkisiVarMi())
         {
-            TempData["HataMesaji"] = "Denetim kaydini goruntulemek icin yetkin yok.";
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.DenetimDetayYetkisiYok;
             return RedirectToAction(nameof(Index));
         }
 
         var sonuc = await denetimApiClient.DenetimKaydiGetirAsync(id, token);
         if (!sonuc.BasariliMi || sonuc.Veri is null)
         {
-            TempData["HataMesaji"] = sonuc.Hata;
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = sonuc.Hata;
             return RedirectToAction(nameof(Index));
         }
 
@@ -75,14 +73,14 @@ public sealed class DenetimController(DenetimApiClient denetimApiClient) : Contr
     }
 
     private string? TokenAl()
-        => HttpContext.Session.GetString(TokenSessionKey);
+        => HttpContext.Session.GetString(MvcSabitleri.TokenSessionKey);
 
     private string? RolAl()
-        => HttpContext.Session.GetString(RolSessionKey);
+        => HttpContext.Session.GetString(MvcSabitleri.RolSessionKey);
 
     private bool YonetimYetkisiVarMi()
     {
         var rol = RolAl();
-        return rol is "Admin" or "ITPersoneli";
+        return rol is MvcSabitleri.AdminRolu or MvcSabitleri.ITPersoneliRolu;
     }
 }

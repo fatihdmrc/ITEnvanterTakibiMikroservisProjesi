@@ -1,4 +1,5 @@
 using KimlikVePersonelServisi.Api.Contracts.Personeller;
+using KimlikVePersonelServisi.Api.Sabitler;
 using KimlikVePersonelServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ public sealed class PersonellerController(IKimlikPersonelServisi kimlikPersonelS
     {
         var personel = await kimlikPersonelServisi.PersonelGetirAsync(id, cancellationToken);
         return personel is null
-            ? NotFound(new { hata = "Personel bulunamadı." })
+            ? NotFound(new { hata = KimlikPersonelMesajlari.PersonelBulunamadi })
             : Ok(personel);
     }
 

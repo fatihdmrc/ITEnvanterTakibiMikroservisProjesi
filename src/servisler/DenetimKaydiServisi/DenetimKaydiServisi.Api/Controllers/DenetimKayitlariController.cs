@@ -1,5 +1,6 @@
 using DenetimKaydiServisi.Api.Contracts.DenetimKayitlari;
 using DenetimKaydiServisi.Api.Domain.Enums;
+using DenetimKaydiServisi.Api.Sabitler;
 using DenetimKaydiServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,7 +47,7 @@ public sealed class DenetimKayitlariController(IDenetimKaydiServisi denetimKaydi
     public async Task<ActionResult<DenetimKaydiCevap>> Getir(string id, CancellationToken cancellationToken)
     {
         var kayit = await denetimKaydiServisi.GetirAsync(id, cancellationToken);
-        return kayit is null ? NotFound(new { hata = "Denetim kaydi bulunamadi." }) : Ok(kayit);
+        return kayit is null ? NotFound(new { hata = DenetimMesajlari.DenetimKaydiBulunamadi }) : Ok(kayit);
     }
 
     [HttpPost("crud")]

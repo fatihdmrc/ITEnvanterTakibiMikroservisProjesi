@@ -9,6 +9,7 @@ using EnvanterServisi.Api.Domain.Entities;
 using EnvanterServisi.Api.Domain.Enums;
 using EnvanterServisi.Api.Options;
 using EnvanterServisi.Api.Repositories;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services.Cache;
 using DotNetCore.CAP;
 using Microsoft.Extensions.Options;
@@ -51,18 +52,18 @@ public sealed class EnvanterYonetimServisi(
     {
         if (string.IsNullOrWhiteSpace(istek.Ad))
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Kategori adı zorunludur.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.KategoriAdiZorunlu);
         }
 
         if (istek.UstKategoriId.HasValue && !await kategoriRepository.VarMiAsync(istek.UstKategoriId.Value, cancellationToken))
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Üst kategori bulunamadı.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.UstKategoriBulunamadi);
         }
 
         var ad = istek.Ad.Trim();
         if (await kategoriRepository.AdKullaniliyorMuAsync(ad, istek.UstKategoriId, cancellationToken: cancellationToken))
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Aynı üst kategori altında bu ada sahip kategori zaten var.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.KategoriAdiKullaniliyor);
         }
 
         var kategori = new Kategori
@@ -85,28 +86,28 @@ public sealed class EnvanterYonetimServisi(
         var kategori = await kategoriRepository.GetirAsync(id, cancellationToken);
         if (kategori is null)
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Kategori bulunamadı.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.KategoriBulunamadi);
         }
 
         if (id == istek.UstKategoriId)
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Kategori kendi üst kategorisi olamaz.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.KategoriKendiUstuOlamaz);
         }
 
         if (istek.UstKategoriId.HasValue && !await kategoriRepository.VarMiAsync(istek.UstKategoriId.Value, cancellationToken))
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Üst kategori bulunamadı.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.UstKategoriBulunamadi);
         }
 
         var ad = istek.Ad.Trim();
         if (string.IsNullOrWhiteSpace(ad))
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Kategori adı zorunludur.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.KategoriAdiZorunlu);
         }
 
         if (await kategoriRepository.AdKullaniliyorMuAsync(ad, istek.UstKategoriId, id, cancellationToken))
         {
-            return Sonuc<KategoriCevap>.Basarisiz("Aynı üst kategori altında bu ada sahip kategori zaten var.");
+            return Sonuc<KategoriCevap>.Basarisiz(EnvanterMesajlari.KategoriAdiKullaniliyor);
         }
 
         kategori.Ad = ad;
@@ -144,17 +145,17 @@ public sealed class EnvanterYonetimServisi(
         var ad = istek.Ad.Trim();
         if (string.IsNullOrWhiteSpace(ad))
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Lokasyon adı zorunludur.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.LokasyonAdiZorunlu);
         }
 
         if (istek.UstLokasyonId.HasValue && !await lokasyonRepository.VarMiAsync(istek.UstLokasyonId.Value, cancellationToken))
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Üst lokasyon bulunamadı.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.UstLokasyonBulunamadi);
         }
 
         if (await lokasyonRepository.AdKullaniliyorMuAsync(ad, istek.UstLokasyonId, cancellationToken: cancellationToken))
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Aynı üst lokasyon altında bu ada sahip lokasyon zaten var.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.LokasyonAdiKullaniliyor);
         }
 
         var lokasyon = new Lokasyon
@@ -175,28 +176,28 @@ public sealed class EnvanterYonetimServisi(
         var lokasyon = await lokasyonRepository.GetirAsync(id, cancellationToken);
         if (lokasyon is null)
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Lokasyon bulunamadı.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.LokasyonBulunamadi);
         }
 
         if (id == istek.UstLokasyonId)
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Lokasyon kendi üst lokasyonu olamaz.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.LokasyonKendiUstuOlamaz);
         }
 
         if (istek.UstLokasyonId.HasValue && !await lokasyonRepository.VarMiAsync(istek.UstLokasyonId.Value, cancellationToken))
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Üst lokasyon bulunamadı.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.UstLokasyonBulunamadi);
         }
 
         var ad = istek.Ad.Trim();
         if (string.IsNullOrWhiteSpace(ad))
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Lokasyon adı zorunludur.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.LokasyonAdiZorunlu);
         }
 
         if (await lokasyonRepository.AdKullaniliyorMuAsync(ad, istek.UstLokasyonId, id, cancellationToken))
         {
-            return Sonuc<LokasyonCevap>.Basarisiz("Aynı üst lokasyon altında bu ada sahip lokasyon zaten var.");
+            return Sonuc<LokasyonCevap>.Basarisiz(EnvanterMesajlari.LokasyonAdiKullaniliyor);
         }
 
         lokasyon.Ad = ad;
@@ -261,7 +262,7 @@ public sealed class EnvanterYonetimServisi(
         var cihaz = await cihazRepository.GetirAsync(id, cancellationToken);
         if (cihaz is null)
         {
-            return Sonuc<CihazCevap>.Basarisiz("Cihaz bulunamadı.");
+            return Sonuc<CihazCevap>.Basarisiz(EnvanterMesajlari.CihazBulunamadi);
         }
 
         var assetTag = BosIseNull(istek.AssetTag) ?? cihaz.AssetTag ?? await SiradakiAssetTagUretAsync(cancellationToken);
@@ -297,7 +298,7 @@ public sealed class EnvanterYonetimServisi(
         var cihaz = await cihazRepository.GetirAsync(id, cancellationToken);
         if (cihaz is null)
         {
-            return Sonuc<CihazCevap>.Basarisiz("Cihaz bulunamadı.");
+            return Sonuc<CihazCevap>.Basarisiz(EnvanterMesajlari.CihazBulunamadi);
         }
 
         var oncekiDurum = cihaz.Durum;
@@ -364,17 +365,17 @@ public sealed class EnvanterYonetimServisi(
         var ad = istek.Ad.Trim();
         if (string.IsNullOrWhiteSpace(ad))
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Sarf malzeme adı zorunludur.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfMalzemeAdiZorunlu);
         }
 
         if (istek.EldekiMiktar < 0 || istek.KritikStokSeviyesi < 0)
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Miktar ve kritik stok seviyesi negatif olamaz.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.MiktarVeKritikStokNegatifOlamaz);
         }
 
         if (await sarfMalzemeRepository.AdKullaniliyorMuAsync(ad, istek.KategoriId, istek.LokasyonId, cancellationToken: cancellationToken))
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Aynı kategori ve lokasyonda bu sarf malzeme zaten var.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfMalzemeAdiKullaniliyor);
         }
 
         var sarfMalzeme = new SarfMalzeme
@@ -384,7 +385,7 @@ public sealed class EnvanterYonetimServisi(
             LokasyonId = istek.LokasyonId,
             EldekiMiktar = istek.EldekiMiktar,
             KritikStokSeviyesi = istek.KritikStokSeviyesi,
-            Birim = string.IsNullOrWhiteSpace(istek.Birim) ? "Adet" : istek.Birim.Trim()
+            Birim = string.IsNullOrWhiteSpace(istek.Birim) ? EnvanterMesajlari.VarsayilanBirim : istek.Birim.Trim()
         };
 
         sarfMalzemeRepository.Ekle(sarfMalzeme);
@@ -398,7 +399,7 @@ public sealed class EnvanterYonetimServisi(
         var sarfMalzeme = await sarfMalzemeRepository.GetirAsync(id, cancellationToken);
         if (sarfMalzeme is null)
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Sarf malzeme bulunamadı.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfMalzemeBulunamadi);
         }
 
         var sonuc = await SarfMalzemeReferanslariniDogrulaAsync(istek.KategoriId, istek.LokasyonId, cancellationToken);
@@ -410,17 +411,17 @@ public sealed class EnvanterYonetimServisi(
         var ad = istek.Ad.Trim();
         if (string.IsNullOrWhiteSpace(ad))
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Sarf malzeme adı zorunludur.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfMalzemeAdiZorunlu);
         }
 
         if (istek.EldekiMiktar < 0 || istek.KritikStokSeviyesi < 0)
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Miktar ve kritik stok seviyesi negatif olamaz.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.MiktarVeKritikStokNegatifOlamaz);
         }
 
         if (await sarfMalzemeRepository.AdKullaniliyorMuAsync(ad, istek.KategoriId, istek.LokasyonId, id, cancellationToken))
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Aynı kategori ve lokasyonda bu sarf malzeme zaten var.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfMalzemeAdiKullaniliyor);
         }
 
         sarfMalzeme.Ad = ad;
@@ -428,7 +429,7 @@ public sealed class EnvanterYonetimServisi(
         sarfMalzeme.LokasyonId = istek.LokasyonId;
         sarfMalzeme.EldekiMiktar = istek.EldekiMiktar;
         sarfMalzeme.KritikStokSeviyesi = istek.KritikStokSeviyesi;
-        sarfMalzeme.Birim = string.IsNullOrWhiteSpace(istek.Birim) ? "Adet" : istek.Birim.Trim();
+        sarfMalzeme.Birim = string.IsNullOrWhiteSpace(istek.Birim) ? EnvanterMesajlari.VarsayilanBirim : istek.Birim.Trim();
         sarfMalzeme.AktifMi = istek.AktifMi;
 
         await sarfMalzemeRepository.KaydetAsync(cancellationToken);
@@ -440,22 +441,22 @@ public sealed class EnvanterYonetimServisi(
         var sarfMalzeme = await sarfMalzemeRepository.GetirAsync(id, cancellationToken);
         if (sarfMalzeme is null)
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Sarf malzeme bulunamadı.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfMalzemeBulunamadi);
         }
 
         if (!SarfMalzemeStokHareketNedeniMi(istek.Neden))
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Bu neden sarf malzeme stok hareketi için desteklenmiyor.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.SarfStokHareketiDesteklenmiyor);
         }
 
         if (istek.Miktar <= 0)
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Stok hareket miktarı sıfırdan büyük olmalıdır.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.StokHareketMiktariPozitifOlmali);
         }
 
         if (istek.HareketTipi == StokHareketTipi.Cikis && sarfMalzeme.EldekiMiktar < istek.Miktar)
         {
-            return Sonuc<SarfMalzemeCevap>.Basarisiz("Eldeki miktardan fazla stok çıkışı yapılamaz.");
+            return Sonuc<SarfMalzemeCevap>.Basarisiz(EnvanterMesajlari.EldekiMiktardanFazlaCikisYapilamaz);
         }
 
         using var transaction = dbContext.Database.BeginTransaction(capPublisher, autoCommit: false);
@@ -524,7 +525,7 @@ public sealed class EnvanterYonetimServisi(
         var kural = await kritikStokKuraliRepository.GetirAsync(id, cancellationToken);
         if (kural is null)
         {
-            return Sonuc<KritikStokKuraliCevap>.Basarisiz("Kritik stok kuralı bulunamadı.");
+            return Sonuc<KritikStokKuraliCevap>.Basarisiz(EnvanterMesajlari.KritikStokKuraliBulunamadi);
         }
 
         var sonuc = await KritikStokKuraliDogrulaAsync(istek.LokasyonId, istek.KategoriId, istek.KritikStokSeviyesi, cancellationToken);
@@ -645,12 +646,12 @@ public sealed class EnvanterYonetimServisi(
     {
         if (string.IsNullOrWhiteSpace(seriNumarasi) && string.IsNullOrWhiteSpace(assetTag))
         {
-            return Sonuc<bool>.Basarisiz("Seri numarası veya asset tag alanlarından en az biri zorunludur.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.CihazKimligiZorunlu);
         }
 
         if (await cihazRepository.SeriNumarasiVeyaAssetTagKullaniliyorMuAsync(BosIseNull(seriNumarasi), BosIseNull(assetTag), haricCihazId, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Seri numarası veya asset tag başka bir cihazda kullanılıyor.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.CihazKimligiKullaniliyor);
         }
 
         return Sonuc<bool>.Basarili(true);
@@ -751,7 +752,7 @@ public sealed class EnvanterYonetimServisi(
                 break;
 
             default:
-                return Sonuc<bool>.Basarisiz("Bu neden cihaz durum hareketi için desteklenmiyor.");
+                return Sonuc<bool>.Basarisiz(EnvanterMesajlari.CihazDurumHareketiDesteklenmiyor);
         }
 
         CihazKapsamAlanlariniDurumaGoreGuncelle(cihaz);
@@ -817,12 +818,12 @@ public sealed class EnvanterYonetimServisi(
     {
         if (!await kategoriRepository.AktifVarMiAsync(kategoriId, VarlikTuru.SeriNumarali, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Seri numaralı cihaz için aktif kategori bulunamadı.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.SeriNumaraliCihazAktifKategoriYok);
         }
 
         if (!await lokasyonRepository.AktifVarMiAsync(lokasyonId, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Aktif lokasyon bulunamadı.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.AktifLokasyonBulunamadi);
         }
 
         return Sonuc<bool>.Basarili(true);
@@ -832,12 +833,12 @@ public sealed class EnvanterYonetimServisi(
     {
         if (!await kategoriRepository.AktifVarMiAsync(kategoriId, VarlikTuru.SarfMalzeme, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Sarf malzeme için aktif kategori bulunamadı.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.SarfMalzemeAktifKategoriYok);
         }
 
         if (!await lokasyonRepository.AktifVarMiAsync(lokasyonId, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Aktif lokasyon bulunamadı.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.AktifLokasyonBulunamadi);
         }
 
         return Sonuc<bool>.Basarili(true);
@@ -847,17 +848,17 @@ public sealed class EnvanterYonetimServisi(
     {
         if (kritikStokSeviyesi < 0)
         {
-            return Sonuc<bool>.Basarisiz("Kritik stok seviyesi negatif olamaz.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.KritikStokNegatifOlamaz);
         }
 
         if (!await lokasyonRepository.AktifVarMiAsync(lokasyonId, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Aktif lokasyon bulunamadı.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.AktifLokasyonBulunamadi);
         }
 
         if (!await kategoriRepository.AktifVarMiAsync(kategoriId, cancellationToken: cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz("Aktif kategori bulunamadı.");
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.AktifKategoriBulunamadi);
         }
 
         return Sonuc<bool>.Basarili(true);

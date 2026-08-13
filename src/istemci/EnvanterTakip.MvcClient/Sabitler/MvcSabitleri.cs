@@ -13,10 +13,15 @@ public static class MvcSabitleri
 
     public const string AdminRolu = "Admin";
     public const string ITPersoneliRolu = "ITPersoneli";
+
+    public const string VarsayilanBildirimServisiAdresi = "http://localhost:5004";
+    public const string BildirimHubYolu = "/hubs/bildirim";
 }
 
 public static class MvcMesajlari
 {
+    public const string Misafir = "Misafir";
+    public const string OturumYokKisa = "Oturum yok";
     public const string OturumYok = "Bu işlem için önce giriş yapmalısın.";
     public const string KontrolPanelindenOturumYok = "Bu işlem için önce kontrol panelinden giriş yapmalısın.";
     public const string GirisBilgileriEksik = "Kullanıcı adı ve şifre girilmelidir.";
@@ -70,6 +75,29 @@ public static class MvcMesajlari
     public const string SadeceIadeSurecindekiZimmetKontrolEdilir = "Fiziki kontrol yalnızca iade sürecindeki zimmetler için tamamlanabilir.";
     public const string IadeKontroluTamamlandi = "İade kontrolü tamamlandı ve cihaz durumu güncellendi.";
 
+    public const string DenetimOturumYok = "Denetim kayıtlarını görmek için önce kontrol panelinden giriş yapmalısın.";
+    public const string DenetimYetkisiYok = "Denetim kayıtlarını yalnızca Admin veya ITPersoneli rolü görebilir.";
+    public const string DenetimDetayOturumYok = "Denetim kaydını görmek için önce giriş yapmalısın.";
+    public const string DenetimDetayYetkisiYok = "Denetim kaydını görüntülemek için yetkin yok.";
+    public const string BildirimOturumYok = "Bildirim bağlantısı için oturum açılmalıdır.";
+
+    public const string KimlikServisineUlasilamadi = "Kimlik ve personel servisine ulaşılamadı. Servisin çalıştığından emin ol.";
+    public const string EnvanterServisineUlasilamadi = "Envanter servisine ulaşılamadı. Servisin çalıştığından emin ol.";
+    public const string ZimmetServisineUlasilamadi = "Zimmet servisine ulaşılamadı. Servisin çalıştığından emin ol.";
+    public const string DenetimServisineUlasilamadi = "Denetim kaydı servisine ulaşılamadı. Servisin çalıştığından emin ol.";
+    public const string ServisZamanindaCevapVermedi = "Servis zamanında cevap vermedi.";
+    public const string ServisBeklenmeyenFormattaCevapDondu = "Servis beklenmeyen formatta cevap döndürdü.";
+    public const string ServisBosCevapDondu = "Servis boş cevap döndürdü.";
+    public const string OturumBulunamadiVeyaSuresiDoldu = "Oturum bulunamadı veya süresi doldu. Lütfen tekrar giriş yap.";
+    public const string YetkiYok = "Bu işlem için yetkin yok.";
+    public const string IstenenKayitBulunamadi = "İstenen kayıt bulunamadı.";
+    public const string GonderilenBilgilerGecerliDegil = "Gönderilen bilgiler geçerli değil.";
+    public const string ServisHataDondurdu = "Servis hata döndürdü.";
+
+    public const string HomeHataSayfasiLogu = "MVC client hata sayfası gösterildi. RequestId: {RequestId}";
+    public const string EnvanterHataSayfasiLogu = "Envanter MVC hata sayfası gösterildi. RequestId: {RequestId}";
+    public const string ZimmetHataSayfasiLogu = "Zimmet MVC hata sayfası gösterildi. RequestId: {RequestId}";
+
     public static string GirisYapildi(string kullaniciAdi)
         => $"{kullaniciAdi} kullanıcısı ile giriş yapıldı.";
 
@@ -81,4 +109,7 @@ public static class MvcMesajlari
 
     public static string ListeAlinamadi(string listeAdi, string? hata)
         => $"{listeAdi} alınamadı: {hata}";
+
+    public static string GecmisAlinamadi(string gecmisAdi, string? hata)
+        => $"{gecmisAdi} alınamadı: {hata}";
 }

@@ -143,8 +143,8 @@ Teknoloji:
 
 Sorumlulukları:
 
-- RabbitMQ üzerinden `zimmet.olusturuldu` eventini tüketmek
-- Test modunda Gmail SMTP ile zimmet bilgilendirme e-postası göndermek
+- RabbitMQ üzerinden `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketmek
+- Test modunda Gmail SMTP ile zimmet oluşturma ve iade süreci bilgilendirme e-postası göndermek
 - Mail gönderimini servis içinde sınırlı tekrar denemeyle yönetmek
 
 Teknoloji:
@@ -154,11 +154,11 @@ Teknoloji:
 
 Önemli kararlar:
 
-- MailServisi yalnızca test amaçlıdır.
+- MailServisi test amaçlıdır.
 - Test modunda gerçek personel e-postasına gönderim yapılmaz; alıcı `fathdmrc01@gmail.com` olarak override edilir.
 - Gerçek personel e-postası event payload'ında ve mail içeriğinde görünür.
 - Gmail kullanıcı adı ve app password kaynak kodda tutulmaz.
-- 3 SMTP denemesi başarısız olursa CAP tüketimi başarısız kabul edilir; ana zimmet oluşturma işlemi geri alınmaz.
+- 3 SMTP denemesi başarısız olursa CAP tüketimi başarısız kabul edilir; ana zimmet oluşturma veya iade işlemi geri alınmaz.
 
 ## 3. Servisler Arası İletişim
 
@@ -174,7 +174,7 @@ Senkron HTTP çağrıları, işlem sırasında hemen doğrulama gereken durumlar
 
 ### Asenkron CAP + RabbitMQ İletişimi
 
-DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır. Faz 7 itibarıyla DenetimKaydiServisi audit consumer olarak eklenmiştir. Faz 9 itibarıyla BildirimServisi kritik stok consumer olarak eklenmiştir. Test mail entegrasyonu kapsamında MailServisi `zimmet.olusturuldu` eventini tüketir.
+DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktır. RabbitMQ mesaj taşıyıcı olarak görev yapacaktır. PostgreSQL kullanan servislerde CAP Outbox tabloları aynı servis veritabanı içinde yer alacak ve iş verisi ile event kaydı aynı transaction kapsamında yazılacaktır. Faz 6 itibarıyla event üretici taraf KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi içinde uygulanmıştır. Faz 7 itibarıyla DenetimKaydiServisi audit consumer olarak eklenmiştir. Faz 9 itibarıyla BildirimServisi kritik stok consumer olarak eklenmiştir. Test mail entegrasyonu kapsamında MailServisi `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir.
 
 ### Faz 7 Denetim Mimarisi
 
@@ -208,10 +208,16 @@ DotNetCore.CAP, uygulama tarafındaki event bus katmanı olarak kullanılacaktı
 - Sağlık endpointi `/saglik`, Swagger adresi `/swagger` olarak kullanılır.
 - CAP consumer grubu `mail-servisi` olarak belirlenmiştir.
 - CAP storage için mevcut MongoDB replica set kullanılır; uygulama seviyesinde kalıcı mail log tutulmaz.
-- `zimmet.olusturuldu` payload'ı `PersonelEmail` alanını taşır.
+- Zimmet mail event payload'ları `PersonelEmail` alanını ve mail içeriği için gerekli personel/cihaz snapshot bilgilerini taşır.
 - Gmail ayarları `Gmail` configuration bölümünden okunur.
 - Test modu açıkken SMTP alıcısı her zaman `fathdmrc01@gmail.com` olur.
 - MailServisi içinde 3 deneme yapılır; CAP `FailedRetryCount = 0` olduğu için retry sayısı servis koduyla sınırlıdır.
+
+### String Sabitleri ve Demo Seed Güvenliği
+
+- Servislerde tekrar eden event adları, rol adları, hata/başarı mesajları ve teknik anahtarlar `Sabitler` klasörlerindeki merkezi sınıflardan okunur.
+- MVC client içinde session/tempdata anahtarları ve kullanıcı mesajları `MvcSabitleri` ve `MvcMesajlari` üzerinden yönetilir.
+- Development ortamında demo veri reset davranışı varsayılan kapalıdır. `DemoVeri:Sifirla=false` mevcut veriyi silmez; reset yalnızca `$env:DemoVeri__Sifirla="true"` açıkça verildiğinde çalışır.
 
 CAP Outbox şemaları:
 

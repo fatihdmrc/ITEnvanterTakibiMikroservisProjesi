@@ -1,6 +1,7 @@
 using BildirimServisi.Api.Contracts.Bildirimler;
 using BildirimServisi.Api.Contracts.Events;
 using BildirimServisi.Api.Hubs;
+using BildirimServisi.Api.Sabitler;
 using DotNetCore.CAP;
 using Microsoft.AspNetCore.SignalR;
 
@@ -18,7 +19,7 @@ public sealed class KritikStokBildirimConsumer(
             payload.VarlikTuru,
             payload.KategoriId,
             payload.LokasyonId,
-            "Kritik stok uyarısı",
+            BildirimMesajlari.KritikStokUyarisiBasligi,
             MesajOlustur(payload),
             payload.CihazModeli,
             payload.SarfMalzemeId,
@@ -28,8 +29,8 @@ public sealed class KritikStokBildirimConsumer(
             payload.OlusmaZamaniUtc,
             DateTime.UtcNow);
 
-        await hubContext.Clients.All.SendAsync("KritikStokBildirimiAlindi", bildirim, cancellationToken);
-        logger.LogInformation("Kritik stok bildirimi SignalR ile yayinlandi. EventId: {EventId}", payload.EventId);
+        await hubContext.Clients.All.SendAsync(BildirimMesajlari.KritikStokBildirimiAlindiMetodu, bildirim, cancellationToken);
+        logger.LogInformation(BildirimMesajlari.KritikStokYayinlandiLogu, payload.EventId);
     }
 
     private static string MesajOlustur(KritikStokSeviyesineDusulduEvent payload)
@@ -38,6 +39,6 @@ public sealed class KritikStokBildirimConsumer(
             ?? payload.CihazModeli
             ?? payload.VarlikTuru;
 
-        return $"{varlikAdi} için mevcut miktar {payload.MevcutMiktar}, kritik seviye {payload.KritikStokSeviyesi}.";
+        return BildirimMesajlari.KritikStokMesaji(varlikAdi, payload.MevcutMiktar, payload.KritikStokSeviyesi);
     }
 }

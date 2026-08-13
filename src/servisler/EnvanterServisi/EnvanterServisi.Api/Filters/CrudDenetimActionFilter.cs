@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using EnvanterServisi.Api.Contracts.Denetim;
+using EnvanterServisi.Api.Sabitler;
 using EnvanterServisi.Api.Services.Harici;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -45,7 +46,7 @@ public sealed class CrudDenetimActionFilter(DenetimApiClient denetimApiClient) :
             RolGetir(context.HttpContext.User),
             context.HttpContext.Request.Method,
             path,
-            $"{context.HttpContext.Request.Method} {path} islemi basariyla tamamlandi.",
+            string.Format(EnvanterMesajlari.CrudDenetimAciklamasi, context.HttpContext.Request.Method, path),
             JsonSerializer.Serialize(new { routeValues, actionArguments, sonuc }, JsonAyarlari),
             DateTime.UtcNow);
 
