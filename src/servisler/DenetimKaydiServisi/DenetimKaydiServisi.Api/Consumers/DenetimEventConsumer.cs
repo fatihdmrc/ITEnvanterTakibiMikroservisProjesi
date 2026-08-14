@@ -1,14 +1,19 @@
 using DenetimKaydiServisi.Api.Contracts.Events;
+using DenetimKaydiServisi.Api.Sabitler;
 using DenetimKaydiServisi.Api.Services;
 using DotNetCore.CAP;
 
 namespace DenetimKaydiServisi.Api.Consumers;
 
-public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServisi) : ICapSubscribe
+public sealed class DenetimEventConsumer(
+    IDenetimKaydiServisi denetimKaydiServisi,
+    ILogger<DenetimEventConsumer> logger) : ICapSubscribe
 {
     [CapSubscribe(EventAdlari.PersonelIstenAyrildi)]
-    public Task PersonelIstenAyrildi(PersonelIstenAyrildiEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
+    public async Task PersonelIstenAyrildi(PersonelIstenAyrildiEvent payload, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(DenetimMesajlari.EventAlindiLogu, EventAdlari.PersonelIstenAyrildi, payload.EventId);
+        await denetimKaydiServisi.EventKaydiOlusturAsync(
             new EventDenetimKaydiOlusturIstek(
                 payload.EventId,
                 EventAdlari.PersonelIstenAyrildi,
@@ -21,10 +26,14 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload.OlusmaZamaniUtc,
                 payload),
             cancellationToken);
+        logger.LogInformation(DenetimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.PersonelIstenAyrildi, payload.EventId);
+    }
 
     [CapSubscribe(EventAdlari.CihazDurumuDegisti)]
-    public Task CihazDurumuDegisti(CihazDurumuDegistiEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
+    public async Task CihazDurumuDegisti(CihazDurumuDegistiEvent payload, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(DenetimMesajlari.EventAlindiLogu, EventAdlari.CihazDurumuDegisti, payload.EventId);
+        await denetimKaydiServisi.EventKaydiOlusturAsync(
             new EventDenetimKaydiOlusturIstek(
                 payload.EventId,
                 EventAdlari.CihazDurumuDegisti,
@@ -37,10 +46,14 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload.OlusmaZamaniUtc,
                 payload),
             cancellationToken);
+        logger.LogInformation(DenetimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.CihazDurumuDegisti, payload.EventId);
+    }
 
     [CapSubscribe(EventAdlari.KritikStokSeviyesineDusuldu)]
-    public Task KritikStokSeviyesineDusuldu(KritikStokSeviyesineDusulduEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
+    public async Task KritikStokSeviyesineDusuldu(KritikStokSeviyesineDusulduEvent payload, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(DenetimMesajlari.EventAlindiLogu, EventAdlari.KritikStokSeviyesineDusuldu, payload.EventId);
+        await denetimKaydiServisi.EventKaydiOlusturAsync(
             new EventDenetimKaydiOlusturIstek(
                 payload.EventId,
                 EventAdlari.KritikStokSeviyesineDusuldu,
@@ -53,10 +66,14 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload.OlusmaZamaniUtc,
                 payload),
             cancellationToken);
+        logger.LogInformation(DenetimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.KritikStokSeviyesineDusuldu, payload.EventId);
+    }
 
     [CapSubscribe(EventAdlari.ZimmetOlusturuldu)]
-    public Task ZimmetOlusturuldu(ZimmetOlusturulduEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
+    public async Task ZimmetOlusturuldu(ZimmetOlusturulduEvent payload, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(DenetimMesajlari.EventAlindiLogu, EventAdlari.ZimmetOlusturuldu, payload.EventId);
+        await denetimKaydiServisi.EventKaydiOlusturAsync(
             new EventDenetimKaydiOlusturIstek(
                 payload.EventId,
                 EventAdlari.ZimmetOlusturuldu,
@@ -69,10 +86,14 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload.OlusmaZamaniUtc,
                 payload),
             cancellationToken);
+        logger.LogInformation(DenetimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.ZimmetOlusturuldu, payload.EventId);
+    }
 
     [CapSubscribe(EventAdlari.ZimmetIadeAlindi)]
-    public Task ZimmetIadeAlindi(ZimmetIadeAlindiEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
+    public async Task ZimmetIadeAlindi(ZimmetIadeAlindiEvent payload, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(DenetimMesajlari.EventAlindiLogu, EventAdlari.ZimmetIadeAlindi, payload.EventId);
+        await denetimKaydiServisi.EventKaydiOlusturAsync(
             new EventDenetimKaydiOlusturIstek(
                 payload.EventId,
                 EventAdlari.ZimmetIadeAlindi,
@@ -85,10 +106,14 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload.OlusmaZamaniUtc,
                 payload),
             cancellationToken);
+        logger.LogInformation(DenetimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.ZimmetIadeAlindi, payload.EventId);
+    }
 
     [CapSubscribe(EventAdlari.ZimmetIadeEdildi)]
-    public Task ZimmetIadeEdildi(ZimmetIadeEdildiEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
+    public async Task ZimmetIadeEdildi(ZimmetIadeEdildiEvent payload, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation(DenetimMesajlari.EventAlindiLogu, EventAdlari.ZimmetIadeEdildi, payload.EventId);
+        await denetimKaydiServisi.EventKaydiOlusturAsync(
             new EventDenetimKaydiOlusturIstek(
                 payload.EventId,
                 EventAdlari.ZimmetIadeEdildi,
@@ -101,5 +126,7 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload.OlusmaZamaniUtc,
                 payload),
             cancellationToken);
+        logger.LogInformation(DenetimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.ZimmetIadeEdildi, payload.EventId);
+    }
 
 }

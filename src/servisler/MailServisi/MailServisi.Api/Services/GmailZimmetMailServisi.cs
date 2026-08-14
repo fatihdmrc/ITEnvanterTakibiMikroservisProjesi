@@ -126,20 +126,31 @@ public sealed class GmailZimmetMailServisi(
         AyarlariDogrula(ayarlar);
 
         var denemeSayisi = Math.Max(ayarlar.DenemeSayisi, 1);
+        var aliciEmail = AliciEmailGetir(icerik, ayarlar);
         var sonHata = default(Exception);
+
+        logger.LogInformation(
+            MailMesajlari.MailGonderimBasladiLogu,
+            icerik.MailTuru,
+            icerik.EventId,
+            icerik.GercekAliciEmail,
+            aliciEmail,
+            ayarlar.TestModu,
+            denemeSayisi);
 
         for (var deneme = 1; deneme <= denemeSayisi; deneme++)
         {
             try
             {
+                logger.LogInformation(MailMesajlari.MailDenemeBasladiLogu, icerik.MailTuru, icerik.EventId, deneme, denemeSayisi);
                 await MailGonderAsync(icerik, ayarlar, cancellationToken);
-                logger.LogInformation("{MailTuru} maili gönderildi. EventId: {EventId}, Deneme: {Deneme}", icerik.MailTuru, icerik.EventId, deneme);
+                logger.LogInformation(MailMesajlari.MailGonderildiLogu, icerik.MailTuru, icerik.EventId, aliciEmail, deneme, denemeSayisi);
                 return;
             }
             catch (Exception exception) when (deneme < denemeSayisi && !cancellationToken.IsCancellationRequested)
             {
                 sonHata = exception;
-                logger.LogWarning(exception, "{MailTuru} maili gönderilemedi. EventId: {EventId}, Deneme: {Deneme}/{DenemeSayisi}", icerik.MailTuru, icerik.EventId, deneme, denemeSayisi);
+                logger.LogWarning(exception, MailMesajlari.MailGonderilemediLogu, icerik.MailTuru, icerik.EventId, deneme, denemeSayisi);
                 await Task.Delay(TimeSpan.FromSeconds(Math.Max(ayarlar.DenemeBeklemeSaniye, 1)), cancellationToken);
             }
             catch (Exception exception)
@@ -149,12 +160,13 @@ public sealed class GmailZimmetMailServisi(
             }
         }
 
+        logger.LogError(sonHata, MailMesajlari.MailKaliciHataLogu, icerik.MailTuru, icerik.EventId, aliciEmail, denemeSayisi);
         throw new InvalidOperationException(MailMesajlari.MailGonderilemedi(icerik.MailTuru, denemeSayisi), sonHata);
     }
 
     private static async Task MailGonderAsync(MailIcerigi icerik, GmailAyarlari ayarlar, CancellationToken cancellationToken)
     {
-        var aliciEmail = ayarlar.TestModu ? ayarlar.TestAliciEmail : icerik.GercekAliciEmail;
+        var aliciEmail = AliciEmailGetir(icerik, ayarlar);
         var testModuHtml = ayarlar.TestModu
             ? MailMesajlari.TestModuHtml(icerik.GercekAliciEmail, ayarlar.TestAliciEmail)
             : string.Empty;
@@ -216,6 +228,9 @@ public sealed class GmailZimmetMailServisi(
 
     private static string NotMetni(string? not)
         => string.IsNullOrWhiteSpace(not) ? "-" : not;
+
+    private static string AliciEmailGetir(MailIcerigi icerik, GmailAyarlari ayarlar)
+        => ayarlar.TestModu ? ayarlar.TestAliciEmail : icerik.GercekAliciEmail;
 
     private sealed record MailIcerigi(
         string MailTuru,

@@ -14,6 +14,8 @@ public sealed class KritikStokBildirimConsumer(
     [CapSubscribe(EventAdlari.KritikStokSeviyesineDusuldu)]
     public async Task KritikStokSeviyesineDusuldu(KritikStokSeviyesineDusulduEvent payload, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation(BildirimMesajlari.EventAlindiLogu, EventAdlari.KritikStokSeviyesineDusuldu, payload.EventId);
+
         var bildirim = new KritikStokBildirimi(
             payload.EventId,
             payload.VarlikTuru,
@@ -31,6 +33,7 @@ public sealed class KritikStokBildirimConsumer(
 
         await hubContext.Clients.All.SendAsync(BildirimMesajlari.KritikStokBildirimiAlindiMetodu, bildirim, cancellationToken);
         logger.LogInformation(BildirimMesajlari.KritikStokYayinlandiLogu, payload.EventId);
+        logger.LogInformation(BildirimMesajlari.EventTetiklenenIslemTamamlandiLogu, EventAdlari.KritikStokSeviyesineDusuldu, payload.EventId);
     }
 
     private static string MesajOlustur(KritikStokSeviyesineDusulduEvent payload)
