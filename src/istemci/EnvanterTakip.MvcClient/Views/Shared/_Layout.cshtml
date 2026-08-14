@@ -29,29 +29,32 @@
         <aside class="app-sidebar" id="appSidebar" aria-label="Ana menü">
             <div class="sidebar-brand">
                 <div class="brand-mark">IT</div>
-                <div>
+                <div class="brand-copy">
                     <div class="brand-title">Envanter Takip</div>
                     <div class="brand-subtitle">Mikroservis Paneli</div>
                 </div>
+                <button class="sidebar-collapse-toggle" type="button" id="desktopSidebarToggle" aria-label="Menüyü daralt" title="Menüyü daralt">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
                 @if (!oturumVarMi || adminMi)
                 {
-                    <a class="sidebar-link @AktifSinif("Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                    <a class="sidebar-link @AktifSinif("Home")" asp-area="" asp-controller="Home" asp-action="Index" title="Kontrol Paneli">
                         <span class="material-symbols-outlined">dashboard</span>
                         <span>@(oturumVarMi ? "Kontrol Paneli" : "Giriş")</span>
                     </a>
                 }
-                <a class="sidebar-link @AktifSinif("Envanter")" asp-area="" asp-controller="Envanter" asp-action="Index">
+                <a class="sidebar-link @AktifSinif("Envanter")" asp-area="" asp-controller="Envanter" asp-action="Index" title="Envanter">
                     <span class="material-symbols-outlined">inventory_2</span>
                     <span>Envanter</span>
                 </a>
-                <a class="sidebar-link @AktifSinif("Zimmet")" asp-area="" asp-controller="Zimmet" asp-action="Index">
+                <a class="sidebar-link @AktifSinif("Zimmet")" asp-area="" asp-controller="Zimmet" asp-action="Index" title="Zimmetler">
                     <span class="material-symbols-outlined">assignment_ind</span>
                     <span>Zimmetler</span>
                 </a>
-                <a class="sidebar-link @AktifSinif("Denetim")" asp-area="" asp-controller="Denetim" asp-action="Index">
+                <a class="sidebar-link @AktifSinif("Denetim")" asp-area="" asp-controller="Denetim" asp-action="Index" title="Denetim">
                     <span class="material-symbols-outlined">fact_check</span>
                     <span>Denetim</span>
                 </a>
@@ -61,24 +64,24 @@
                 <div class="sidebar-section-title">API Swagger</div>
                 @if (adminMi)
                 {
-                    <a class="sidebar-link sidebar-link-muted" href="http://localhost:5000/swagger" target="_blank" rel="noopener">
+                    <a class="sidebar-link sidebar-link-muted" href="http://localhost:5000/swagger" target="_blank" rel="noopener" title="Kimlik API">
                         <span class="material-symbols-outlined">key</span>
                         <span>Kimlik API</span>
                     </a>
                 }
-                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5001/swagger" target="_blank" rel="noopener">
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5001/swagger" target="_blank" rel="noopener" title="Envanter API">
                     <span class="material-symbols-outlined">devices</span>
                     <span>Envanter API</span>
                 </a>
-                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5002/swagger" target="_blank" rel="noopener">
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5002/swagger" target="_blank" rel="noopener" title="Zimmet API">
                     <span class="material-symbols-outlined">assignment_return</span>
                     <span>Zimmet API</span>
                 </a>
-                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5003/swagger" target="_blank" rel="noopener">
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5003/swagger" target="_blank" rel="noopener" title="Denetim API">
                     <span class="material-symbols-outlined">history</span>
                     <span>Denetim API</span>
                 </a>
-                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5004/swagger" target="_blank" rel="noopener">
+                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5004/swagger" target="_blank" rel="noopener" title="Bildirim API">
                     <span class="material-symbols-outlined">notifications</span>
                     <span>Bildirim API</span>
                 </a>
