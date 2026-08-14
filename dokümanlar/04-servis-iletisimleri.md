@@ -152,7 +152,7 @@ Kullanıcı bağlamı:
 ## 6. Örnek Akış: Zimmet Oluşturma
 
 1. Kullanıcı MVC client veya Swagger üzerinden ZimmetServisi'ne zimmet oluşturma isteği gönderir.
-2. ZimmetServisi, KimlikVePersonelServisi üzerinden personeli doğrular.
+2. ZimmetServisi, KimlikVePersonelServisi içindeki zimmet amaçlı salt-okunur personel doğrulama endpointi üzerinden personeli doğrular.
 3. ZimmetServisi, EnvanterServisi üzerinden cihazı doğrular.
 4. ZimmetServisi ilgili cihaz için açık zimmet olup olmadığını kendi veritabanından kontrol eder.
 5. Cihaz ve personel uygunsa EnvanterServisi'ne `Zimmetlendi` cihaz durum hareketi gönderilir.
@@ -165,7 +165,7 @@ Kullanıcı bağlamı:
 
 ## 7. Örnek Akış: Personel İşten Ayrılma
 
-1. Admin veya ITPersoneli, ApiGateway üzerinden personeli işten ayrıldı durumuna alma isteği gönderir.
+1. Admin, ApiGateway üzerinden personeli işten ayrıldı durumuna alma isteği gönderir.
 2. ApiGateway isteği KimlikVePersonelServisi'ne yönlendirir.
 3. KimlikVePersonelServisi, personel durumunu `IstenAyrildi` yapar.
 4. Aynı servis ilgili kullanıcı hesabını pasifleştirir.
@@ -177,6 +177,12 @@ Kullanıcı bağlamı:
 ## 8. Faz 7 CRUD Audit İletişimi
 
 KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı `POST`, `PUT`, `PATCH` ve `DELETE` mutasyonlarından sonra DenetimKaydiServisi'ne best-effort HTTP çağrısı yapar.
+
+Yetki notu:
+
+- Departman, personel ve kullanıcı yönetimi yalnızca `Admin` rolüne açıktır.
+- `ITPersoneli`, zimmet işlemlerinde gereken personel seçim/doğrulama bilgisine sadece zimmet amaçlı salt-okunur endpointler üzerinden erişir.
+- `ITPersoneli` Envanter, Zimmet ve Denetim bölümlerinde işlem yapabilir.
 
 ```text
 POST http://localhost:5003/api/denetim-kayitlari/crud

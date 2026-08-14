@@ -1,4 +1,5 @@
 using KimlikVePersonelServisi.Api.Contracts.Kullanicilar;
+using KimlikVePersonelServisi.Api.Sabitler;
 using KimlikVePersonelServisi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ namespace KimlikVePersonelServisi.Api.Controllers;
 
 [ApiController]
 [Route("api/kullanicilar")]
-[Authorize(Policy = "SadeceAdmin")]
+[Authorize(Policy = KimlikPersonelMesajlari.SadeceAdminPolicy)]
 public sealed class KullanicilarController(IKimlikPersonelServisi kimlikPersonelServisi) : ControllerBase
 {
     [HttpGet]

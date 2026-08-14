@@ -49,6 +49,9 @@ public sealed class KimlikPersonelApiClient(HttpClient httpClient)
     public Task<ApiListeSonucu<PersonelModel>> PersonelleriListeleAsync(string? token)
         => GetListeAsync<PersonelModel>("/api/personeller", token);
 
+    public Task<ApiListeSonucu<PersonelModel>> ZimmetSecimiPersonelleriListeleAsync(string? token)
+        => GetListeAsync<PersonelModel>("/api/personeller/zimmet-secimi", token);
+
     public Task<ApiIslemSonucu<PersonelModel>> PersonelGetirAsync(Guid personelId, string? token)
         => GetAsync<PersonelModel>($"/api/personeller/{personelId}", token);
 

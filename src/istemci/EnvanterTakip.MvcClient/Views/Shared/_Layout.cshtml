@@ -4,6 +4,7 @@
     var kullaniciAdi = Context.Session.GetString(MvcSabitleri.KullaniciAdiSessionKey) ?? MvcMesajlari.Misafir;
     var rol = Context.Session.GetString(MvcSabitleri.RolSessionKey) ?? MvcMesajlari.OturumYokKisa;
     var oturumVarMi = Context.Session.GetString(MvcSabitleri.TokenSessionKey) is not null;
+    var adminMi = rol == MvcSabitleri.AdminRolu;
 
     string AktifSinif(string hedefController)
         => string.Equals(controller, hedefController, StringComparison.OrdinalIgnoreCase)
@@ -35,10 +36,13 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="sidebar-link @AktifSinif("Home")" asp-area="" asp-controller="Home" asp-action="Index">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span>Kontrol Paneli</span>
-                </a>
+                @if (!oturumVarMi || adminMi)
+                {
+                    <a class="sidebar-link @AktifSinif("Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span>@(oturumVarMi ? "Kontrol Paneli" : "Giriş")</span>
+                    </a>
+                }
                 <a class="sidebar-link @AktifSinif("Envanter")" asp-area="" asp-controller="Envanter" asp-action="Index">
                     <span class="material-symbols-outlined">inventory_2</span>
                     <span>Envanter</span>
@@ -55,10 +59,13 @@
 
             <div class="sidebar-section">
                 <div class="sidebar-section-title">API Swagger</div>
-                <a class="sidebar-link sidebar-link-muted" href="http://localhost:5000/swagger" target="_blank" rel="noopener">
-                    <span class="material-symbols-outlined">key</span>
-                    <span>Kimlik API</span>
-                </a>
+                @if (adminMi)
+                {
+                    <a class="sidebar-link sidebar-link-muted" href="http://localhost:5000/swagger" target="_blank" rel="noopener">
+                        <span class="material-symbols-outlined">key</span>
+                        <span>Kimlik API</span>
+                    </a>
+                }
                 <a class="sidebar-link sidebar-link-muted" href="http://localhost:5001/swagger" target="_blank" rel="noopener">
                     <span class="material-symbols-outlined">devices</span>
                     <span>Envanter API</span>

@@ -511,7 +511,7 @@ Planlanan roller:
 Yetki yaklaşımı:
 
 - Admin tüm işlemleri yapabilir.
-- ITPersoneli cihaz, stok ve zimmet operasyonlarını yürütebilir.
+- ITPersoneli departman, personel ve kullanıcı yönetimi yapamaz; cihaz, stok, zimmet ve denetim operasyonlarını yürütebilir.
 - PersonelKullanicisi yalnızca kendisine ait zimmet süreçlerini sistem üzerinden takip edebilir.
 - Rol bazlı yetkilendirme şimdilik yeterli kabul edilmiştir.
 
@@ -636,6 +636,7 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Zimmet oluşturulacak cihaz `AktifMi = true` ve `Durum = Kullanilabilir` olmalıdır.
 - Faz 5'te servisler arası iletişim senkron HTTP'dir.
 - ZimmetServisi, gelen kullanıcı JWT token'ını KimlikVePersonelServisi ve EnvanterServisi çağrılarına forward eder.
+- IT personelinin zimmet oluşturabilmesi için KimlikVePersonelServisi içinde zimmet amaçlı salt-okunur personel seçim/doğrulama endpointleri Admin/IT erişimine açıktır; personel yönetimi endpointleri yalnızca Admin erişimindedir.
 - ZimmetServisi cihaz durumunu doğrudan değiştirmez; EnvanterServisi cihaz durum hareketi endpointini kullanır.
 - MVC client üzerinde `Zimmetler` ekranı bulunur. Admin/IT zimmet oluşturur, iade alır ve iade kontrolünü tamamlar. Personel kullanıcısı kendi zimmetlerini görür.
 - Personel kullanıcısının kendi zimmetlerini başka servis okuması olmadan görebilmesi için zimmet kaydında atama anındaki personel ve cihaz görüntü bilgileri de saklanır.
@@ -712,6 +713,14 @@ Aşağıdaki sorular henüz netleştirilmemiştir ve analiz/tasarım aşamasınd
 - Demo veri reset davranışı varsayılan olarak kapalıdır. `DemoVeri:Sifirla=false` normal geliştirme çalıştırmasında mevcut veriyi silmez.
 - Bilinçli demo reset gerektiğinde servisler `$env:DemoVeri__Sifirla="true"` override değeriyle başlatılacaktır.
 - Audit/Mongo ve CAP teknik kayıtları domain seed resetinden ayrı ele alınır; domain seed mekanizması bu kayıtları temizlemek için kullanılmayacaktır.
+
+## IT Personeli Yetki Sınırı Kararı - 2026-08-14
+
+- `ITPersoneli` rolü MVC client içinde Departman, Personel ve Kullanıcı yönetim paneline erişemez.
+- Departman, personel ve kullanıcı yönetim işlemleri API tarafında `SadeceAdmin` policy ile sınırlandırılmıştır.
+- `ITPersoneli` rolü Envanter, Zimmet ve Denetim bölümlerini kullanmaya devam eder.
+- Zimmet oluşturma ekranında gereken personel seçimi için ayrı salt-okunur `GET /api/personeller/zimmet-secimi` endpointi kullanılır.
+- ZimmetServisi personel uygunluğu doğrulamasında yönetim endpointi yerine `GET /api/personeller/{id}/zimmet-dogrulama` endpointini çağırır.
 
 ## Docker Compose Grup Kararı - 2026-08-12
 

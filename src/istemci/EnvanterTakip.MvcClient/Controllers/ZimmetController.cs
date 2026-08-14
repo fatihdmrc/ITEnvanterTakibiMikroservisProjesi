@@ -37,7 +37,7 @@ public sealed class ZimmetController(
 
         if (model.YonetimYetkisiVarMi)
         {
-            var personelSonucu = await kimlikPersonelApiClient.PersonelleriListeleAsync(token);
+            var personelSonucu = await kimlikPersonelApiClient.ZimmetSecimiPersonelleriListeleAsync(token);
             var personeller = ListeSonucunuYansit(model, "Personeller", personelSonucu);
             model.AktifPersoneller = personeller
                 .Where(personel => personel.AktifMi && personel.Durum == PersonelDurumuModel.Aktif)

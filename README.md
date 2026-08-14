@@ -191,6 +191,12 @@ Demo kullanıcılar:
 | `it.personel` | `ItPersonel123!` | ITPersoneli |
 | `personel` | `Personel123!` | PersonelKullanicisi |
 
+Yetki özeti:
+
+- `Admin`: departman, personel, kullanıcı, envanter, zimmet ve denetim işlemlerini yapabilir.
+- `ITPersoneli`: departman/personel/kullanıcı yönetimine erişemez; envanter, zimmet ve denetim bölümlerinde işlem yapabilir.
+- `PersonelKullanicisi`: kendi zimmetlerini görüntüler.
+
 ## Ekran Görüntüleri
 
 Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründe tutulacaktır. Görseller eklendiğinde aşağıdaki yollar README içinde doğrudan çalışır.

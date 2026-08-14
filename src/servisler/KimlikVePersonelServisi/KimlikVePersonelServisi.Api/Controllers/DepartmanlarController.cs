@@ -8,7 +8,7 @@ namespace KimlikVePersonelServisi.Api.Controllers;
 
 [ApiController]
 [Route("api/departmanlar")]
-[Authorize(Policy = "AdminVeyaITPersoneli")]
+[Authorize(Policy = KimlikPersonelMesajlari.SadeceAdminPolicy)]
 public sealed class DepartmanlarController(IKimlikPersonelServisi kimlikPersonelServisi) : ControllerBase
 {
     [HttpGet]

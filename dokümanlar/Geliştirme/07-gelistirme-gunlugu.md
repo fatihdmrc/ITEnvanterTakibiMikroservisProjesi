@@ -869,6 +869,28 @@ Doğrulama:
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 - Bozuk Türkçe karakter aramasında eşleşme bulunmadı.
 
+### IT personeli kimlik/personel yönetiminden çıkarıldı - 2026-08-14
+
+Ne yapıldı:
+
+- Departman yönetimi endpointleri `SadeceAdmin` policy ile sınırlandırıldı.
+- Personel listeleme, detay, oluşturma, güncelleme ve işten ayrıldı yapma yönetim endpointleri `SadeceAdmin` policy ile sınırlandırıldı.
+- Kullanıcı yönetimi zaten `SadeceAdmin` idi; bu davranış korundu.
+- Zimmet akışının bozulmaması için `GET /api/personeller/zimmet-secimi` ve `GET /api/personeller/{id}/zimmet-dogrulama` salt-okunur endpointleri Admin/IT erişimine açık bırakıldı.
+- ZimmetServisi personel doğrulamasında yönetim endpointi yerine zimmet doğrulama endpointini kullanacak şekilde güncellendi.
+- MVC client'ta IT personeli kontrol paneli/departman/personel/kullanıcı yönetiminden uzaklaştırıldı; giriş sonrası Envanter bölümüne yönlendirilir.
+- Menüde IT personeli için Kontrol Paneli ve Kimlik API bağlantısı gizlendi.
+
+Neden yapıldı:
+
+- IT personelinin sorumluluğu envanter, zimmet ve denetim operasyonlarıyla sınırlı olmalıdır.
+- Departman, personel ve kullanıcı yönetimi daha hassas idari işlemler olduğu için yalnızca Admin rolüne bırakıldı.
+- Zimmet operasyonu personel bilgisini okumaya ihtiyaç duyduğu için bu ihtiyaç yönetim yetkisi vermeden ayrı salt-okunur endpointlerle çözüldü.
+
+Doğrulama:
+
+- `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
 ### MongoDB CAP storage replica set ayarı yapıldı
 
 Ne yapıldı:

@@ -13,6 +13,7 @@ public static class MvcSabitleri
 
     public const string AdminRolu = "Admin";
     public const string ITPersoneliRolu = "ITPersoneli";
+    public const string PersonelKullanicisiRolu = "PersonelKullanicisi";
 
     public const string VarsayilanBildirimServisiAdresi = "http://localhost:5004";
     public const string BildirimHubYolu = "/hubs/bildirim";
@@ -24,6 +25,7 @@ public static class MvcMesajlari
     public const string OturumYokKisa = "Oturum yok";
     public const string OturumYok = "Bu işlem için önce giriş yapmalısın.";
     public const string KontrolPanelindenOturumYok = "Bu işlem için önce kontrol panelinden giriş yapmalısın.";
+    public const string KimlikPersonelYonetimiYetkisiYok = "Departman, personel ve kullanıcı yönetimi yalnızca Admin rolüne açıktır.";
     public const string GirisBilgileriEksik = "Kullanıcı adı ve şifre girilmelidir.";
     public const string OturumKapatildi = "Oturum kapatıldı.";
 

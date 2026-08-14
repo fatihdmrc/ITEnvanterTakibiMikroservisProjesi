@@ -42,7 +42,7 @@ Amaç:
 
 Aktör:
 
-- Admin veya ITPersoneli
+- Admin
 
 Akış:
 

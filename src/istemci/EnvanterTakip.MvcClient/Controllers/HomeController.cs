@@ -12,6 +12,12 @@ public class HomeController(
 {
     public async Task<IActionResult> Index(string? personelArama, Guid? personelDepartmanId, string? sekme)
     {
+        if (TokenAl() is not null && !KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KimlikPersonelYonetimiYetkisiYok;
+            return KullaniciRoluneGoreAnaBolumeYonlendir();
+        }
+
         var model = await PanelModeliOlustur(personelArama, personelDepartmanId, sekme);
 
         model.BasariMesaji = TempData[MvcSabitleri.BasariMesajiTempDataKey] as string;
@@ -44,7 +50,9 @@ public class HomeController(
         HttpContext.Session.SetString(MvcSabitleri.RolSessionKey, sonuc.Veri.Rol.ToString());
 
         TempData[MvcSabitleri.BasariMesajiTempDataKey] = MvcMesajlari.GirisYapildi(form.KullaniciAdi);
-        return RedirectToAction(nameof(Index));
+        return sonuc.Veri.Rol.ToString() == MvcSabitleri.AdminRolu
+            ? RedirectToAction(nameof(Index))
+            : KullaniciRoluneGoreAnaBolumeYonlendir(sonuc.Veri.Rol.ToString());
     }
 
     public IActionResult Cikis()
@@ -62,6 +70,10 @@ public class HomeController(
         if (token is null)
         {
             return OturumYok();
+        }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
         }
 
         if (!ModelState.IsValid)
@@ -84,6 +96,10 @@ public class HomeController(
         {
             return OturumYok();
         }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
+        }
 
         if (!ModelState.IsValid)
         {
@@ -105,6 +121,10 @@ public class HomeController(
         {
             return OturumYok();
         }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
+        }
 
         if (!ModelState.IsValid)
         {
@@ -125,6 +145,10 @@ public class HomeController(
         {
             return OturumYok();
         }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
+        }
 
         var model = await PersonelDuzenleModeliOlustur(id, token);
         if (model is null)
@@ -144,6 +168,10 @@ public class HomeController(
         if (token is null)
         {
             return OturumYok();
+        }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
         }
 
         if (!ModelState.IsValid)
@@ -173,6 +201,10 @@ public class HomeController(
         {
             return OturumYok();
         }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
+        }
 
         var model = await PersonelIstenAyrilOnayModeliOlustur(id, token);
         if (model is null)
@@ -191,6 +223,10 @@ public class HomeController(
         if (token is null)
         {
             return OturumYok();
+        }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
         }
 
         var model = await PersonelIstenAyrilOnayModeliOlustur(id, token);
@@ -218,6 +254,10 @@ public class HomeController(
         if (token is null)
         {
             return OturumYok();
+        }
+        if (!KimlikPersonelYonetimiYetkisiVarMi())
+        {
+            return KimlikPersonelYonetimiYetkisiYok();
         }
 
         if (!ModelState.IsValid)
@@ -363,6 +403,29 @@ public class HomeController(
 
     private string? TokenAl()
         => HttpContext.Session.GetString(MvcSabitleri.TokenSessionKey);
+
+    private string? RolAl()
+        => HttpContext.Session.GetString(MvcSabitleri.RolSessionKey);
+
+    private bool KimlikPersonelYonetimiYetkisiVarMi()
+        => RolAl() == MvcSabitleri.AdminRolu;
+
+    private IActionResult KimlikPersonelYonetimiYetkisiYok()
+    {
+        TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KimlikPersonelYonetimiYetkisiYok;
+        return KullaniciRoluneGoreAnaBolumeYonlendir();
+    }
+
+    private IActionResult KullaniciRoluneGoreAnaBolumeYonlendir(string? rol = null)
+    {
+        rol ??= RolAl();
+        return rol switch
+        {
+            MvcSabitleri.ITPersoneliRolu => RedirectToAction("Index", "Envanter"),
+            MvcSabitleri.PersonelKullanicisiRolu => RedirectToAction("Index", "Zimmet"),
+            _ => RedirectToAction("Index", "Envanter")
+        };
+    }
 
     private IActionResult OturumYok()
     {

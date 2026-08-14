@@ -157,7 +157,7 @@ Kimlik ve personel servisinde şu controller'lar bulunur:
 - `SaglikController`: `GET /saglik` endpointini sağlar.
 - `KimlikController`: `POST /api/kimlik/giris` endpointini sağlar.
 - `DepartmanlarController`: departman listeleme, detay, oluşturma ve güncelleme endpointlerini sağlar.
-- `PersonellerController`: personel listeleme, detay, oluşturma, güncelleme ve işten ayrıldı işlemlerini sağlar.
+- `PersonellerController`: Admin için personel listeleme, detay, oluşturma, güncelleme ve işten ayrıldı işlemlerini sağlar; Admin/IT zimmet akışı için ayrıca salt-okunur `zimmet-secimi` ve `zimmet-dogrulama` endpointlerini sunar.
 - `KullanicilarController`: kullanıcı listeleme ve oluşturma endpointlerini sağlar.
 
 Genel akış:

@@ -89,12 +89,12 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    // Admin ve IT personeli, kimlik/personel yönetim ekranlarını kullanabilir.
-    options.AddPolicy("AdminVeyaITPersoneli", policy =>
+    // IT personeli zimmet akışları için salt-okunur personel doğrulama endpointlerini kullanabilir.
+    options.AddPolicy(KimlikPersonelMesajlari.AdminVeyaITPersoneliPolicy, policy =>
         policy.RequireRole(KimlikPersonelMesajlari.AdminRolu, KimlikPersonelMesajlari.ITPersoneliRolu));
 
-    // Kullanıcı hesabı açma gibi daha hassas işlemler yalnızca admin rolüne bırakılır.
-    options.AddPolicy("SadeceAdmin", policy =>
+    // Departman, personel ve kullanıcı yönetimi yalnızca admin rolüne bırakılır.
+    options.AddPolicy(KimlikPersonelMesajlari.SadeceAdminPolicy, policy =>
         policy.RequireRole(KimlikPersonelMesajlari.AdminRolu));
 });
 

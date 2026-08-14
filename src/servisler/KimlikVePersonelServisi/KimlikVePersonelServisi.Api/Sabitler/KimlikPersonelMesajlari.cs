@@ -4,6 +4,8 @@ public static class KimlikPersonelMesajlari
 {
     public const string AdminRolu = "Admin";
     public const string ITPersoneliRolu = "ITPersoneli";
+    public const string AdminVeyaITPersoneliPolicy = "AdminVeyaITPersoneli";
+    public const string SadeceAdminPolicy = "SadeceAdmin";
 
     public const string DepartmanAdiZorunlu = "Departman adı zorunludur.";
     public const string DepartmanAdiKullaniliyor = "Aynı ada sahip departman zaten var.";
