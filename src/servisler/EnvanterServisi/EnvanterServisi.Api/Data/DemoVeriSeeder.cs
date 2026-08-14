@@ -138,9 +138,7 @@ public static class DemoVeriSeeder
     private static List<KritikStokKurali> KritikStokKurallariniOlustur()
         =>
         [
-            new() { Id = Guid.Parse("50000000-0000-0000-0000-000000000001"), LokasyonId = DemoKimlikleri.LokasyonItDepo, KategoriId = DemoKimlikleri.KategoriLaptop, CihazModeli = "Latitude 5450", KritikStokSeviyesi = 5 },
-            new() { Id = Guid.Parse("50000000-0000-0000-0000-000000000002"), LokasyonId = DemoKimlikleri.LokasyonItDepo, KategoriId = DemoKimlikleri.KategoriToner, KritikStokSeviyesi = 8 },
-            new() { Id = Guid.Parse("50000000-0000-0000-0000-000000000003"), LokasyonId = DemoKimlikleri.LokasyonAnkara, KategoriId = DemoKimlikleri.KategoriKablo, KritikStokSeviyesi = 20 }
+            new() { Id = Guid.Parse("50000000-0000-0000-0000-000000000001"), LokasyonId = DemoKimlikleri.LokasyonItDepo, KategoriId = DemoKimlikleri.KategoriLaptop, CihazModeli = "Latitude 5450", KritikStokSeviyesi = 5 }
         ];
 
     private static List<StokHareketi> StokHareketleriniOlustur(IReadOnlyCollection<Cihaz> cihazlar, IReadOnlyCollection<SarfMalzeme> sarflar)

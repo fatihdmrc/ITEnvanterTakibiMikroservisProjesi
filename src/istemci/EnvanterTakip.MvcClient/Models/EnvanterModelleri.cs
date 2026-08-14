@@ -8,6 +8,7 @@ public sealed class EnvanterPanelModel
     public IReadOnlyCollection<LokasyonModel> Lokasyonlar { get; set; } = [];
     public IReadOnlyCollection<CihazModel> Cihazlar { get; set; } = [];
     public IReadOnlyCollection<SarfMalzemeModel> SarfMalzemeler { get; set; } = [];
+    public IReadOnlyCollection<KritikStokKuraliModel> KritikStokKurallari { get; set; } = [];
     public StokOzetModel StokOzet { get; set; } = new(0, 0, 0, []);
     public CihazFiltreModel CihazFiltre { get; set; } = new();
     public List<string> ListelemeHatalari { get; set; } = [];
@@ -151,6 +152,26 @@ public sealed class SarfMalzemeStokHareketiFormModel
     public string? Aciklama { get; set; }
 }
 
+public class KritikStokKuraliOlusturFormModel
+{
+    [Required(ErrorMessage = "Kategori zorunludur.")]
+    public Guid KategoriId { get; set; }
+
+    [Required(ErrorMessage = "Lokasyon zorunludur.")]
+    public Guid LokasyonId { get; set; }
+
+    public string? CihazModeli { get; set; }
+
+    [Range(0, int.MaxValue, ErrorMessage = "Kritik stok seviyesi negatif olamaz.")]
+    public int KritikStokSeviyesi { get; set; }
+}
+
+public sealed class KritikStokKuraliGuncelleFormModel : KritikStokKuraliOlusturFormModel
+{
+    public Guid Id { get; set; }
+    public bool AktifMi { get; set; } = true;
+}
+
 public sealed record KategoriModel(
     Guid Id,
     string Ad,
@@ -206,6 +227,14 @@ public sealed record KritikStokModel(
     string? Model,
     int MevcutMiktar,
     int KritikStokSeviyesi);
+
+public sealed record KritikStokKuraliModel(
+    Guid Id,
+    Guid LokasyonId,
+    Guid KategoriId,
+    string? CihazModeli,
+    int KritikStokSeviyesi,
+    bool AktifMi);
 
 public sealed record StokHareketiModel(
     Guid Id,

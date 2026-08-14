@@ -139,15 +139,16 @@ Amaç:
 Akış:
 
 1. Stok hareketi gerçekleşir.
-2. EnvanterServisi ilgili kategori için kullanılabilir stok değerini hesaplar.
-3. Seri numaralı cihazlarda kullanılabilir stok cihaz durumlarından hesaplanır.
-4. Sarf malzemelerinde kullanılabilir stok `EldekiMiktar` alanından okunur.
-5. Hesaplanan değer kritik stok seviyesinin altındaysa event üretilir.
-6. CAP Outbox kaydı oluşturulur ve `stok.kritik-seviyeye-dusuldu` eventi RabbitMQ'ya yayınlanır.
-7. DenetimKaydiServisi event kaydını MongoDB'ye yazar.
-8. BildirimServisi aynı eventi tüketir.
-9. BildirimServisi, bağlı Admin/IT kullanıcılarına `KritikStokBildirimiAlindi` SignalR mesajını gönderir.
-10. MVC client canlı bildirim merkezinde uyarıyı gösterir.
+2. EnvanterServisi ilgili kategori, lokasyon ve gerekirse cihaz modeli için kullanılabilir stok değerini hesaplar.
+3. Seri numaralı cihazlarda eşik bilgisi aktif `KritikStokKurali` kayıtlarından okunur; bu kurallar yalnızca seri numaralı cihaz kategorileri için kullanılır.
+4. Seri numaralı cihazlarda kullanılabilir stok cihaz durumlarından hesaplanır.
+5. Sarf malzemelerinde kritik seviye `SarfMalzeme.KritikStokSeviyesi` alanından, kullanılabilir stok ise `EldekiMiktar` alanından okunur.
+6. Hesaplanan değer kritik stok seviyesinin altındaysa event üretilir.
+7. CAP Outbox kaydı oluşturulur ve `stok.kritik-seviyeye-dusuldu` eventi RabbitMQ'ya yayınlanır.
+8. DenetimKaydiServisi event kaydını MongoDB'ye yazar.
+9. BildirimServisi aynı eventi tüketir.
+10. BildirimServisi, bağlı Admin/IT kullanıcılarına `KritikStokBildirimiAlindi` SignalR mesajını gönderir.
+11. MVC client canlı bildirim merkezinde uyarıyı gösterir.
 
 ## 6. Hurda / Iskarta / Elden Çıkarma Akışı
 

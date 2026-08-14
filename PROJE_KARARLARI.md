@@ -195,8 +195,9 @@ Sarf malzeme olarak sınıflandırılacak ürünler:
 - Piller ve enerji ürünleri
 - Laptop kılıfı, ekran temizleme kiti, kablo düzenleyici, boş USB bellek gibi diğer aksesuarlar
 
-Sarf malzemelerinde minimum stok seviyesi kategori bazlı tanımlanacaktır.
-- Kritik stok seviyesi lokasyon-cihaz modeli ve lokasyon-kategori kırılımında takip edilecektir.
+Sarf malzemelerinde minimum stok seviyesi sarf malzeme kaydının kendi `KritikStokSeviyesi` alanında tanımlanacaktır.
+- Seri numaralı cihazlarda kritik stok seviyesi aktif `KritikStokKurali` kayıtlarıyla lokasyon-kategori ve lokasyon-kategori-model kırılımında takip edilecektir.
+- `KritikStokKurali` aktif kullanılabilmek için seri numaralı cihaz kategorisine bağlı olmalıdır; sarf malzeme kategorileri bu tablo üzerinden kritik stok kuralı üretmez.
 
 ### Toplam Varlık ve Kullanılabilir Stok Ayrımı
 

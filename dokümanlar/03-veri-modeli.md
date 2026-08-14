@@ -168,6 +168,8 @@ Kurallar:
 - Kritik stok seviyesi lokasyon-cihaz modeli ve lokasyon-kategori kırılımında takip edilir.
 - Cihaz modeli boş bırakılırsa kural lokasyon-kategori bazlı yorumlanır.
 - Cihaz modeli doluysa kural lokasyon-cihaz modeli bazlı yorumlanır.
+- `KritikStokKurali` yalnızca seri numaralı cihaz kategorileri için aktif kullanılabilir. Sarf malzemelerin kritik seviyesi `SarfMalzeme.KritikStokSeviyesi` alanından yönetilir.
+- Seri numaralı olmayan kategoriye bağlı eski aktif kritik stok kuralları migration ile pasifleştirilir ve stok özeti hesabına dahil edilmez.
 
 ## 4. ZimmetServisi Veri Modeli
 

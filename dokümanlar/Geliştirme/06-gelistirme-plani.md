@@ -177,7 +177,7 @@ Bu bölüm, kod tarafında yapılan son değişikliklerden sonra planın güncel
 - Faz 3 kapsamında EnvanterServisi kategori, lokasyon, cihaz, sarf malzeme, cihaz durum hareketi, sarf malzeme stok hareketi ve kritik stok altyapısıyla çalışır durumdadır.
 - Faz 3 cihaz durum modeli güncel enum adlarıyla hizalanmıştır: `Kullanilabilir`, `Zimmetli`, `Incelemede`, `Bakimda`, `HasarliTeslimAlindi`, `Kayip`, `Calindi`, `HurdaIskarta`, `KullanimDisi`.
 - Eski veritabanı kayıtlarında kalan cihaz durum değerlerini yeni enum değerlerine dönüştüren migration eklenmiştir.
-- Faz 4 kapsamında MVC client üzerinde envanter listeleme, ekleme, güncelleme, cihaz durum hareketi, sarf malzeme stok hareketi, stok özeti ve kritik stok gösterimi çalışır durumdadır.
+- Faz 4 kapsamında MVC client üzerinde envanter listeleme, ekleme, güncelleme, cihaz durum hareketi, sarf malzeme stok hareketi, stok özeti, kritik stok gösterimi ve seri numaralı cihazlar için kritik stok kuralı yönetimi çalışır durumdadır.
 - Client tarafında servis kapalı, yetkisiz, rol yetersiz veya beklenmeyen cevap durumları Türkçe hata mesajlarıyla gösterilir.
 
 ### Uygulama kararı

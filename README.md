@@ -233,6 +233,8 @@ Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründ
 
 ![Stok özeti](dokümanlar/görseller/ekranlar/stok-ozeti.png)
 
+MVC Envanter ekranındaki `Kritik Kurallar` sekmesi seri numaralı cihazlar için lokasyon/kategori/model bazlı kritik stok kuralı oluşturma, güncelleme ve pasifleştirme işlemlerini yönetir. Sarf malzemelerin kritik seviyesi ise sarf malzeme kaydının kendi alanında tutulur.
+
 ### Zimmetler
 
 ![Zimmetler](dokümanlar/görseller/ekranlar/zimmetler.png)
@@ -242,6 +244,7 @@ Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründ
 - MVC client üzerinden demo kullanıcıyla giriş yapılır.
 - Departman ve personel kayıtları yönetilir.
 - Cihaz, kategori, lokasyon ve sarf malzeme kayıtları yönetilir.
+- Seri numaralı cihazlar için kritik stok kuralları Envanter ekranındaki `Kritik Kurallar` sekmesinden yönetilir.
 - Cihazlar için durum hareketi işlenir; aktiflik ve toplam varlık kapsamı sistem tarafından hesaplanır.
 - Sarf malzemelerde miktar bazlı stok hareketi işlenir.
 - Uygun durumdaki cihaz aktif personele zimmetlenir.

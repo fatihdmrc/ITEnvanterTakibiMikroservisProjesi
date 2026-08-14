@@ -100,6 +100,11 @@ public static class MvcMesajlari
     public const string EnvanterHataSayfasiLogu = "Envanter MVC hata sayfası gösterildi. RequestId: {RequestId}";
     public const string ZimmetHataSayfasiLogu = "Zimmet MVC hata sayfası gösterildi. RequestId: {RequestId}";
 
+    public const string KritikStokKuraliBilgileriHatali = "Kritik stok kuralı bilgileri eksik veya hatalı.";
+    public const string KritikStokKuraliOlusturuldu = "Kritik stok kuralı oluşturuldu.";
+    public const string KritikStokKuraliGuncellendi = "Kritik stok kuralı güncellendi.";
+    public const string KritikStokKuraliPasiflestirildi = "Kritik stok kuralı pasifleştirildi.";
+
     public static string GirisYapildi(string kullaniciAdi)
         => $"{kullaniciAdi} kullanıcısı ile giriş yapıldı.";
 

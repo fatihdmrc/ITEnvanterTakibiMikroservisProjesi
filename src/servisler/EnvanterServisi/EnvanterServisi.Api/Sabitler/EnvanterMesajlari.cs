@@ -34,6 +34,8 @@ public static class EnvanterMesajlari
 
     public const string KritikStokKuraliBulunamadi = "Kritik stok kuralı bulunamadı.";
     public const string KritikStokNegatifOlamaz = "Kritik stok seviyesi negatif olamaz.";
+    public const string KritikStokKuraliSeriNumaraliKategoriOlmali = "Kritik stok kuralı yalnızca seri numaralı cihaz kategorileri için oluşturulabilir.";
+    public const string KritikStokKuraliZatenVar = "Aynı kategori, lokasyon ve model için kritik stok kuralı zaten var.";
     public const string AktifLokasyonBulunamadi = "Aktif lokasyon bulunamadı.";
     public const string AktifKategoriBulunamadi = "Aktif kategori bulunamadı.";
     public const string VarsayilanBirim = "Adet";

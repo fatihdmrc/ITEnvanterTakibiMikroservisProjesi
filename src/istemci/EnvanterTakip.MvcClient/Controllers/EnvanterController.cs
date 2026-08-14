@@ -50,6 +50,8 @@ public sealed class EnvanterController(
             {
                 model.ListelemeHatalari.Add(MvcMesajlari.ListeAlinamadi("Stok özeti", stokOzetSonucu.Hata));
             }
+            var kritikKuralSonucu = await envanterApiClient.KritikStokKurallariniListeleAsync(token);
+            model.KritikStokKurallari = ListeSonucunuYansit(model, "Kritik stok kuralları", kritikKuralSonucu);
         }
 
         return View(model);
@@ -325,6 +327,48 @@ public sealed class EnvanterController(
         return RedirectToAction(nameof(SarfMalzemeIslemleri), new { id = form.Id });
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> KritikStokKuraliOlustur(KritikStokKuraliOlusturFormModel form)
+    {
+        var token = TokenAl();
+        if (token is null)
+        {
+            return OturumYok();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KritikStokKuraliBilgileriHatali;
+            return RedirectToSekme("kritik");
+        }
+
+        var sonuc = await envanterApiClient.KritikStokKuraliOlusturAsync(form, token);
+        IslemSonucunuYansit(sonuc, MvcMesajlari.KritikStokKuraliOlusturuldu);
+        return RedirectToSekme("kritik");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> KritikStokKuraliGuncelle(KritikStokKuraliGuncelleFormModel form)
+    {
+        var token = TokenAl();
+        if (token is null)
+        {
+            return OturumYok();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            TempData[MvcSabitleri.HataMesajiTempDataKey] = MvcMesajlari.KritikStokKuraliBilgileriHatali;
+            return RedirectToSekme("kritik");
+        }
+
+        var sonuc = await envanterApiClient.KritikStokKuraliGuncelleAsync(form, token);
+        IslemSonucunuYansit(sonuc, form.AktifMi ? MvcMesajlari.KritikStokKuraliGuncellendi : MvcMesajlari.KritikStokKuraliPasiflestirildi);
+        return RedirectToSekme("kritik");
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
@@ -481,7 +525,7 @@ public sealed class EnvanterController(
         => RedirectToAction(nameof(Index), new { sekme });
 
     private static string SekmeDogrula(string? sekme)
-        => sekme is "kategori" or "lokasyon" or "cihaz" or "sarf" ? sekme : "stok";
+        => sekme is "kategori" or "lokasyon" or "cihaz" or "sarf" or "kritik" ? sekme : "stok";
 
     private static IReadOnlyCollection<T> ListeSonucunuYansit<T>(
         EnvanterPanelModel model,

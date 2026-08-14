@@ -238,13 +238,17 @@ Bu migration uygulanmadan eski veritabanı kayıtları okunmaya çalışılırsa
 
 Envanter yönetimi tarafında ana `Views/Envanter/Index.cshtml` ekranı listeleme ve yeni kayıt oluşturma amacıyla sade tutulur.
 
-- `Views/Envanter/Index.cshtml`: Stok özeti, kategori, lokasyon, cihaz ve sarf malzeme sekmelerini gösterir. Cihaz ve sarf malzeme sekmeleri tablo listeleme yapısındadır.
+- `Views/Envanter/Index.cshtml`: Stok özeti, kritik stok kuralı, kategori, lokasyon, cihaz ve sarf malzeme sekmelerini gösterir. Cihaz ve sarf malzeme sekmeleri tablo listeleme yapısındadır.
 - `Views/Envanter/CihazIslemleri.cshtml`: Tek bir cihazın bilgi güncelleme ve cihaz durum hareketi işleme formlarını içerir.
 - `Views/Envanter/SarfMalzemeIslemleri.cshtml`: Tek bir sarf malzemenin bilgi güncelleme, stok hareketi işleme ve stok hareketi geçmişi görüntüleme alanlarını içerir.
 
 `EnvanterController` içinde `CihazIslemleri` ve `SarfMalzemeIslemleri` GET action'ları ilgili kaydı API'den tekil olarak çeker. Bu nedenle `EnvanterApiClient` içinde `CihazGetirAsync` ve `SarfMalzemeGetirAsync` metotları bulunur.
 
 Bu ayrım sayesinde büyük listelerde ana ekran taranabilir kalır; düzenleme, cihaz durum hareketi ve sarf malzeme stok hareketi gibi detay işlemler ayrı sayfada yapılır.
+
+Kritik stok kuralları MVC client içinde `EnvanterController.KritikStokKuraliOlustur` ve `EnvanterController.KritikStokKuraliGuncelle` action'larıyla yönetilir. `EnvanterApiClient` bu işlemler için `GET/POST/PUT /api/stok/kritik-kurallar` endpointlerini kullanır. Yeni kural oluşturma formu yalnızca seri numaralı cihaz kategorilerini listeler; eski hatalı sarf kategori kuralları görüntülenebilir ve pasifleştirilebilir.
+
+Backend tarafında `EnvanterYonetimServisi.KritikStokKuraliDogrulaAsync` aktif kritik stok kurallarını yalnızca `VarlikTuru.SeriNumarali` kategorilere izin verecek şekilde doğrular. `StokOzetiniGetirAsync` de seri numaralı olmayan kategoriye bağlı eski kuralları stok özeti hesabına dahil etmez.
 
 ## Cihaz AssetTag ve Durum Hareketi Akışı
 

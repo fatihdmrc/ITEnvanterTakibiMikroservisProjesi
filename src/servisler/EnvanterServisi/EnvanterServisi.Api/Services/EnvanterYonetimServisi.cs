@@ -506,11 +506,17 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<KritikStokKuraliCevap>.Basarisiz(sonuc.Hata!);
         }
 
+        var cihazModeli = BosIseNull(istek.CihazModeli);
+        if (await KritikStokKuraliKullaniliyorMuAsync(istek.LokasyonId, istek.KategoriId, cihazModeli, null, cancellationToken))
+        {
+            return Sonuc<KritikStokKuraliCevap>.Basarisiz(EnvanterMesajlari.KritikStokKuraliZatenVar);
+        }
+
         var kural = new KritikStokKurali
         {
             LokasyonId = istek.LokasyonId,
             KategoriId = istek.KategoriId,
-            CihazModeli = BosIseNull(istek.CihazModeli),
+            CihazModeli = cihazModeli,
             KritikStokSeviyesi = istek.KritikStokSeviyesi
         };
 
@@ -528,15 +534,23 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<KritikStokKuraliCevap>.Basarisiz(EnvanterMesajlari.KritikStokKuraliBulunamadi);
         }
 
-        var sonuc = await KritikStokKuraliDogrulaAsync(istek.LokasyonId, istek.KategoriId, istek.KritikStokSeviyesi, cancellationToken);
+        var sonuc = istek.AktifMi
+            ? await KritikStokKuraliDogrulaAsync(istek.LokasyonId, istek.KategoriId, istek.KritikStokSeviyesi, cancellationToken)
+            : await PasifKritikStokKuraliDogrulaAsync(istek.LokasyonId, istek.KategoriId, istek.KritikStokSeviyesi, cancellationToken);
         if (!sonuc.BasariliMi)
         {
             return Sonuc<KritikStokKuraliCevap>.Basarisiz(sonuc.Hata!);
         }
 
+        var cihazModeli = BosIseNull(istek.CihazModeli);
+        if (istek.AktifMi && await KritikStokKuraliKullaniliyorMuAsync(istek.LokasyonId, istek.KategoriId, cihazModeli, id, cancellationToken))
+        {
+            return Sonuc<KritikStokKuraliCevap>.Basarisiz(EnvanterMesajlari.KritikStokKuraliZatenVar);
+        }
+
         kural.LokasyonId = istek.LokasyonId;
         kural.KategoriId = istek.KategoriId;
-        kural.CihazModeli = BosIseNull(istek.CihazModeli);
+        kural.CihazModeli = cihazModeli;
         kural.KritikStokSeviyesi = istek.KritikStokSeviyesi;
         kural.AktifMi = istek.AktifMi;
 
@@ -551,8 +565,13 @@ public sealed class EnvanterYonetimServisi(
         var sarfToplam = await sarfMalzemeRepository.ToplamMiktarAsync(cancellationToken);
         var kritikStoklar = new List<KritikStokCevap>();
 
+        var seriKategoriIdleri = (await kategoriRepository.ListeleAsync(cancellationToken))
+            .Where(kategori => kategori.AktifMi && kategori.VarlikTuru == VarlikTuru.SeriNumarali)
+            .Select(kategori => kategori.Id)
+            .ToHashSet();
+
         var kurallar = (await kritikStokKuraliRepository.ListeleAsync(cancellationToken))
-            .Where(kural => kural.AktifMi)
+            .Where(kural => kural.AktifMi && seriKategoriIdleri.Contains(kural.KategoriId))
             .ToList();
 
         foreach (var kural in kurallar)
@@ -856,12 +875,42 @@ public sealed class EnvanterYonetimServisi(
             return Sonuc<bool>.Basarisiz(EnvanterMesajlari.AktifLokasyonBulunamadi);
         }
 
-        if (!await kategoriRepository.AktifVarMiAsync(kategoriId, cancellationToken: cancellationToken))
+        if (!await kategoriRepository.AktifVarMiAsync(kategoriId, VarlikTuru.SeriNumarali, cancellationToken))
         {
-            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.AktifKategoriBulunamadi);
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.KritikStokKuraliSeriNumaraliKategoriOlmali);
         }
 
         return Sonuc<bool>.Basarili(true);
+    }
+
+    private async Task<Sonuc<bool>> PasifKritikStokKuraliDogrulaAsync(Guid lokasyonId, Guid kategoriId, int kritikStokSeviyesi, CancellationToken cancellationToken)
+    {
+        if (kritikStokSeviyesi < 0)
+        {
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.KritikStokNegatifOlamaz);
+        }
+
+        if (!await lokasyonRepository.VarMiAsync(lokasyonId, cancellationToken))
+        {
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.LokasyonBulunamadi);
+        }
+
+        if (!await kategoriRepository.VarMiAsync(kategoriId, cancellationToken))
+        {
+            return Sonuc<bool>.Basarisiz(EnvanterMesajlari.KategoriBulunamadi);
+        }
+
+        return Sonuc<bool>.Basarili(true);
+    }
+
+    private async Task<bool> KritikStokKuraliKullaniliyorMuAsync(Guid lokasyonId, Guid kategoriId, string? cihazModeli, Guid? haricKuralId, CancellationToken cancellationToken)
+    {
+        var kurallar = await kritikStokKuraliRepository.ListeleAsync(cancellationToken);
+        return kurallar.Any(kural =>
+            kural.LokasyonId == lokasyonId
+            && kural.KategoriId == kategoriId
+            && (!haricKuralId.HasValue || kural.Id != haricKuralId.Value)
+            && string.Equals(kural.CihazModeli ?? string.Empty, cihazModeli ?? string.Empty, StringComparison.OrdinalIgnoreCase));
     }
 
     private TimeSpan ReferansVeriCacheSuresi()

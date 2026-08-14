@@ -196,6 +196,28 @@ public sealed class EnvanterApiClient(HttpClient httpClient)
         }
     }
 
+    public Task<ApiListeSonucu<KritikStokKuraliModel>> KritikStokKurallariniListeleAsync(string? token)
+        => GetListeAsync<KritikStokKuraliModel>("/api/stok/kritik-kurallar", token);
+
+    public Task<ApiIslemSonucu<KritikStokKuraliModel>> KritikStokKuraliOlusturAsync(KritikStokKuraliOlusturFormModel form, string? token)
+        => PostAsync<KritikStokKuraliModel>("/api/stok/kritik-kurallar", new
+        {
+            form.LokasyonId,
+            form.KategoriId,
+            form.CihazModeli,
+            form.KritikStokSeviyesi
+        }, token);
+
+    public Task<ApiIslemSonucu<KritikStokKuraliModel>> KritikStokKuraliGuncelleAsync(KritikStokKuraliGuncelleFormModel form, string? token)
+        => PutAsync<KritikStokKuraliModel>($"/api/stok/kritik-kurallar/{form.Id}", new
+        {
+            form.LokasyonId,
+            form.KategoriId,
+            form.CihazModeli,
+            form.KritikStokSeviyesi,
+            form.AktifMi
+        }, token);
+
     private async Task<ApiIslemSonucu<T>> GetAsync<T>(string adres, string? token)
     {
         try

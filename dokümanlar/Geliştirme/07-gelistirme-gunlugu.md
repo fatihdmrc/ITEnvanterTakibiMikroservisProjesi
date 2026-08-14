@@ -931,3 +931,26 @@ Doğrulama:
 - PostgreSQL içinde `kimlik_personel`, `envanter`, `zimmet` ve CAP şemalarının durduğu kontrol edildi.
 - `dotnet build ITEnvanterTakipSistemi.sln --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
 
+### MVC kritik stok kuralı yönetimi eklendi
+
+Ne yapıldı:
+
+- MVC Envanter ekranına `Kritik Kurallar` sekmesi eklendi.
+- Admin/IT kullanıcıları bu sekmeden seri numaralı cihazlar için lokasyon, kategori, opsiyonel cihaz modeli ve kritik stok seviyesi bazlı kural oluşturabilir, güncelleyebilir veya pasifleştirebilir.
+- Kategori yönetim ekranındaki görünür kritik stok alanı kaldırıldı; kritik stok kuralı yönetimi ayrı sekmeye taşındı.
+- EnvanterServisi aktif kritik stok kurallarını yalnızca `VarlikTuru.SeriNumarali` kategoriler için kabul edecek şekilde doğrulandı.
+- Aynı lokasyon, kategori ve model için duplicate kritik stok kuralı servis katmanında Türkçe iş kuralı hatasıyla engellendi.
+- Stok özeti hesabı, seri numaralı olmayan kategoriye bağlı eski kritik stok kurallarını dikkate almayacak hale getirildi.
+- Demo seed içindeki sarf malzeme kategorilerine bağlı hatalı `KritikStokKurali` kayıtları kaldırıldı.
+- Mevcut veritabanlarında seri numaralı olmayan kategoriye bağlı aktif kritik stok kurallarını pasifleştiren veri migration'ı eklendi.
+
+Neden yapıldı:
+
+- Sarf malzemelerde kritik seviye `SarfMalzeme.KritikStokSeviyesi` alanından yönetilirken, seri numaralı cihazlarda kritik stok kuralı ayrı `KritikStokKurallari` tablosundan yönetilmelidir.
+- Bu ayrım net olmadığı için stok özetinde kaldırılmış gibi görünen veya kullanıcı tarafından belirlenmemiş sanılan kritik seviye kayıtları görünebiliyordu.
+
+Doğrulama:
+
+- `dotnet build src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+- `dotnet build src\istemci\EnvanterTakip.MvcClient\EnvanterTakip.MvcClient.csproj --no-restore` komutu 0 hata ve 0 uyarı ile tamamlandı.
+
