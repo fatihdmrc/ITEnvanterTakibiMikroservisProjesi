@@ -1,40 +1,37 @@
 # Çalıştırma Rehberi
 
-Bu doküman, projeyi geliştirme ortamında nasıl ayağa kaldıracağını anlatır.
+Bu doküman, IT Envanter Takip Mikroservis Projesi'ni geliştirme ortamında ilk kez kurmak, servisleri ayrı ayrı çalıştırmak, demo verisini bilinçli şekilde sıfırlamak ve temel adresleri kontrol etmek için kullanılır.
 
-## 1. Gerekenler
+## 1. Gereksinimler
 
 Bilgisayarda şu araçlar bulunmalıdır:
 
 - .NET 8 SDK
 - Docker Desktop
 - PowerShell veya Windows Terminal
+- İsteğe bağlı: DBeaver Community
 
-Projede `global.json` ile .NET 8 SDK hedeflenmiştir.
+Projede .NET 8 hedeflenmiştir. Komutlar PowerShell için hazırlanmıştır.
 
-## 2. Proje Klasörüne Geç
+## 2. Proje Kök Dizini
 
-PowerShell açıp proje klasörüne geç:
+Önce proje kök dizinine geç:
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi"
 ```
 
-## 3. .NET Paketlerini Geri Yükle
+Bu rehberdeki proje yolu bu klasöre göre verilmiştir.
 
-Paketler normal NuGet cache üzerinden geri yüklenir:
+## 3. Paketleri Geri Yükle ve Derle
+
+İlk kurulumda veya paket değişikliği sonrası:
 
 ```powershell
 dotnet restore ITEnvanterTakipSistemi.sln
 ```
 
-## 4. Projeyi Derle
-
-Derleme almadan önce çalışan servis terminali varsa `Ctrl + C` ile kapat. Çalışan uygulama kapanmazsa Windows `.exe` dosyasını kilitler ve build sırasında şu tarz hata alınır:
-
-```text
-The process cannot access the file ... because it is being used by another process.
-```
+Derleme kontrolü:
 
 ```powershell
 dotnet build ITEnvanterTakipSistemi.sln --no-restore
@@ -48,27 +45,44 @@ Oluşturma başarılı oldu.
 0 Hata
 ```
 
-## 5. PostgreSQL, RabbitMQ, MongoDB ve Redis'i Docker ile Başlat
+## 4. Altyapı Servislerini Başlat
 
-Docker Compose proje adı `it-envanter` olarak sabitlenmiştir. Docker Desktop'ta altyapı servisleri aynı grup altında, ayrı containerlar olarak görünür.
+PostgreSQL, RabbitMQ, MongoDB ve Redis Docker Compose ile çalışır.
 
 ```powershell
 docker compose up -d postgres rabbitmq mongodb redis
 ```
 
-MongoDB, CAP MongoDB storage transaction ihtiyacı nedeniyle tek node replica set olarak çalışır. İlk başlatmadan sonra replica set'i hazırlamak için şu komutu çalıştır:
+MongoDB CAP storage için replica set olarak çalışır. İlk kurulumdan sonra şu komutu çalıştır:
 
 ```powershell
 docker exec it-envanter-mongodb mongosh --eval "try { rs.status() } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'127.0.0.1:27017'}]}) }"
 ```
 
-Çalışıyor mu kontrol etmek için:
+Container kontrolü:
 
 ```powershell
 docker ps
 ```
 
-PostgreSQL bilgileri:
+Docker Desktop'ta beklenen compose grubu:
+
+```text
+it-envanter
+```
+
+Beklenen containerlar:
+
+```text
+it-envanter-postgres
+it-envanter-rabbitmq
+it-envanter-mongodb
+it-envanter-redis
+```
+
+## 5. Altyapı Bağlantı Bilgileri
+
+PostgreSQL:
 
 ```text
 Host: localhost
@@ -78,357 +92,264 @@ User: itenvanter
 Password: itenvanter123
 ```
 
-RabbitMQ bilgileri:
+RabbitMQ:
 
 ```text
-AMQP Port: 5672
+AMQP: localhost:5672
 Management UI: http://localhost:15672
 User: guest
 Password: guest
 Exchange: inventory.events
 ```
 
-MongoDB bilgileri:
+MongoDB:
 
 ```text
 Host: localhost
 Port: 27017
 Replica set: rs0
-Kullanım: DenetimKaydiServisi audit/event log ve CAP consumer storage
+Kullanım: Denetim audit/event log ve CAP consumer storage
 ```
 
-Redis bilgileri:
+Redis:
 
 ```text
 Host: localhost
 Port: 6379
-Kullanım: EnvanterServisi kategori/lokasyon referans veri cache
+Kullanım: EnvanterServisi kategori/lokasyon cache
 ```
 
-MailServisi Gmail ayarları user-secrets ile verilir:
+## 6. MailServisi Gmail Ayarları
+
+MailServisi test amaçlı Gmail SMTP kullanır. Gmail kullanıcı adı ve app password repo içine yazılmaz; `user-secrets` ile local makinede saklanır.
+
+Proje kök dizinindeyken:
 
 ```powershell
 dotnet user-secrets set "Gmail:KullaniciAdi" "fathdmrc01@gmail.com" --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj"
 dotnet user-secrets set "Gmail:AppPassword" "GMAIL_APP_PASSWORD" --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj"
 ```
 
-Not: `GMAIL_APP_PASSWORD` normal Gmail şifresi değildir; Gmail app password değeri olmalıdır. Test modu açıkken e-postalar yalnızca `fathdmrc01@gmail.com` adresine gönderilir.
-
-PostgreSQL'i durdurmak için:
+MailServisi klasörünün içindeyken `--project` yazmadan da çalıştırabilirsin:
 
 ```powershell
-docker compose down
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\MailServisi\MailServisi.Api"
+dotnet user-secrets set "Gmail:KullaniciAdi" "fathdmrc01@gmail.com"
+dotnet user-secrets set "Gmail:AppPassword" "GMAIL_APP_PASSWORD"
 ```
 
-## 6. DBeaver ile Veritabanını Görüntüle
+Kayıtlı değerleri görmek için:
 
-DBeaver Community Desktop kurulduktan sonra PostgreSQL veritabanına şu bilgilerle bağlanılır:
-
-```text
-Database Type: PostgreSQL
-Host: localhost
-Port: 5432
-Database: it_envanter_takip
-Username: itenvanter
-Password: itenvanter123
+```powershell
+dotnet user-secrets list --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj"
 ```
 
-İlk bağlantı adımları:
+Notlar:
 
-1. DBeaver'ı aç.
-2. `New Database Connection` seç.
-3. `PostgreSQL` seç.
-4. Yukarıdaki bağlantı bilgilerini gir.
-5. `Test Connection` butonuna bas.
-6. Sürücü indirme uyarısı çıkarsa onayla.
-7. Bağlantı başarılıysa `Finish` ile kaydet.
+- `GMAIL_APP_PASSWORD` normal Gmail şifresi değildir; Gmail uygulama şifresidir.
+- Bu ayarlar bir kez girildikten sonra bilgisayar kapanıp açılsa da kalır.
+- Aynı key tekrar set edilirse eski değerin üzerine yazılır.
+- Test modu açık olduğu için mailler gerçek personele gitmez; alıcı `fathdmrc01@gmail.com` olarak override edilir.
 
-Kimlik ve personel tablolarını görmek için:
+## 7. Veritabanı Migration
 
-1. Sol menüden bağlantıyı aç.
-2. `Databases > it_envanter_takip > Schemas > kimlik_personel > Tables` yoluna git.
-3. `Departmanlar`, `Personeller`, `Kullanicilar`, `Roller` ve Identity bağlantı tablolarını incele.
+Servisler başlarken kendi migration'larını otomatik uygular. Yine de ilk kurulumda manuel uygulamak istersen PostgreSQL çalışırken şu komutları proje kökünden çalıştırabilirsin.
 
-Not: EF Core şu an tablo adlarını C# `DbSet` adlarıyla oluşturduğu için tablolar büyük harfle başlar. DBeaver'da küçük harfli tablo adı ararsan görünmüyor gibi düşünebilirsin.
-
-Identity geçişinden sonra `Kullanicilar` tablosunda `PasswordHash`, `SecurityStamp`, `LockoutEnd` gibi standart Identity alanları da görünür. Bunlar bizim elle yazdığımız alanlar değil, ASP.NET Core Identity'nin kullanıcı güvenliği için yönettiği alanlardır.
-
-Envanter tablolarını görmek için:
-
-```text
-Databases > it_envanter_takip > Schemas > envanter > Tables
-```
-
-Bu schema altında şu tablolar bulunur:
-
-```text
-Kategoriler
-Lokasyonlar
-Cihazlar
-SarfMalzemeler
-StokHareketleri
-KritikStokKurallari
-```
-
-Zimmet tablolarını görmek için:
-
-```text
-Databases > it_envanter_takip > Schemas > zimmet > Tables
-```
-
-Bu schema altında şu tablo bulunur:
-
-```text
-Zimmetler
-```
-
-## 7. Migration Uygula
-
-PostgreSQL çalıştıktan sonra KimlikVePersonelServisi migration'ını uygula:
+KimlikVePersonelServisi:
 
 ```powershell
 dotnet ef database update --project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --startup-project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --context KimlikPersonelDbContext
 ```
 
-EnvanterServisi migration'ını uygulamak için:
+EnvanterServisi:
 
 ```powershell
 dotnet ef database update --project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --startup-project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --context EnvanterDbContext
 ```
 
-ZimmetServisi migration'ını uygulamak için:
+ZimmetServisi:
 
 ```powershell
 dotnet ef database update --project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --startup-project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --context ZimmetDbContext
 ```
 
-Not: EnvanterServisi açılışında `Database.MigrateAsync()` çalıştığı için bekleyen migration'lar servis başlatıldığında da uygulanır. `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı mevcut cihazların `AktifMi`, `ToplamVarligaDahilMi` ve çıkış tarihi alanlarını yeni yaşam döngüsü kuralına göre düzeltir.
+DenetimKaydiServisi, BildirimServisi ve MailServisi PostgreSQL migration kullanmaz. Bu servisler CAP consumer state ve audit/event kayıtları için MongoDB kullanır.
 
-Not: ZimmetServisi açılışında da `Database.MigrateAsync()` çalışır. Bekleyen `IlkZimmetSemasi` migration'ı servis başlatıldığında otomatik uygulanır.
+## 8. Demo Verisini Sıfırlayıp Yeniden Kurma
 
-Not:
-
-```text
-EF tools version '8.0.0' is older than runtime '8.0.18'
-```
-
-uyarısı görülebilir. Migration başarılı uygulanıyorsa bu uyarı geliştirmeyi engellemez.
-
-## 8. Servisleri Çalıştır
-
-Her uygulamayı ayrı terminal penceresinde çalıştırman en anlaşılır yöntemdir.
-
-### Terminal 1 - KimlikVePersonelServisi
-
-```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
-dotnet run --project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --launch-profile http
-```
-
-Kontrol adresi:
+Normal development çalıştırmasında demo reset kapalıdır:
 
 ```text
-http://localhost:5000/saglik
+DemoVeri:Sifirla=false
 ```
 
-Swagger adresi:
+Bu sayede servisleri başlatmak mevcut test verilerini silmez.
 
-```text
-http://localhost:5000/swagger
-```
-
-Hazır demo kullanıcılarla JWT deneme sırası:
-
-1. Swagger'da `POST /api/kimlik/giris` endpointini aç.
-2. Aşağıdaki demo kullanıcılardan biriyle giriş yap.
-3. Dönen `token` değerini kopyala.
-4. Swagger'daki `Authorize` butonuna bas.
-5. Açılan alana yalnızca token değerini yapıştır. `Bearer` kelimesini Swagger için ayrıca yazmana gerek yoktur.
-6. Yetkili bir endpoint çağır. Örneğin `GET /api/departmanlar` endpointi admin veya IT personeli token'ı ile `200 OK` dönmelidir.
-
-Postman veya curl ile denerken ise header şu formatta gönderilir:
-
-```text
-Authorization: Bearer JWT_TOKEN_DEGERI
-```
-
-Demo kullanıcılar:
-
-```text
-admin / Admin123! / Admin
-it.personel / ItPersonel123! / ITPersoneli
-personel / Personel123! / PersonelKullanicisi
-```
-
-Demo veri reset varsayılan olarak kapalıdır. Normal development çalıştırmasında `DemoVeri:Sifirla=false` olduğu için mevcut veriler silinmez. Demo verisini bilinçli olarak sıfırlamak gerektiğinde ilgili servisleri başlatmadan önce PowerShell'de şu override verilir:
+Demo verisini bilinçli olarak sıfırlayıp yeniden kurmak için Kimlik, Envanter ve Zimmet servislerini başlatmadan önce aynı PowerShell terminalinde şu environment override değerini ver:
 
 ```powershell
 $env:DemoVeri__Sifirla="true"
 ```
 
-Reset işlemi tamamlandıktan sonra aynı terminalde normal çalışmaya dönmek için:
+Sonra seed uygulayacak servisleri sırayla başlat:
+
+```powershell
+dotnet run --project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --launch-profile http
+```
+
+Kimlik servisi açıldıktan sonra `Ctrl + C` ile kapatıp EnvanterServisi'ni başlat:
+
+```powershell
+dotnet run --project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --launch-profile http
+```
+
+Envanter servisi açıldıktan sonra `Ctrl + C` ile kapatıp ZimmetServisi'ni başlat:
+
+```powershell
+dotnet run --project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --launch-profile http
+```
+
+Reset işlemi bittiğinde aynı terminalde override değerini temizle:
 
 ```powershell
 Remove-Item Env:\DemoVeri__Sifirla
 ```
 
-Örnek giriş gövdesi:
+Sonra servisleri normal şekilde ayrı terminallerde çalıştır.
 
-```json
-{
-  "kullaniciAdi": "admin",
-  "sifre": "Admin123!"
-}
+Önemli:
+
+- `DemoVeri__Sifirla=true` açıkken servis başlatmak ilgili servis domain verisini sıfırlar.
+- Bu değeri normal günlük testlerde açık bırakma.
+- Denetim/Mongo kayıtları ve CAP teknik kayıtları domain demo seed resetinden ayrı kabul edilir.
+
+## 9. Servisleri Ayrı Ayrı Çalıştırma
+
+Her uygulamayı ayrı PowerShell terminalinde çalıştırmak en rahat yöntemdir. Önce her terminalde proje kök dizinine geç:
+
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi"
 ```
 
-Başarılı cevapta beklenen temel alanlar:
+### Terminal 1 - KimlikVePersonelServisi
 
-```json
-{
-  "token": "JWT_TOKEN_DEGERI",
-  "kullaniciId": "KULLANICI_ID",
-  "personelId": "PERSONEL_ID",
-  "rol": "Admin",
-  "gecerlilikZamani": "2026-07-27T..."
-}
+```powershell
+dotnet run --project "src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api\KimlikVePersonelServisi.Api.csproj" --launch-profile http
 ```
 
-Elle veri oluşturmak istersen deneme sırası:
+Alternatif olarak proje klasörünün içindeysen:
 
-1. `POST /api/departmanlar` ile departman oluştur.
-2. Dönen `id` değerini kullanarak `POST /api/personeller` ile personel oluştur.
-3. Dönen personel `id` değerini kullanarak `POST /api/kullanicilar` ile kullanıcı oluştur.
-4. `POST /api/kimlik/giris` ile giriş yap.
-
-Örnek departman oluşturma gövdesi:
-
-```json
-{
-  "ad": "Bilgi İşlem",
-  "sorumluPersonelId": null
-}
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\KimlikVePersonelServisi\KimlikVePersonelServisi.Api"
+dotnet run --launch-profile http
 ```
 
-Örnek personel oluşturma gövdesi:
-
-```json
-{
-  "ad": "Fatih",
-  "soyad": "Demir",
-  "email": "fatih.demir@example.com",
-  "departmanId": "DEPARTMAN_ID_BURAYA",
-  "unvan": "IT Uzmanı",
-  "departmanSorumlusuMu": false,
-  "iseGirisTarihi": "2026-07-27"
-}
-```
-
-Örnek kullanıcı oluşturma gövdesi:
-
-```json
-{
-  "kullaniciAdi": "fatih.demir",
-  "sifre": "Deneme123!",
-  "rol": 2,
-  "personelId": "PERSONEL_ID_BURAYA"
-}
-```
-
-Rol değerleri:
+Adresler:
 
 ```text
-1 = Admin
-2 = ITPersoneli
-3 = PersonelKullanicisi
+Swagger: http://localhost:5000/swagger
+Sağlık:  http://localhost:5000/saglik
 ```
 
-Örnek giriş gövdesi:
+Temel endpointler:
 
-```json
-{
-  "kullaniciAdi": "fatih.demir",
-  "sifre": "Deneme123!"
-}
+```text
+POST /api/kimlik/giris
+GET  /api/departmanlar                         Admin
+POST /api/departmanlar                         Admin
+GET  /api/personeller                          Admin
+GET  /api/personeller/zimmet-secimi            Admin, ITPersoneli
+GET  /api/personeller/{id}/zimmet-dogrulama    Admin, ITPersoneli
+POST /api/personeller                          Admin
+POST /api/kullanicilar                         Admin
 ```
 
 ### Terminal 2 - EnvanterServisi
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
 dotnet run --project "src\servisler\EnvanterServisi\EnvanterServisi.Api\EnvanterServisi.Api.csproj" --launch-profile http
 ```
 
-Kontrol adresi:
+Proje klasörünün içindeysen:
 
-```text
-http://localhost:5001/saglik
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\EnvanterServisi\EnvanterServisi.Api"
+dotnet run --launch-profile http
 ```
 
-Swagger adresi:
+Adresler:
 
 ```text
-http://localhost:5001/swagger
+Swagger: http://localhost:5001/swagger
+Sağlık:  http://localhost:5001/saglik
 ```
-
-EnvanterServisi endpointleri JWT ile korunur. Önce KimlikVePersonelServisi üzerinden `admin` veya `it.personel` kullanıcısıyla token alıp EnvanterServisi Swagger ekranındaki `Authorize` alanına yapıştırman gerekir.
 
 Temel endpointler:
 
 ```text
-GET /api/kategoriler
-GET /api/lokasyonlar
-GET /api/cihazlar
-GET /api/sarf-malzemeler
-GET /api/stok/ozet
+GET  /api/kategoriler
+GET  /api/lokasyonlar
+GET  /api/cihazlar
+POST /api/cihazlar
+POST /api/cihazlar/{id}/durum-hareketleri
+GET  /api/sarf-malzemeler
+POST /api/sarf-malzemeler/{id}/stok-hareketleri
+GET  /api/stok/ozet
+GET  /api/stok/hareketler
 ```
 
 ### Terminal 3 - ZimmetServisi
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
 dotnet run --project "src\servisler\ZimmetServisi\ZimmetServisi.Api\ZimmetServisi.Api.csproj" --launch-profile http
 ```
 
-Kontrol adresi:
+Proje klasörünün içindeysen:
 
-```text
-http://localhost:5002/saglik
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\ZimmetServisi\ZimmetServisi.Api"
+dotnet run --launch-profile http
 ```
 
-Swagger adresi:
+Adresler:
 
 ```text
-http://localhost:5002/swagger
+Swagger: http://localhost:5002/swagger
+Sağlık:  http://localhost:5002/saglik
 ```
-
-ZimmetServisi endpointleri JWT ile korunur. Zimmet oluşturma, iade alma ve iade kontrolü için `admin` veya `it.personel` token'ı gerekir. `personel` rolündeki kullanıcı yalnızca kendi zimmetlerini `GET /api/zimmetler/benim` endpointiyle görebilir.
 
 Temel endpointler:
 
 ```text
-GET /api/zimmetler
-GET /api/zimmetler/benim
-GET /api/zimmetler/{id}
+GET  /api/zimmetler
+GET  /api/zimmetler/benim
+GET  /api/zimmetler/{id}
 POST /api/zimmetler
 POST /api/zimmetler/{id}/iade-alindi
 POST /api/zimmetler/{id}/iade-kontrolu
 ```
 
+ZimmetServisi çalışırken KimlikVePersonelServisi ve EnvanterServisi de açık olmalıdır. Çünkü personel uygunluğu ve cihaz durum değişikliği bu servisler üzerinden doğrulanır.
+
 ### Terminal 4 - DenetimKaydiServisi
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
 dotnet run --project "src\servisler\DenetimKaydiServisi\DenetimKaydiServisi.Api\DenetimKaydiServisi.Api.csproj" --launch-profile http
 ```
 
-Kontrol adresi:
+Proje klasörünün içindeysen:
 
-```text
-http://localhost:5003/swagger
-http://localhost:5003/saglik
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\DenetimKaydiServisi\DenetimKaydiServisi.Api"
+dotnet run --launch-profile http
 ```
 
-DenetimKaydiServisi endpointleri JWT ile korunur. Denetim kayıtlarını listeleme ve detay görüntüleme için `admin` veya `it.personel` token'ı gerekir.
+Adresler:
+
+```text
+Swagger: http://localhost:5003/swagger
+Sağlık:  http://localhost:5003/saglik
+```
 
 Temel endpointler:
 
@@ -441,40 +362,59 @@ POST /api/denetim-kayitlari/crud
 ### Terminal 5 - BildirimServisi
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
 dotnet run --project "src\servisler\BildirimServisi\BildirimServisi.Api\BildirimServisi.Api.csproj" --launch-profile http
 ```
 
-Kontrol adresi:
+Proje klasörünün içindeysen:
 
-```text
-http://localhost:5004/swagger
-http://localhost:5004/saglik
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\BildirimServisi\BildirimServisi.Api"
+dotnet run --launch-profile http
 ```
 
-BildirimServisi, `stok.kritik-seviyeye-dusuldu` eventini CAP/RabbitMQ üzerinden tüketir ve `/hubs/bildirim` SignalR hub'ı üzerinden Admin/IT kullanıcılarına canlı bildirim gönderir.
+Adresler:
+
+```text
+Swagger: http://localhost:5004/swagger
+Sağlık:  http://localhost:5004/saglik
+Hub:     http://localhost:5004/hubs/bildirim
+```
+
+BildirimServisi `stok.kritik-seviyeye-dusuldu` eventini tüketir ve Admin/IT kullanıcılarına canlı SignalR bildirimi gönderir.
 
 ### Terminal 6 - MailServisi
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
 dotnet run --project "src\servisler\MailServisi\MailServisi.Api\MailServisi.Api.csproj" --launch-profile http
 ```
 
-Kontrol adresi:
+Proje klasörünün içindeysen:
 
-```text
-http://localhost:5006/swagger
-http://localhost:5006/saglik
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\MailServisi\MailServisi.Api"
+dotnet run --launch-profile http
 ```
 
-MailServisi, `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini CAP/RabbitMQ üzerinden tüketir ve test modunda Gmail ile zimmet bilgilendirme e-postası gönderir. Gönderim 3 kez denenir; 3 deneme başarısız olursa CAP consumer başarısız tüketim olarak izlenir.
+Adresler:
+
+```text
+Swagger: http://localhost:5006/swagger
+Sağlık:  http://localhost:5006/saglik
+```
+
+MailServisi `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini tüketir. Gmail secret değerleri girilmiş olmalıdır.
 
 ### Terminal 7 - MVC Client
 
 ```powershell
-cd "C:\Users\fathd\Desktop\IT Ekipman Takip Sistemi"
 dotnet run --project "src\istemci\EnvanterTakip.MvcClient\EnvanterTakip.MvcClient.csproj" --launch-profile http
+```
+
+Proje klasörünün içindeysen:
+
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\istemci\EnvanterTakip.MvcClient"
+dotnet run --launch-profile http
 ```
 
 Tarayıcı adresi:
@@ -483,228 +423,201 @@ Tarayıcı adresi:
 http://localhost:5010
 ```
 
-MVC client üzerinden şu işlemler denenebilir:
-
-- Demo kullanıcı ile giriş yapmak
-- Oturumdaki kullanıcı bilgisini görmek
-- Departmanları listelemek ve yeni departman oluşturmak
-- Personelleri listelemek ve yeni personel oluşturmak
-- Personeli işten ayrıldı olarak işaretlemek
-- Kullanıcıları listelemek ve yeni kullanıcı oluşturmak
-- Envanter ekranından cihaz ve sarf malzeme işlemlerini yönetmek
-- Zimmetler ekranından zimmet oluşturmak, iade almak ve iade kontrolünü tamamlamak
-- Denetim ekranından event ve CRUD audit kayıtlarını filtrelemek ve detay payload'ını görüntülemek
-- Admin/IT kullanıcısı ile kritik stok canlı bildirimlerini görmek
-
-Not: MVC client şu an doğrudan `http://localhost:5000`, `http://localhost:5001`, `http://localhost:5002`, `http://localhost:5003` ve `http://localhost:5004` adreslerindeki servislere bağlanır. MailServisi client tarafından doğrudan çağrılmaz, CAP/RabbitMQ event consumer olarak çalışır. ApiGateway eklendiğinde client servis adresleri `appsettings.json` içinden gateway adresine çevrilecektir.
-
-Yetki notu:
-
-- Giriş yapılmadan departman, personel ve kullanıcı endpointleri `401 Unauthorized` döner.
-- `Admin` rolü departman, personel ve kullanıcı yönetimi yapabilir.
-- `ITPersoneli` rolü departman ve personel yönetimi yapabilir.
-- `PersonelKullanicisi` yönetim endpointlerini kullanamaz; Zimmetler ekranında yalnızca kendi zimmet süreçlerini görebilir.
-
-## 9. Şu Anki Durum
-
-Şu an çalışan kapsam:
-
-- Solution iskeleti
-- KimlikVePersonelServisi API projesi
-- EnvanterServisi API projesi
-- ZimmetServisi API projesi
-- DenetimKaydiServisi API projesi
-- BildirimServisi API projesi
-- MailServisi API projesi
-- ASP.NET Core MVC client projesi
-- PostgreSQL Docker Compose 
-- RabbitMQ Docker Compose
-- MongoDB Docker Compose
-- Redis Docker Compose
-- KimlikVePersonelServisi EF Core migration yapısı
-- KimlikVePersonelServisi PostgreSQL bağlantısı
-- ASP.NET Core Identity ile kullanıcı, rol ve şifre yönetimi
-- KimlikVePersonelServisi JWT token üretimi
-- Varsayılan kapalı reset davranışına sahip demo departman, personel ve kullanıcı kayıtları
-- Her iki API için `/saglik` endpointi
-- DBeaver Community ile veritabanı görüntüleme
-- Repository pattern ile ayrılmış veri erişim katmanı
-- Controller, service ve repository şeklinde ayrılmış KimlikVePersonelServisi API mimarisi
-- Kimlik ve personel işlemlerini kullanan MVC kontrol paneli
-- EnvanterServisi EF Core migration yapısı
-- EnvanterServisi kategori, lokasyon, cihaz ve sarf malzeme CRUD endpointleri
-- EnvanterServisi kullanılabilir stok ve kritik stok özeti endpointi
-- ZimmetServisi EF Core migration yapısı
-- ZimmetServisi zimmet oluşturma, iade alma, iade kontrolü ve kendi zimmetlerini listeleme endpointleri
-- MVC client Zimmetler ekranı
-- MVC client Denetim ekranı
-- MVC client canlı bildirim merkezi
-- DotNetCore.CAP + RabbitMQ event yayınlama altyapısı
-- CAP Outbox şemaları: `cap_kimlik`, `cap_envanter`, `cap_zimmet`
-- MongoDB audit log koleksiyonu: `DenetimKayitlari`
-- Redis referans veri cache anahtarları: `envanter:kategoriler:v1`, `envanter:lokasyonlar:v1`
-- BildirimServisi SignalR hub endpointi: `/hubs/bildirim`
-- MailServisi test mail consumer grubu: `mail-servisi`
-
-Henüz eklenmeyenler:
-
-- ApiGateway
-Swagger ve EF Core paketleri proje dosyalarına eklenmiştir.
-
-## 10. Sık Karşılaşılan Hata: Dosya Kilitli
-
-Build sırasında şu hata görülürse:
+MVC client şu servislere doğrudan bağlanır:
 
 ```text
-Dosya şunun tarafından kilitlendi: "EnvanterServisi.Api (21256)"
+KimlikVePersonelServisi: http://localhost:5000
+EnvanterServisi:        http://localhost:5001
+ZimmetServisi:          http://localhost:5002
+DenetimKaydiServisi:    http://localhost:5003
+BildirimServisi:        http://localhost:5004
 ```
 
-Bu, ilgili uygulamanın hâlâ çalıştığı anlamına gelir. Çözüm olarak:
+MailServisi MVC tarafından doğrudan çağrılmaz; CAP/RabbitMQ event consumer olarak çalışır.
 
-1. Servisin çalıştığı terminale geç.
-2. `Ctrl + C` ile uygulamayı durdur.
-3. Build komutunu tekrar çalıştır.
+## 10. dotnet watch ile Çalıştırma
 
-Eğer terminali bulamıyorsan PowerShell'de ilgili process id ile kapatabilirsin:
+Geliştirme sırasında ilgili proje klasörünün içine girip `dotnet watch` kullanabilirsin.
+
+Örnek MailServisi:
 
 ```powershell
-Stop-Process -Id 21256 -Force
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\servisler\MailServisi\MailServisi.Api"
+dotnet watch
 ```
 
-Buradaki `21256` örnektir; hata mesajında hangi process id yazıyorsa onu kullanmalısın.
+Örnek MVC Client:
 
-## 11. Güncel MVC Client Notları - 2026-08-02
+```powershell
+cd "C:\Users\fathd\Desktop\ITEnvanterTakibiMikroservisProjesi\src\istemci\EnvanterTakip.MvcClient"
+dotnet watch
+```
 
-MVC client üzerinden şu işlemler güncel olarak denenebilir:
+`dotnet watch` aynı `Development` ayarlarını ve proje için kayıtlı user-secrets değerlerini kullanır.
 
-- Demo kullanıcı ile giriş yapmak
-- Departmanları listelemek, oluşturmak, güncellemek ve `AktifMi` ile pasifleştirmek
-- Personelleri tablo halinde listelemek
-- Personelleri ad, soyad veya e-posta ile aramak
-- Personelleri departmana göre filtrelemek
-- Personel oluşturmak
-- Personeli ayrı düzenleme sayfasında güncellemek
-- Personeli ayrı onay sayfası üzerinden işten ayrıldı yapmak
-- Kullanıcıları listelemek ve yeni kullanıcı oluşturmak
-- Envanter ekranında kategori, lokasyon ve sarf malzeme kayıtlarını listelemek, oluşturmak, güncellemek ve `AktifMi` ile pasifleştirmek
-- Cihazları listelemek, oluşturmak, güncellemek ve cihaz durum hareketi işlemek
-- Sarf malzeme stok hareketi işlemek
-- Basit stok özetini ve kritik stok listesini görmek
-- Zimmet oluşturmak
-- Zimmet iadesi almak
-- İade kontrol sonucunu kaydetmek
-- Personel kullanıcısı ile kendi zimmetlerini görmek
+## 11. Demo Kullanıcılar
 
-Notlar:
+KimlikVePersonelServisi seed sonrası şu kullanıcılar kullanılabilir:
 
-- Client tarafındaki listeleme hataları artık boş liste gibi gösterilmez; Türkçe hata mesajı olarak ekrana yansıtılır.
-- Envanter veritabanında eski cihaz durum değerleri varsa `CihazDurumuEskiDegerleriniGuncelle` migration'ı uygulanmalıdır. Uygulama açılışında `Database.MigrateAsync()` çalıştığı için servis başlatıldığında bekleyen migration'lar otomatik uygulanır.
+```text
+admin / Admin123! / Admin
+it.personel / ItPersonel123! / ITPersoneli
+personel / Personel123! / PersonelKullanicisi
+```
 
-## 12. Güncel Envanter Client Notları - 2026-08-03
+Yetki özeti:
 
-Envanter ekranında cihaz ve sarf malzeme yönetimi artık listeleme ve işlem sayfası olarak ayrılmıştır:
+```text
+Admin: Departman, personel, kullanıcı, envanter, zimmet ve denetim işlemleri
+ITPersoneli: Envanter, zimmet ve denetim işlemleri
+PersonelKullanicisi: Kendi zimmetlerini görüntüleme
+```
 
-- Cihazlar sekmesinde cihazlar tablo halinde listelenir.
-- Cihaz satırındaki `İşlemler` butonu `CihazIslemleri` sayfasına gider.
-- Cihaz bilgisi güncelleme ve cihaz durum hareketi işleme bu sayfada yapılır.
-- Sarf Malzemeler sekmesinde sarf malzemeler tablo halinde listelenir.
-- Sarf malzeme satırındaki `İşlemler` butonu `SarfMalzemeIslemleri` sayfasına gider.
-- Sarf malzeme bilgisi güncelleme ve sarf malzeme stok hareketi işleme bu sayfada yapılır.
-- Sarf malzeme stok hareketi işlendiğinde aynı sayfada `Stok Hareketi Geçmişi` tablosunda görüntülenir.
+ITPersoneli rolü departman, personel ve kullanıcı yönetim ekranına erişemez. Zimmet oluşturma ekranında gereken personel seçimi ayrı salt-okunur endpoint üzerinden yapılır.
 
-Kategori ve lokasyon yönetimi mevcut tek sayfa akışını korur.
+Swagger'da token alma:
 
-Ek cihaz yönetimi notları:
+1. `http://localhost:5000/swagger` adresine git.
+2. `POST /api/kimlik/giris` endpointini aç.
+3. Demo kullanıcı bilgilerinden biriyle giriş yap.
+4. Dönen `token` değerini kopyala.
+5. Diğer servislerin Swagger ekranında `Authorize` butonuna bas.
+6. Token değerini yapıştır.
 
-- Yeni cihaz oluştururken AssetTag girilmez; sistem otomatik `BT-...` numarası üretir.
-- Cihazlar sekmesinde aktif/pasif, kategori ve lokasyon filtreleriyle liste daraltılabilir.
-- Cihaz işlem sayfasında durum hareketi işlendiğinde aynı sayfada cihaz durum geçmişi görülebilir.
-- Cihaz işlem sayfasında `AktifMi` ve `ToplamVarligaDahilMi` elle değiştirilemez; sistem cihaz durumu ve elden çıkarma tipine göre hesaplar.
-- Cihaz işlem sayfasında `Durum`, çıkış tarihi ve elden çıkarma bilgileri salt okunurdur; durum değiştirmek için `Cihaz Durum Hareketi` formu kullanılır.
-- Bakımdan dönen cihazı tekrar kullanılabilir yapmak için `Cihaz Durum Hareketi` formunda `BakimdanDondu` nedeni seçilir.
-- Zimmet senaryoları için `Zimmetlendi` nedeni cihazı `Zimmetli`, `ZimmetIadeAlindi` nedeni cihazı `Incelemede` durumuna alır.
-- Sarf malzeme stok hareketi formunda cihaz durumuna özel nedenler gösterilmez.
-- `EnvantereGiris` cihaz durum hareketi formunda gösterilmez; yeni cihaz oluşturma akışına aittir.
-- Manuel stok çıkışı, kaybolma, çalınma, kullanım dışı bırakma ve elden çıkarılmış hurda/ıskarta işlemlerinden sonra cihaz pasif ve toplam varlık dışı hale gelir.
-- Boş AssetTag değerlerini dolduran `AssetTagBosCihazlariDoldur` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.
-- Cihaz kapsam alanlarını düzelten `CihazKapsamAlanlariniDurumaGoreDuzelt` migration'ı servis başlatıldığında bekleyen migration olarak otomatik uygulanır.
+Postman veya curl için header formatı:
 
-## 13. Güncel ZimmetServisi Notları - 2026-08-08
+```text
+Authorization: Bearer JWT_TOKEN_DEGERI
+```
 
-ZimmetServisi Faz 5 kapsamında ayrı servis olarak eklenmiştir:
+## 12. Önerilen Tam Çalıştırma Sırası
 
-- Servis adresi `http://localhost:5002` olarak sabitlenmiştir.
-- Zimmet verileri PostgreSQL içinde `zimmet` şemasında tutulur.
-- Zimmet oluşturma sırasında aktif personel ve kullanılabilir cihaz kontrolü diğer servisler üzerinden yapılır.
-- Zimmet oluşturulunca cihaz EnvanterServisi üzerinden `Zimmetli` yapılır.
-- İade alınınca cihaz `Incelemede` olur.
-- İade kontrolünde sonuç `Saglam`, `Bakimda`, `HurdaIskarta` veya `HasarliTeslimAlindi` olarak kaydedilir ve cihaz durumu buna göre güncellenir.
-- Zimmet ve iade fotoğrafları bu fazda yoktur.
-- CAP/RabbitMQ Faz 6'da eklenmiştir. ZimmetServisi'nin senkron HTTP doğrulama ve cihaz durum hareketi çağrıları korunur; başarılı işlemler ayrıca CAP Outbox üzerinden RabbitMQ eventleri üretir.
+Temiz bir test için pratik sıra:
 
-## 14. Faz 6 CAP/RabbitMQ Notları - 2026-08-10
+1. Docker Desktop'ı aç.
+2. Proje köküne geç.
+3. Altyapıyı başlat:
 
-Faz 6 ile event yayınlama altyapısı eklenmiştir:
+```powershell
+docker compose up -d postgres rabbitmq mongodb redis
+```
 
-- KimlikVePersonelServisi: `personel.isten-ayrildi`
-- EnvanterServisi: `cihaz.durumu-degisti`, `stok.kritik-seviyeye-dusuldu`
-- ZimmetServisi: `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi`, `cihaz.hasarli-teslim-alindi`
+4. MongoDB replica set kontrolünü çalıştır:
 
-CAP, outbox tablolarını servis başlatıldığında kendi şemaları altında oluşturur. DenetimKaydiServisi Faz 7'de eklendiği için audit amaçlı event tüketimi MongoDB'ye yapılır. BildirimServisi Faz 9'da kritik stok eventlerini tüketir ve SignalR bildirimi üretir.
+```powershell
+docker exec it-envanter-mongodb mongosh --eval "try { rs.status() } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'127.0.0.1:27017'}]}) }"
+```
 
-## 15. Faz 7 DenetimKaydiServisi Notları - 2026-08-11
+5. Gerekliyse Gmail user-secrets değerlerini gir.
+6. Gerekliyse demo reset için `$env:DemoVeri__Sifirla="true"` verip Kimlik, Envanter ve Zimmet servislerini sırayla birer kez başlat.
+7. Reset kullandıysan `Remove-Item Env:\DemoVeri__Sifirla` ile temizle.
+8. Ayrı terminallerde şu sırayla servisleri açık bırak:
 
-Faz 7 ile DenetimKaydiServisi ve MongoDB eklenmiştir:
+```text
+KimlikVePersonelServisi  -> http://localhost:5000
+EnvanterServisi          -> http://localhost:5001
+ZimmetServisi            -> http://localhost:5002
+DenetimKaydiServisi      -> http://localhost:5003
+BildirimServisi          -> http://localhost:5004
+MailServisi              -> http://localhost:5006
+MVC Client               -> http://localhost:5010
+```
 
-- MongoDB container adı `it-envanter-mongodb`, portu `27017` olarak ayarlanmıştır.
-- DenetimKaydiServisi `http://localhost:5003` adresinde çalışır.
-- Denetim API Swagger adresi `http://localhost:5003/swagger` şeklindedir.
-- Servis CAP/RabbitMQ üzerinden domain eventlerini tüketir ve MongoDB'ye yazar.
-- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi başarılı CRUD/mutasyon işlemlerini best-effort HTTP çağrısıyla DenetimKaydiServisi'ne gönderir.
-- DenetimServisi kapalıysa ana iş akışları başarısız sayılmaz; kaynak servis uyarı logu üretir.
+9. Tarayıcıdan MVC client'a git:
 
-## 16. Faz 8 Redis Cache Notları - 2026-08-12
+```text
+http://localhost:5010
+```
 
-Faz 8 ile Redis cache altyapısı EnvanterServisi referans verileri için eklenmiştir:
+## 13. DBeaver ile PostgreSQL Kontrolü
 
-- Redis container adı `it-envanter-redis`, portu `6379` olarak ayarlanmıştır.
-- EnvanterServisi `Redis:ConnectionString = 127.0.0.1:6379` ayarıyla Redis'e bağlanır.
-- `Cache:ReferansVeriDakika = 30` ayarı kategori ve lokasyon liste cache süresini belirler.
-- Kategoriler `envanter:kategoriler:v1`, lokasyonlar `envanter:lokasyonlar:v1` anahtarıyla cache'lenir.
-- Kategori veya lokasyon oluşturma/güncelleme başarılı olunca ilgili cache temizlenir.
-- Redis geçici olarak kapalıysa EnvanterServisi kategori/lokasyon okumasını PostgreSQL üzerinden sürdürür ve uyarı logu yazar.
+DBeaver bağlantı bilgileri:
 
-## 17. Faz 9 SignalR Bildirimleri Notları - 2026-08-12
+```text
+Database Type: PostgreSQL
+Host: localhost
+Port: 5432
+Database: it_envanter_takip
+Username: itenvanter
+Password: itenvanter123
+```
 
-Faz 9 ile BildirimServisi ve MVC canlı bildirim merkezi eklenmiştir:
+Şemalar:
 
-- BildirimServisi `http://localhost:5004` adresinde çalışır.
-- Bildirim API Swagger adresi `http://localhost:5004/swagger` şeklindedir.
-- SignalR hub endpointi `http://localhost:5004/hubs/bildirim` şeklindedir.
-- Servis yalnızca `stok.kritik-seviyeye-dusuldu` eventini CAP/RabbitMQ üzerinden tüketir.
-- Admin ve ITPersoneli rolleri canlı bildirim merkezine bağlanabilir.
-- PersonelKullanicisi rolü canlı bildirim bağlantısı kuramaz.
-- MVC client içinde yerel SignalR istemci dosyası kullanılır; CDN bağımlılığı yoktur.
-- Bildirimler kalıcı saklanmaz; sayfa yenilenirse canlı liste sıfırlanır.
+```text
+kimlik_personel
+envanter
+zimmet
+cap_kimlik
+cap_envanter
+cap_zimmet
+```
 
-## 18. Zimmet Test Mail Notları - 2026-08-12
+Envanter tabloları:
 
-MailServisi test amaçlı Gmail gönderimi için eklenmiştir:
+```text
+Kategoriler
+Lokasyonlar
+Cihazlar
+SarfMalzemeler
+StokHareketleri
+KritikStokKurallari
+```
 
-- Servis adresi `http://localhost:5006` şeklindedir.
-- Swagger adresi `http://localhost:5006/swagger` şeklindedir.
-- Sağlık endpointi `http://localhost:5006/saglik` şeklindedir.
-- Servis `zimmet.olusturuldu`, `zimmet.iade-alindi` ve `zimmet.iade-edildi` eventlerini CAP/RabbitMQ üzerinden tüketir.
-- Event payload'larında `PersonelEmail` alanı ve mail içeriği için gerekli zimmet/cihaz snapshot bilgileri bulunur.
-- Test modunda gerçek personele e-posta gönderilmez; alıcı `fathdmrc01@gmail.com` olarak override edilir.
-- Gmail kullanıcı adı ve app password user-secrets ile verilmelidir.
-- SMTP gönderimi 3 kez denenir.
-- Mail gönderimi başarısız olursa zimmet oluşturma veya iade işlemleri geri alınmaz.
+Zimmet tabloları:
 
-## 19. String Sabitleri ve Demo Seed Notları - 2026-08-13
+```text
+Zimmetler
+```
 
-- Kullanıcı mesajları, rol adları, event adları, SignalR metod adları, session/tempdata anahtarları ve tekrar eden teknik stringler servis bazlı `Sabitler` sınıflarından okunur.
-- MVC client içinde oturum ve bildirim mesaj anahtarları `MvcSabitleri`, kullanıcıya dönen Türkçe mesajlar `MvcMesajlari` üzerinden yönetilir.
-- KimlikVePersonelServisi, EnvanterServisi ve ZimmetServisi için development reset ayarı varsayılan kapalıdır.
-- Reset yalnızca `$env:DemoVeri__Sifirla="true"` açıkça verildiğinde yapılmalıdır.
-- Audit/Mongo ve CAP teknik kayıtları domain demo seed resetinden ayrı kabul edilir.
+## 14. RabbitMQ Yönetim Paneli
+
+Adres:
+
+```text
+http://localhost:15672
+```
+
+Giriş:
+
+```text
+User: guest
+Password: guest
+```
+
+Kontrol edilebilecekler:
+
+```text
+Exchange: inventory.events
+Consumer grupları:
+- denetim-kaydi-servisi
+- bildirim-servisi
+- mail-servisi
+```
+
+## 15. Çalışan Kapsam
+
+Şu an projede aktif çalışan ana parçalar:
+
+- KimlikVePersonelServisi
+- EnvanterServisi
+- ZimmetServisi
+- DenetimKaydiServisi
+- BildirimServisi
+- MailServisi
+- MVC Client
+- PostgreSQL
+- RabbitMQ
+- MongoDB
+- Redis
+- CAP/RabbitMQ event altyapısı
+- MongoDB audit kayıtları
+- Redis referans veri cache
+- SignalR canlı kritik stok bildirimi
+- Gmail test mail consumer akışı
+
+Sıradaki ana faz:
+
+```text
+Faz 10 - ApiGateway Entegrasyonu
+```
