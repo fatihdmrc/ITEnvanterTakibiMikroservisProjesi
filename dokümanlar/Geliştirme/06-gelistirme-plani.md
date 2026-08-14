@@ -1,6 +1,6 @@
 # Geliştirme Planı
 
-Bu doküman, IT Ekipman Takip Sistemi'nin kodlama aşamasında hangi sırayla geliştirileceğini belirtir. Plan, temelden başlayıp sistemin ana özelliklerini aşamalı şekilde ekleme yaklaşımına göre hazırlanmıştır.
+Bu doküman, IT Envanter Takip Sistemi'nin kodlama aşamasında hangi sırayla geliştirileceğini belirtir. Plan, temelden başlayıp sistemin ana özelliklerini aşamalı şekilde ekleme yaklaşımına göre hazırlanmıştır.
 
 ## 1. Temel Kararlar
 
@@ -96,7 +96,7 @@ Bu hedefin seçilme nedeni:
 - CAP outbox şemaları servis bazında ayrılmıştır: `cap_kimlik`, `cap_envanter`, `cap_zimmet`.
 - Zimmet, iade, cihaz durum değişikliği, kritik stok ve personel ayrılış eventleri yayınlanır.
 - Event üretimi iş verisiyle aynı EF transaction kapsamına alınmıştır.
-- Event consumer tarafı Faz 7 DenetimKaydiServisi ve Faz 9 SignalR Bildirimleri kapsamında ele alınacaktır.
+- Event consumer tarafı Faz 7 DenetimKaydiServisi, Faz 9 SignalR Bildirimleri ve faz dışı test MailServisi entegrasyonu kapsamında uygulanmıştır.
 
 ### Faz 7 - DenetimKaydiServisi
 
@@ -249,7 +249,7 @@ Faz 6 kapsamında event üreten servislerde DotNetCore.CAP ve RabbitMQ entegrasy
 - KimlikVePersonelServisi `personel.isten-ayrildi` eventini üretir.
 - EnvanterServisi `cihaz.durumu-degisti` ve `stok.kritik-seviyeye-dusuldu` eventlerini üretir.
 - ZimmetServisi `zimmet.olusturuldu`, `zimmet.iade-alindi`, `cihaz.kontrole-alindi`, `zimmet.iade-edildi` ve hasarlı iade durumunda `cihaz.hasarli-teslim-alindi` eventlerini üretir.
-- Event tüketicilerinden DenetimKaydiServisi Faz 7'de uygulanmıştır; bildirim tüketimi Faz 9'da uygulanacaktır.
+- Event tüketicilerinden DenetimKaydiServisi Faz 7'de, bildirim tüketimi Faz 9'da uygulanmıştır. MailServisi faz dışı test entegrasyonu olarak zimmet mail eventlerini tüketir.
 
 ## 15. Faz 7 DenetimKaydiServisi Durumu - 2026-08-11
 

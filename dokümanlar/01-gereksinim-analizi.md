@@ -72,7 +72,7 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 - İşten ayrılan personelin kullanıcı hesabı pasifleştirilmelidir.
 - İşten ayrılan personele yeni zimmet oluşturulmamalıdır.
 - Departman ayrı entity olarak tutulmalıdır.
-- Departman sorumlusu Admin veya ITPersoneli tarafından belirlenebilmelidir.
+- Departman sorumlusu yalnızca Admin tarafından belirlenebilmelidir.
 
 ### Envanter Yönetimi
 
@@ -142,7 +142,7 @@ Sistem aşağıdaki ana yetenekleri kapsar:
 ## 6. Fonksiyonel Olmayan Gereksinimler
 
 - Sistem mikroservis mimarisiyle tasarlanmalıdır.
-- Client istekleri YARP tabanlı Api Gateway üzerinden ilgili servislere yönlendirilmelidir.
+- Faz 10 sonrasında client istekleri YARP tabanlı ApiGateway üzerinden ilgili servislere yönlendirilmelidir; güncel Faz 9 durumunda MVC client servisleri doğrudan çağırır.
 - Her servis kendi sorumluluk alanına sahip olmalıdır.
 - Her servis kendi portunda ve kendi Swagger arayüzüyle çalışmalıdır.
 - Servisler arası senkron doğrulamalar HTTP ile yapılmalıdır.

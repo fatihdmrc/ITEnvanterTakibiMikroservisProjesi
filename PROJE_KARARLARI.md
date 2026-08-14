@@ -1,4 +1,4 @@
-# IT Ekipman Takip Sistemi - Mimari ve Analiz Kararları
+# IT Envanter Takip Sistemi - Mimari ve Analiz Kararları
 
 Bu doküman, SDLC'nin ilk iki aşaması olan gereksinim analizi ve sistem tasarımı için yaşayan karar kaydı olarak tutulur. Projede yeni karar alındıkça veya mevcut karar değiştikçe bu dosya güncellenmelidir.
 
@@ -295,7 +295,7 @@ Zimmet iadesi doğrudan "depoya döndü" olarak tamamlanmayacaktır. İade alın
 - Bina, kat, oda gibi hiyerarşik lokasyon modeli tasarımda desteklenecek şekilde düşünülmelidir.
 - İlk sürümde basit liste tercih edilirse ileride hiyerarşik modele geçiş için `UstLokasyonId` alanı eklenebilir.
 - Departman ayrı entity olarak tutulacaktır.
-- Departman sorumlusu ITPersoneli veya Admin rolündeki kullanıcı tarafından belirlenir.
+- Departman sorumlusu yalnızca Admin rolündeki kullanıcı tarafından belirlenir.
 
 ## 11. Personel Yaşam Döngüsü Kararları
 

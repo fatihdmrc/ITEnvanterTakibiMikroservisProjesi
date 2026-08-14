@@ -2,13 +2,13 @@
 
 ## 1. Mimari Yaklaşım
 
-Sistem mikroservis mimarisiyle tasarlanacaktır. Client istekleri YARP tabanlı Api Gateway üzerinden ilgili mikroservislere yönlendirilecektir. Her mikroservis kendi portunda çalışacak, kendi Swagger arayüzüne sahip olacak ve kendi sorumluluk alanındaki verileri yönetecektir.
+Sistem mikroservis mimarisiyle tasarlanmıştır. Güncel Faz 9 durumunda MVC client servisleri doğrudan kendi portları üzerinden çağırır. YARP tabanlı ApiGateway Faz 10 kapsamında eklendiğinde client istekleri merkezi gateway üzerinden ilgili mikroservislere yönlendirilecektir. Her mikroservis kendi portunda çalışır, kendi Swagger arayüzüne sahip olur ve kendi sorumluluk alanındaki verileri yönetir.
 
 Ana mimari hedef, servisleri iş alanlarına göre ayırmak ve servisler arası bağımlılığı mümkün olduğunca azaltmaktır. Senkron doğrulamalar HTTP ile yapılacak, sistem genelinde duyurulması gereken olaylar DotNetCore.CAP üzerinden RabbitMQ eventleriyle yayınlanacaktır. Event yayınlama güvenilirliği için Outbox Pattern uygulanacaktır.
 
 ## 2. Servisler
 
-### ApiGateway
+### ApiGateway (Faz 10 Planı)
 
 Sorumlulukları:
 

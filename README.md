@@ -199,18 +199,43 @@ Yetki özeti:
 
 ## Ekran Görüntüleri
 
-Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründe tutulacaktır. Görseller eklendiğinde aşağıdaki yollar README içinde doğrudan çalışır.
+Ekran görüntüleri repo içinde `dokümanlar/görseller/ekranlar/` klasöründe tutulur. Aşağıdaki görseller bu klasördeki mevcut `.png` dosyalarından gösterilir.
 
-| Ekran | Görsel |
-| --- | --- |
-| Giriş ekranı | `dokümanlar/görseller/ekranlar/giris-ekrani.png` |
-| Personel yönetimi | `dokümanlar/görseller/ekranlar/personel-yonetimi.png` |
-| Envanter cihazlar | `dokümanlar/görseller/ekranlar/envanter-cihazlar.png` |
-| Cihaz işlemleri | `dokümanlar/görseller/ekranlar/cihaz-islemleri.png` |
-| Sarf malzeme işlemleri | `dokümanlar/görseller/ekranlar/sarf-malzeme-islemleri.png` |
-| Zimmetler | `dokümanlar/görseller/ekranlar/zimmetler.png` |
-| Zimmet iade kontrolü | `dokümanlar/görseller/ekranlar/zimmet-iade-kontrolu.png` |
-| RabbitMQ paneli | `dokümanlar/görseller/ekranlar/rabbitmq-paneli.png` |
+### Departman
+
+![Departman](dokümanlar/görseller/ekranlar/departman.png)
+
+### Personel
+
+![Personel](dokümanlar/görseller/ekranlar/personel.png)
+
+### Kullanıcı
+
+![Kullanıcı](dokümanlar/görseller/ekranlar/kullanici.png)
+
+### Kategoriler
+
+![Kategoriler](dokümanlar/görseller/ekranlar/kategoriler.png)
+
+### Lokasyonlar
+
+![Lokasyonlar](dokümanlar/görseller/ekranlar/lokasyonlar.png)
+
+### Cihazlar
+
+![Cihazlar](dokümanlar/görseller/ekranlar/cihazlar.png)
+
+### Sarf Malzemeler
+
+![Sarf malzemeler](<dokümanlar/görseller/ekranlar/sarf malzemeler.png>)
+
+### Stok Özeti
+
+![Stok özeti](dokümanlar/görseller/ekranlar/stok-ozeti.png)
+
+### Zimmetler
+
+![Zimmetler](dokümanlar/görseller/ekranlar/zimmetler.png)
 
 ## Temel Kullanım Akışları
 

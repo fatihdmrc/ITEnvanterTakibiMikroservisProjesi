@@ -60,7 +60,7 @@ Kurallar:
 
 Kurallar:
 
-- Departman sorumlusu Admin veya ITPersoneli tarafından belirlenir.
+- Departman sorumlusu yalnızca Admin tarafından belirlenir.
 - Departman sorumlusu işten ayrılırsa yeni sorumlu atanmalıdır.
 
 ## 3. EnvanterServisi Veri Modeli

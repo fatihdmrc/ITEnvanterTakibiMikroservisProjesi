@@ -2,28 +2,29 @@
 
 ## 1. Genel Yaklaşım
 
-Sistem YARP tabanlı Api Gateway ile çalışacaktır. Client uygulama istekleri önce ApiGateway'e gelecek, ApiGateway isteği ilgili mikroservise yönlendirecektir. Her servis kendi portundan ve kendi Swagger arayüzünden erişilebilir olmaya devam edecektir. Servisler arası iletişim üç şekilde tasarlanır:
+Güncel uygulamada MVC client servisleri doğrudan kendi portları üzerinden çağırır. ApiGateway henüz devrede değildir; YARP tabanlı ApiGateway entegrasyonu Faz 10 kapsamında, Demo ve Dokümantasyon fazından hemen önce eklenecektir. Her servis kendi portundan ve kendi Swagger arayüzünden erişilebilir olmaya devam eder. Servisler arası iletişim şu şekilde tasarlanır:
 
-- Client-server yönlendirmesi için ApiGateway
+- Güncel Faz 9 durumunda MVC client -> servis doğrudan HTTP çağrıları
+- Faz 10 sonrasında client-server yönlendirmesi için ApiGateway
 - Senkron HTTP çağrıları
 - Asenkron DotNetCore.CAP + RabbitMQ eventleri
 
 Senkron HTTP çağrıları işlem anında doğrulama gerektiğinde kullanılır. CAP + RabbitMQ eventleri ise gerçekleşen olayların diğer servislere güvenilir şekilde duyurulması için kullanılır. Event publish işlemlerinde Outbox Pattern uygulanır.
 
-Faz 6 güncel uygulamasında ZimmetServisi, KimlikVePersonelServisi ve EnvanterServisi ile işlem anı doğrulama için doğrudan HTTP üzerinden konuşmaya devam eder. Başarılı domain işlemleri ayrıca DotNetCore.CAP Outbox üzerinden RabbitMQ'ya event olarak yayınlanır.
+Faz 6 ve sonrası güncel uygulamada ZimmetServisi, KimlikVePersonelServisi ve EnvanterServisi ile işlem anı doğrulama için doğrudan HTTP üzerinden konuşmaya devam eder. Başarılı domain işlemleri ayrıca DotNetCore.CAP Outbox üzerinden RabbitMQ'ya event olarak yayınlanır.
 
 ## 2. Servis Portları
 
-Önerilen portlar:
+Güncel servis portları:
 
 | Servis | Port | Açıklama |
 | --- | --- | --- |
-| ApiGateway | 5005 | YARP tabanlı merkezi client giriş noktası |
 | KimlikVePersonelServisi | 5000 | Kullanıcı, personel ve departman işlemleri |
 | EnvanterServisi | 5001 | Cihaz, sarf malzeme, kategori, lokasyon ve stok işlemleri |
 | ZimmetServisi | 5002 | Zimmet oluşturma ve iade işlemleri |
 | DenetimKaydiServisi | 5003 | Audit/event log sorgulama |
 | BildirimServisi | 5004 | Kritik stok SignalR bildirim paneli |
+| ApiGateway | 5005 | Faz 10'da eklenecek YARP tabanlı merkezi client giriş noktası |
 | MailServisi | 5006 | Zimmet oluşturma ve iade süreçlerinde test Gmail gönderimi |
 
 ## 3. Senkron HTTP Çağrıları
@@ -127,7 +128,7 @@ Eventler:
 | CihazDurumuDegisti | `cihaz.durumu-degisti` | EnvanterServisi | DenetimKaydiServisi | Cihaz durum değişikliğini kaydetmek |
 | CihazKontroleAlindi | `cihaz.kontrole-alindi` | ZimmetServisi | DenetimKaydiServisi | İade sonrası fiziki kontrol sürecini duyurmak |
 | CihazHasarliTeslimAlindi | `cihaz.hasarli-teslim-alindi` | ZimmetServisi | DenetimKaydiServisi | Hasarlı iade bilgisini duyurmak |
-| PersonelIstenAyrildi | `personel.isten-ayrildi` | KimlikVePersonelServisi | ZimmetServisi (gelecek), DenetimKaydiServisi | Ayrılan personelin aktif zimmetlerinin görünür olması |
+| PersonelIstenAyrildi | `personel.isten-ayrildi` | KimlikVePersonelServisi | DenetimKaydiServisi | Ayrılan personel olayını audit kaydına almak |
 
 ## 5. Standart Event İçeriği
 
@@ -165,14 +166,14 @@ Kullanıcı bağlamı:
 
 ## 7. Örnek Akış: Personel İşten Ayrılma
 
-1. Admin, ApiGateway üzerinden personeli işten ayrıldı durumuna alma isteği gönderir.
-2. ApiGateway isteği KimlikVePersonelServisi'ne yönlendirir.
+1. Admin, MVC client veya Swagger üzerinden KimlikVePersonelServisi'ne personeli işten ayrıldı durumuna alma isteği gönderir.
+2. KimlikVePersonelServisi gelen JWT token'ı doğrular ve isteğin `Admin` rolünden geldiğini kontrol eder.
 3. KimlikVePersonelServisi, personel durumunu `IstenAyrildi` yapar.
 4. Aynı servis ilgili kullanıcı hesabını pasifleştirir.
 5. KimlikVePersonelServisi aynı transaction içinde Outbox kaydını oluşturur.
 6. CAP, `PersonelIstenAyrildi` eventini RabbitMQ'ya yayınlar.
-7. ZimmetServisi consumer davranışı sonraki fazlarda ele alınacaktır.
-8. DenetimKaydiServisi Faz 7'de olayı MongoDB'ye kaydeder.
+7. DenetimKaydiServisi Faz 7'de olayı MongoDB'ye kaydeder.
+8. Ayrılan personelin aktif zimmetlerine ilişkin otomatik aksiyon gerekiyorsa ZimmetServisi consumer davranışı sonraki fazlarda ele alınacaktır.
 
 ## 8. Faz 7 CRUD Audit İletişimi
 
