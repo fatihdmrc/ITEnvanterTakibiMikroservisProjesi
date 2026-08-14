@@ -102,35 +102,4 @@ public sealed class DenetimEventConsumer(IDenetimKaydiServisi denetimKaydiServis
                 payload),
             cancellationToken);
 
-    [CapSubscribe(EventAdlari.CihazKontroleAlindi)]
-    public Task CihazKontroleAlindi(CihazKontroleAlindiEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
-            new EventDenetimKaydiOlusturIstek(
-                payload.EventId,
-                EventAdlari.CihazKontroleAlindi,
-                "ZimmetServisi",
-                "Cihaz",
-                payload.CihazId.ToString(),
-                payload.PersonelAdSoyad,
-                payload.IadeAlanKullaniciId,
-                "Cihaz iade sonrasi kontrole alindi.",
-                payload.OlusmaZamaniUtc,
-                payload),
-            cancellationToken);
-
-    [CapSubscribe(EventAdlari.CihazHasarliTeslimAlindi)]
-    public Task CihazHasarliTeslimAlindi(CihazHasarliTeslimAlindiEvent payload, CancellationToken cancellationToken = default)
-        => denetimKaydiServisi.EventKaydiOlusturAsync(
-            new EventDenetimKaydiOlusturIstek(
-                payload.EventId,
-                EventAdlari.CihazHasarliTeslimAlindi,
-                "ZimmetServisi",
-                "Cihaz",
-                payload.CihazId.ToString(),
-                payload.PersonelAdSoyad,
-                payload.IadeKontroluYapanKullaniciId,
-                "Cihaz hasarli teslim alindi.",
-                payload.OlusmaZamaniUtc,
-                payload),
-            cancellationToken);
 }

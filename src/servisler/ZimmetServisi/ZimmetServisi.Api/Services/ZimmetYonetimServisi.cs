@@ -236,12 +236,12 @@ public sealed class ZimmetYonetimServisi(
         return capPublisher.PublishAsync(EventAdlari.ZimmetOlusturuldu, eventPayload, cancellationToken: cancellationToken);
     }
 
-    private async Task ZimmetIadeAlindiEventleriniYayinlaAsync(Zimmet zimmet, CancellationToken cancellationToken)
+    private Task ZimmetIadeAlindiEventleriniYayinlaAsync(Zimmet zimmet, CancellationToken cancellationToken)
     {
         var iadeTarihi = zimmet.IadeTarihi ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var iadeAlanKullaniciId = zimmet.IadeAlanKullaniciId ?? Guid.Empty;
 
-        await capPublisher.PublishAsync(
+        return capPublisher.PublishAsync(
             EventAdlari.ZimmetIadeAlindi,
             new ZimmetIadeAlindiEvent(
                 Guid.NewGuid(),
@@ -257,27 +257,14 @@ public sealed class ZimmetYonetimServisi(
                 zimmet.IadeNotu,
                 DateTime.UtcNow),
             cancellationToken: cancellationToken);
-
-        await capPublisher.PublishAsync(
-            EventAdlari.CihazKontroleAlindi,
-            new CihazKontroleAlindiEvent(
-                Guid.NewGuid(),
-                zimmet.Id,
-                zimmet.CihazId,
-                zimmet.PersonelId,
-                zimmet.PersonelAdSoyad,
-                iadeTarihi,
-                iadeAlanKullaniciId,
-                DateTime.UtcNow),
-            cancellationToken: cancellationToken);
     }
 
-    private async Task ZimmetIadeEdildiEventleriniYayinlaAsync(Zimmet zimmet, CancellationToken cancellationToken)
+    private Task ZimmetIadeEdildiEventleriniYayinlaAsync(Zimmet zimmet, CancellationToken cancellationToken)
     {
         var kontrolYapanKullaniciId = zimmet.IadeKontroluYapanKullaniciId ?? Guid.Empty;
         var kontrolDurumu = zimmet.IadeKontrolDurumu ?? IadeKontrolDurumu.Saglam;
 
-        await capPublisher.PublishAsync(
+        return capPublisher.PublishAsync(
             EventAdlari.ZimmetIadeEdildi,
             new ZimmetIadeEdildiEvent(
                 Guid.NewGuid(),
@@ -291,24 +278,6 @@ public sealed class ZimmetYonetimServisi(
                 kontrolDurumu,
                 kontrolYapanKullaniciId,
                 zimmet.IadeNotu,
-                DateTime.UtcNow),
-            cancellationToken: cancellationToken);
-
-        if (kontrolDurumu != IadeKontrolDurumu.HasarliTeslimAlindi)
-        {
-            return;
-        }
-
-        await capPublisher.PublishAsync(
-            EventAdlari.CihazHasarliTeslimAlindi,
-            new CihazHasarliTeslimAlindiEvent(
-                Guid.NewGuid(),
-                zimmet.Id,
-                zimmet.CihazId,
-                zimmet.PersonelId,
-                zimmet.PersonelAdSoyad,
-                zimmet.IadeNotu,
-                kontrolYapanKullaniciId,
                 DateTime.UtcNow),
             cancellationToken: cancellationToken);
     }
